@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Composition Lab</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d0f13">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Composition Lab">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root { --bg:#111318; --panel:#1a1f27; --panel2:#232a34; --text:#eef2f7; --muted:#9ba7b4; --accent:#7cc4ff; --ok:#74d99f; --warn:#ffd166; --err:#ff7b7b; --line:#303845; }
+  * { box-sizing:border-box; }
+  html { min-height:100%; overflow-y:auto; }
+  body { margin:0; min-height:100%; overflow-y:auto; background:var(--bg); color:var(--text); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; }
+  header { padding:14px 18px; background:#0d0f13; border-bottom:1px solid #2b323d; position:sticky; top:0; z-index:2; }
+  header h1 { margin:0; font-size:18px; }
+  main { display:grid; grid-template-columns:minmax(320px,460px) 1fr; gap:14px; padding:14px; min-height:calc(100vh - 55px); height:auto; align-items:start; }
+  .panel { background:var(--panel); border:1px solid #2d3540; border-radius:10px; padding:14px; overflow:visible; min-height:0; }
+  label { display:block; margin:10px 0 5px; color:#cbd4df; font-weight:650; }
+  input, select, textarea, button { font:inherit; }
+  input, select, textarea { width:100%; padding:9px; border-radius:7px; border:1px solid #3a4553; background:#10141a; color:var(--text); }
+  textarea { resize:vertical; min-height:110px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  button { border:0; border-radius:7px; padding:10px 14px; cursor:pointer; font-weight:700; }
+  .primary { background:var(--accent); color:#07121a; width:100%; margin-top:12px; }
+  .secondary { background:#303947; color:var(--text); }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  pre { white-space:pre-wrap; word-break:break-word; background:#0f1318; padding:12px; border-radius:8px; border:1px solid #303845; min-height:160px; }
+  .status { padding:8px 10px; border-radius:7px; background:#10141a; border:1px solid #303845; margin-bottom:10px; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .err { color:var(--err); }
+  details { margin-top:10px; }
+  summary { cursor:pointer; color:#cbd4df; }
+  small { color:var(--muted); }
+
+  .keyrow { display:flex; gap:8px; align-items:center; margin-top:7px; flex-wrap:wrap; }
+  .checklabel { margin:0; font-weight:400; display:flex; gap:7px; align-items:center; flex:1 1 220px; }
+  .checklabel input { width:auto; }
+  .smallbtn { padding:7px 10px; font-size:12px; }
+  .uploadrow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+  .uploadrow input[type=file] { flex:1 1 240px; padding:7px; }
+  .uploadinfo { margin-top:6px; color:var(--muted); font-size:12px; }
+  .resultcard { border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--panel2); color:var(--text); line-height:1.45; }
+  .foldbox { margin-top:12px; padding:0; border:1px solid var(--line); border-radius:9px; background:var(--panel2); overflow:hidden; }
+  .foldbox > summary { padding:11px 13px; font-weight:700; color:var(--text); background:#1b222c; }
+  .foldcontent { padding:12px; }
+  .foldbox[open] > summary { border-bottom:1px solid var(--line); }
+  .chatlog { max-height:260px; overflow:auto; display:flex; flex-direction:column; gap:8px; margin:8px 0 10px; }
+  .chatmsg { padding:8px 10px; border-radius:8px; white-space:pre-wrap; line-height:1.35; font-size:13px; }
+  .chatuser { background:#263241; align-self:flex-end; max-width:90%; }
+  .chatai { background:#151c24; border:1px solid #2d3846; align-self:flex-start; max-width:90%; color:var(--text); }
+  .chatrow { display:flex; gap:8px; align-items:flex-end; }
+  .chatrow textarea { flex:1; min-height:60px; }
+  .historyitem { border:1px solid var(--line); border-radius:8px; padding:9px; background:var(--panel2); color:var(--text); margin-bottom:8px; }
+  .historymeta { color:var(--muted); font-size:12px; margin-top:3px; }
+  .costmeta { color:#cbd4df; font-size:12px; margin-top:5px; }
+  .historyactions { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+  .labbox { margin-top:12px; border:1px solid var(--line); border-radius:9px; background:#171d25; overflow:hidden; }
+  .labbox > summary { padding:11px 13px; font-weight:800; color:var(--text); background:#202833; }
+  .labhint { color:var(--muted); font-size:12px; line-height:1.45; margin:0 0 9px; }
+  .labbuttons { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .labbuttons button { width:100%; }
+  .comparegrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .variantcard { border:1px solid var(--line); background:#11161d; border-radius:8px; padding:10px; min-height:112px; }
+  .variantcard strong { display:block; margin-bottom:4px; }
+  .compare-notes { min-height:72px; }
+  @media (max-width:650px){ .labbuttons,.comparegrid{grid-template-columns:1fr;} }
+  @media (max-width:900px){ main{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<header><h1>Composition Lab <span style="font-weight:400;color:var(--muted);font-size:13px;">· Komponieren mit künstlicher Intelligenz</span></h1></header>
+<main>
+  <section class="panel">
+    <label for="provider">Modell-Anbieter</label>
+    <select id="provider">
+      <option value="gemini">Google / Gemini</option>
+      <option value="anthropic">Anthropic / Claude</option>
+      <option value="openai">OpenAI</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="model">Modell</label>
+        <select id="model"></select>
+      </div>
+      <div>
+        <label for="reasoningEffort">Qualität / Denkaufwand</label>
+        <select id="reasoningEffort">
+          <option value="low">Sparsam – Low</option>
+          <option value="medium" selected>Standard – Medium</option>
+          <option value="high">Maximum – High</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="measures">Takte</label>
+        <input id="measures" type="number" min="1" max="256" value="32">
+      </div>
+      <div>
+        <label for="meter">Taktart</label>
+        <input id="meter" value="4/4">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="tempo">Tempo (BPM)</label>
+        <input id="tempo" type="number" min="20" max="300" value="96">
+      </div>
+      <div>
+        <label for="musicalKey">Tonart</label>
+        <input id="musicalKey" value="e minor">
+      </div>
+    </div>
+
+    <label for="ensemble">Besetzung</label>
+    <input id="ensemble" value="Piano solo">
+
+    <label for="prompt">Kompositionsauftrag</label>
+    <textarea id="prompt">Komponiere ein eigenständiges, musikalisch überzeugendes Stück. Entwickle einen klar erkennbaren musikalischen Gedanken mit abwechslungsreicher Dynamik und Artikulation.</textarea>
+
+    <details class="labbox" id="experimentSection" open>
+      <summary>Experimentierlabor</summary>
+      <div class="foldcontent">
+        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>
+        <div class="labbuttons">
+          <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
+          <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
+          <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
+          <button type="button" class="secondary" id="randomToTemplateBtn" disabled>↗ Zufall als Vorlage</button>
+        </div>
+        <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
+      </div>
+    </details>
+
+    <label>Vorhandenes Material hochladen (MIDI oder JSON)</label>
+    <div class="uploadrow">
+      <input id="uploadInput" type="file" accept=".mid,.midi,.json,application/json,audio/midi">
+      <button type="button" class="secondary smallbtn" id="clearUploadBtn">Entfernen</button>
+    </div>
+    <div class="uploadinfo" id="uploadInfo">Kein Material geladen.</div>
+
+    <button class="primary" id="composeBtn">Mit gewählter KI komponieren</button>
+
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <button class="secondary" id="downloadBtn" disabled>MIDI herunterladen</button>
+      <button class="secondary" id="jsonBtn" disabled>JSON herunterladen</button>
+    </div>
+    <div class="status" id="status">Bereit.</div>
+
+    <details class="foldbox" id="conceptSection" open>
+      <summary>Musikalischer Impuls</summary>
+      <div class="foldcontent">
+        <div id="conceptView" class="resultcard">Noch kein Entwurf.</div>
+      </div>
+    </details>
+
+    <h3>Aktuelle Komposition</h3>
+    <div id="lastResult" class="resultcard">Noch keine Komposition.</div>
+
+    <details class="foldbox" id="chatSection" open>
+      <summary>Mit der KI untersuchen & weiterentwickeln</summary>
+      <div class="foldcontent">
+        <div id="chatContext" class="historyitem">Keine Komposition aktiv.</div>
+        <div id="chatLog" class="chatlog"><div class="chatai chatmsg">Stelle hier Fragen zum Stück oder gib Anweisungen wie z.B. „Mache Takt 5 bis 8 dramatischer“ oder „Verlängere um 8 Takte“.</div></div>
+        <div class="chatrow">
+          <textarea id="chatInput" placeholder="Frage oder Änderungswunsch eingeben …"></textarea>
+          <button id="chatSendBtn" class="secondary" type="button">Senden</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="foldbox" id="validationSection">
+      <summary>Technische Analyse & Validierung</summary>
+      <div class="foldcontent">
+        <pre id="validation">Noch keine Komposition geprüft.</pre>
+      </div>
+    </details>
+
+    <details class="foldbox" id="compareSection" open>
+      <summary>Varianten vergleichen</summary>
+      <div class="foldcontent">
+        <p class="labhint">Wähle zwei Fassungen aus dem Verlauf. Composition Lab kürt keinen Sieger – der Vergleich gehört dir.</p>
+        <div class="comparegrid">
+          <div>
+            <label for="variantA">Variante A</label>
+            <select id="variantA"></select>
+            <div id="variantACard" class="variantcard">Noch keine Variante gewählt.</div>
+            <div class="historyactions">
+              <button type="button" class="secondary smallbtn" id="loadVariantA">In Editor laden</button>
+              <button type="button" class="secondary smallbtn" id="midiVariantA">MIDI</button>
+            </div>
+          </div>
+          <div>
+            <label for="variantB">Variante B</label>
+            <select id="variantB"></select>
+            <div id="variantBCard" class="variantcard">Noch keine Variante gewählt.</div>
+            <div class="historyactions">
+              <button type="button" class="secondary smallbtn" id="loadVariantB">In Editor laden</button>
+              <button type="button" class="secondary smallbtn" id="midiVariantB">MIDI</button>
+            </div>
+          </div>
+        </div>
+        <label for="compareNotes">Eigene Beobachtungen</label>
+        <textarea id="compareNotes" class="compare-notes" placeholder="Was funktioniert in A? Was in B? Welche Idee möchtest du weiterentwickeln?"></textarea>
+      </div>
+    </details>
+
+    <details class="foldbox" id="historySection" open>
+      <summary>Versuche & Verlauf (dauerhaft gespeichert)</summary>
+      <div class="foldcontent">
+        <div class="toolbar" style="margin-top:0">
+          <button type="button" class="secondary smallbtn" id="clearHistoryBtn">Verlauf leeren</button>
+        </div>
+        <div id="historyList">Noch kein Verlauf vorhanden.</div>
+      </div>
+    </details>
+  </section>
+
+  <details style="grid-column:1 / -1;" class="foldbox" id="technicalSection">
+      <summary>Technisches</summary>
+      <div class="foldcontent">
+        <label for="apiKey" id="apiKeyLabel" style="margin-top:0;">API-Key für Google / Gemini</label>
+        <div style="display:flex; gap:6px;">
+          <input id="apiKey" type="password" placeholder="API-Key eintragen">
+          <button type="button" id="toggleKeyBtn" class="secondary smallbtn" style="flex:0 0 auto;">👁</button>
+        </div>
+        <div class="keyrow">
+          <label class="checklabel"><input id="rememberApiKey" type="checkbox" checked> Eingaben &amp; Keys auf diesem Gerät merken</label>
+          <button type="button" class="secondary smallbtn" id="saveKeyBtn">💾 Jetzt speichern</button>
+          <button type="button" class="secondary smallbtn" id="clearApiKeyBtn">🗑 Key löschen</button>
+        </div>
+      </div>
+    </details>
+</main>
+
+<script>
+'use strict';
+
+const STORAGE_ID = "ai_midi_composer_settings_v37";
+const HISTORY_ID = "ai_midi_composer_history_v37";
+
+const MODEL_OPTIONS = {
+  gemini: [
+    ["gemini-3.7-flash", "Gemini 3.7 Flash"]
+  ],
+  anthropic: [
+    ["claude-sonnet-5", "Claude Sonnet 5"]
+  ],
+  openai: [
+    ["gpt-5.6-sol", "GPT-5.6 Sol"],
+    ["gpt-5.6-terra", "GPT-5.6 Terra"],
+    ["gpt-5.6-luna", "GPT-5.6 Luna"]
+  ]
+};
+const DEFAULT_MODELS = Object.fromEntries(Object.entries(MODEL_OPTIONS).map(([p, list]) => [p, list[0][0]]));
+
+const TOKEN_RATES = {
+  "claude-sonnet-5": {in:2.00, out:10.00},
+  "gemini-3.7-flash": {in:0.75, out:3.75},
+  "gpt-5.6-sol": {in:2.00, out:10.00},
+  "gpt-5.6": {in:2.00, out:10.00}
+};
+
+const SYSTEM_PREFIX = `Du bist ein Kompositions- und Produktionsassistent für MIDI.
+Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
+
+const TECHNICAL_PROMPT = `NOTATION UND AUSGABE:
+- "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
+- "g" = Gate/Klingdauer als Faktor (z.B. 0.95 = normal, 0.5 = staccato, 1.05 = legato).
+- "st" = System (0=Standard, 1=Rechte Hand / oberes System, 2=Linke Hand / unteres System).
+- Format: JSON mit folgender Struktur:
+{
+  "ti": "Titel",
+  "bpm": 96,
+  "ts": {"n": 4, "d": 4},
+  "k": "e minor",
+  "sm": "Kurze Zusammenfassung",
+  "tr": [
+    {
+      "nm": "Piano",
+      "ch": 0,
+      "pg": 0,
+      "nt": [[0.0, 1.0, 60, 80, 1]],
+      "ct": [[0.0, 64, 0]]
+    }
+  ]
+}
+nt-Array: [StartBeat, Dauer, Pitch, Velocity, Staff, Gate] (Gate ist optional, Standard 0.95).
+ct-Array: [Beat, CC, Wert].
+Gib ausschließlich valides JSON aus.`;
+
+let lastScore = null;
+let lastMidiBytes = null;
+let lastProvider = null;
+let lastModel = null;
+let uploadedScore = null;
+let uploadedName = "";
+let lastConcept = "";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function getStoredData(){
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_ID) || "{}");
+  } catch(_) {
+    return {};
+  }
+}
+
+function providerDisplayName(p){
+  return p === "gemini" ? "Google / Gemini" :
+         p === "anthropic" ? "Anthropic / Claude" :
+         p === "openai" ? "OpenAI" : p;
+}
+function updateApiKeyProviderLabel(p){
+  const label = $("apiKeyLabel");
+  const input = $("apiKey");
+  const name = providerDisplayName(p);
+  if(label) label.textContent = `API-Key für ${name}`;
+  if(input) input.placeholder = `${name} API-Key eintragen`;
+}
+
+function syncUIForProvider(p){
+  const data = getStoredData();
+  const modelEl = $("model");
+  modelEl.innerHTML = "";
+  (MODEL_OPTIONS[p] || []).forEach(([value, label]) => {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = label;
+    modelEl.appendChild(o);
+  });
+  const savedModel = data.models?.[p];
+  if(savedModel && [...modelEl.options].some(o => o.value === savedModel)) modelEl.value = savedModel;
+  else modelEl.value = DEFAULT_MODELS[p] || "";
+
+  const effort = data.efforts?.[p] || "medium";
+  $("reasoningEffort").value = ["low","medium","high"].includes(effort) ? effort : "medium";
+  $("apiKey").value = (data.remember !== false && data.keys?.[p]) ? data.keys[p] : "";
+  updateApiKeyProviderLabel(p);
+  renderChatContext();
+}
+
+function saveCurrentState(){
+  try {
+    const data = getStoredData();
+    const p = $("provider").value;
+    data.provider = p;
+    data.remember = $("rememberApiKey").checked;
+    data.models = data.models || {};
+    data.models[p] = $("model").value;
+    data.efforts = data.efforts || {};
+    data.efforts[p] = $("reasoningEffort").value;
+    
+    // API-Keys
+    data.keys = data.keys || {};
+    if(data.remember && $("apiKey").value.trim()){
+      data.keys[p] = $("apiKey").value.trim();
+    } else if(!data.remember) {
+      delete data.keys[p];
+    }
+
+    // Eingabefelder vollständig sichern
+    data.form = {
+      measures: $("measures").value,
+      meter: $("meter").value,
+      tempo: $("tempo").value,
+      musicalKey: $("musicalKey").value,
+      ensemble: $("ensemble").value,
+      prompt: $("prompt").value
+    };
+
+    localStorage.setItem(STORAGE_ID, JSON.stringify(data));
+  } catch(_) {}
+}
+
+function initApp(){
+  const data = getStoredData();
+  const p = data.provider || "gemini";
+  $("provider").value = p;
+  $("rememberApiKey").checked = data.remember !== false;
+  
+  // Gespeicherte Formularwerte wiederherstellen
+  if(data.form){
+    if(data.form.measures !== undefined) $("measures").value = data.form.measures;
+    if(data.form.meter !== undefined) $("meter").value = data.form.meter;
+    if(data.form.tempo !== undefined) $("tempo").value = data.form.tempo;
+    if(data.form.musicalKey !== undefined) $("musicalKey").value = data.form.musicalKey;
+    if(data.form.ensemble !== undefined) $("ensemble").value = data.form.ensemble;
+    if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;
+  }
+
+  syncUIForProvider(p);
+  renderHistory();
+}
+
+$("provider").addEventListener("change", (e) => {
+  const p = e.target.value;
+  syncUIForProvider(p);
+  saveCurrentState();
+});
+
+// Automatisches Speichern bei jeder Änderung
+["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt"].forEach(id => {
+  $(id).addEventListener("input", saveCurrentState);
+  $(id).addEventListener("change", saveCurrentState);
+});
+$("rememberApiKey").addEventListener("change", saveCurrentState);
+
+$("saveKeyBtn").addEventListener("click", () => {
+  saveCurrentState();
+  const p = $("provider").value.toUpperCase();
+  $("status").innerHTML = `<span class="ok">Alle Eingaben &amp; API-Key für ${esc(p)} erfolgreich gespeichert.</span>`;
+});
+
+$("clearApiKeyBtn").addEventListener("click", () => {
+  const p = $("provider").value;
+  $("apiKey").value = "";
+  const data = getStoredData();
+  if(data.keys?.[p]) {
+    delete data.keys[p];
+    localStorage.setItem(STORAGE_ID, JSON.stringify(data));
+  }
+  $("status").textContent = `Schlüssel für ${p.toUpperCase()} gelöscht.`;
+});
+
+$("toggleKeyBtn").addEventListener("click", () => {
+  $("apiKey").type = $("apiKey").type === "password" ? "text" : "password";
+});
+
+// --- Experimentierlabor: Inspiration & Zufall ---
+function randomUint(max){
+  if(max <= 0) return 0;
+  if(window.crypto && window.crypto.getRandomValues){
+    const a = new Uint32Array(1);
+    const lim = Math.floor(0x100000000 / max) * max;
+    do { window.crypto.getRandomValues(a); } while(a[0] >= lim);
+    return a[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+function pick(arr){ return arr[randomUint(arr.length)]; }
+function randBetween(min,max){ return min + randomUint(max-min+1); }
+
+function generateInspiration(){
+  const ensembles = ["Klavier solo","Cello solo","Flöte und Cello","Klavier und Violine","Streichtrio","zwei Klaviere","Klarinette und Klavier","frei gewählte Besetzung"];
+  const forms = ["eine kurze Bogenform","eine Folge kontrastierender Episoden","eine Entwicklung aus einem einzigen Motiv","eine dreiteilige Form","eine allmähliche Verdichtung mit offenem Ende","eine Form, die sich erst spät als Wiederkehr erkennen lässt"];
+  const ideas = ["ein Motiv aus nur drei Tönen","ein überraschender Registerwechsel","eine zunächst nebensächliche Figur, die später wichtig wird","eine Pause als wiederkehrendes Strukturelement","ein rhythmisches Muster, das seine Bedeutung verändert","eine einzelne fremde Note, die allmählich integriert wird","eine Melodie, deren Begleitung zunehmend eigenständig wird"];
+  const chars = ["ruhig und konzentriert","spielerisch und unberechenbar","dunkel, aber nicht schwer","leicht und gespannt","spröde und neugierig","gesanglich mit plötzlichen Brüchen","zurückhaltend mit einem kurzen Ausbruch"];
+  const twists = ["Am Ende erscheint der Anfang in stark veränderter Gestalt.","Vermeide eine eindeutige Auflösung.","Lass einen scheinbaren Fehler zum Ausgangspunkt einer neuen Idee werden.","Die Mitte soll einen deutlichen Perspektivwechsel erzeugen.","Eine Stimme darf zeitweise vollständig verstummen.","Nimm eine unerwartete Wendung ernst und entwickle sie weiter."];
+  const text = `Experimentiere mit ${pick(ensembles)}. Entwickle ${pick(forms)} aus ${pick(ideas)}. Charakter: ${pick(chars)}. ${pick(twists)}`;
+  $("prompt").value = text;
+  saveCurrentState();
+  $("experimentInfo").textContent = "Neue Inspiration erzeugt. Du kannst den Text frei verändern oder sofort an eine KI schicken.";
+  $("status").innerHTML = '<span class="ok">Inspiration erzeugt.</span>';
+}
+
+function randomScore(useCurrentLimits){
+  let measures, meterN, meterD, bpm, trackCount;
+  if(useCurrentLimits){
+    measures = Math.max(1, Math.min(256, parseInt($("measures").value,10) || 16));
+    const mm = String($("meter").value || "4/4").match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+    meterN = mm ? Math.max(1,Math.min(32,+mm[1])) : 4;
+    meterD = mm && [1,2,4,8,16,32,64].includes(+mm[2]) ? +mm[2] : 4;
+    bpm = Math.max(20,Math.min(300,parseInt($("tempo").value,10)||96));
+    trackCount = 1;
+  } else {
+    measures = randBetween(1,32);
+    meterN = randBetween(1,12);
+    meterD = pick([2,4,8,16]);
+    bpm = randBetween(20,300);
+    trackCount = randBetween(1,6);
+    $("measures").value = measures;
+    $("meter").value = `${meterN}/${meterD}`;
+    $("tempo").value = bpm;
+    $("musicalKey").value = "frei / keine";
+    $("ensemble").value = `${trackCount} Zufallsspur${trackCount===1?"":"en"}`;
+    saveCurrentState();
+  }
+  const beatsPerMeasure = meterN * 4 / meterD;
+  const totalBeats = measures * beatsPerMeasure;
+  const grid = 0.125;
+  const durations = [0.125,0.25,0.333333,0.5,0.666667,0.75,1,1.5,2,3,4,6,8];
+  const tracks=[];
+  for(let ti=0; ti<trackCount; ti++){
+    const nt=[];
+    const eventCount = useCurrentLimits
+      ? Math.max(1, Math.round(totalBeats * (0.6 + randomUint(260)/100)))
+      : randBetween(1, Math.max(2, Math.round(totalBeats * 8)));
+    for(let i=0;i<eventCount;i++){
+      let start, dur, pitch, vel, gate;
+      if(useCurrentLimits){
+        start = +(randomUint(Math.max(1,Math.floor(totalBeats/grid))) * grid).toFixed(6);
+        dur = pick(durations);
+        if(start + dur > totalBeats) dur = Math.max(grid, +(totalBeats-start).toFixed(6));
+        pitch = randBetween(21,108);
+        vel = randBetween(18,127);
+        gate = pick([0.25,0.4,0.6,0.8,0.95,1,1.1,1.35,1.8]);
+      } else {
+        const totalTicks = Math.max(1, Math.round(totalBeats * 480));
+        const startTick = randomUint(totalTicks);
+        start = +(startTick / 480).toFixed(6);
+        const maxDurTicks = Math.max(1, Math.min(totalTicks-startTick, 3840));
+        dur = +(randBetween(1,maxDurTicks) / 480).toFixed(6);
+        pitch = randBetween(0,127);
+        vel = randBetween(1,127);
+        gate = +(randBetween(5,300) / 100).toFixed(2);
+      }
+      nt.push([start,dur,pitch,vel,0,gate]);
+    }
+    nt.sort((a,b)=>a[0]-b[0]);
+    tracks.push({nm:`Zufall ${ti+1}`,ch:ti%16,pg:useCurrentLimits?0:randBetween(0,127),nt,ct:[]});
+  }
+  return {
+    ti: useCurrentLimits ? "Zufall mit Eckdaten" : "Völliger Zufall",
+    bpm,
+    ts:{n:meterN,d:meterD},
+    k: useCurrentLimits ? ($("musicalKey").value || "frei") : "frei / keine",
+    sm: useCurrentLimits ? "Zufällig erzeugtes Material innerhalb der aktuellen zeitlichen Eckdaten. Keine harmonische oder ästhetische Korrektur." : "Ungefiltertes Zufallsmaterial. Nur technische MIDI-Grenzen wurden eingehalten.",
+    tr:tracks
+  };
+}
+
+function installGeneratedScore(score, label){
+  lastScore = score;
+  lastProvider = "zufall";
+  lastModel = "lokaler-zufall";
+  lastConcept = label;
+  lastMidiBytes = buildMidi(score);
+  $("downloadBtn").disabled = false;
+  $("jsonBtn").disabled = false;
+  $("randomToTemplateBtn").disabled = false;
+  $("conceptView").innerHTML = `<strong>Experiment:</strong><br>${esc(label)}`;
+  $("lastResult").innerHTML = `<strong>${esc(score.ti)}</strong><br>${esc(score.bpm)} BPM · ${esc(score.ts.n)}/${esc(score.ts.d)} · ${score.tr.length} Spur(en)<br><small>${esc(score.sm)}</small>`;
+  validateScore(score);
+  renderChatContext();
+  addHistory(score,"zufall","lokaler-zufall",label);
+  $("status").innerHTML = '<span class="ok">Zufallsmusik erzeugt. Höre sie an, verwirf sie oder entwickle sie weiter.</span>';
+}
+
+function generateRandomMusic(useCurrentLimits){
+  const score = randomScore(useCurrentLimits);
+  installGeneratedScore(score, useCurrentLimits
+    ? "Zufall innerhalb der aktuellen Eckdaten. Die einzelnen musikalischen Ereignisse wurden nicht harmonisch oder stilistisch geglättet."
+    : "Völliger Zufall: Taktart, Tempo, Besetzung, Instrumente, Tonhöhen, Dauern, Einsatzzeiten, Dynamik und Artikulation wurden zufällig bestimmt. Nur die technische Gültigkeit der MIDI-Daten wird begrenzt.");
+}
+
+function useRandomAsTemplate(){
+  if(!lastScore) return;
+  uploadedScore = JSON.parse(JSON.stringify(lastScore));
+  uploadedName = `${lastScore.ti || "Zufall"}.json`;
+  const count=(uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);
+  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;
+  $("status").innerHTML='<span class="ok">Aktuelle Zufallsmusik ist jetzt Vorlage für die KI.</span>';
+}
+
+function getHistory(){
+  try { return JSON.parse(localStorage.getItem(HISTORY_ID)||"[]"); } catch(_) { return []; }
+}
+function renderCompareSelectors(){
+  const h=getHistory();
+  const sels=[$("variantA"),$("variantB")];
+  if(!sels[0] || !sels[1]) return;
+  const old=[sels[0].value,sels[1].value];
+  sels.forEach((sel,idx)=>{
+    sel.innerHTML='<option value="">Variante wählen …</option>';
+    h.forEach(item=>{
+      const o=document.createElement("option"); o.value=String(item.id); o.textContent=`${item.title} · ${String(item.provider||"").toUpperCase()} · ${item.time||""}`; sel.appendChild(o);
+    });
+    if([...sel.options].some(o=>o.value===old[idx])) sel.value=old[idx];
+  });
+  if(!sels[0].value && h[0]) sels[0].value=String(h[0].id);
+  if(!sels[1].value && h[1]) sels[1].value=String(h[1].id);
+  renderVariantCard("A"); renderVariantCard("B");
+}
+function selectedVariant(which){
+  const id=$("variant"+which).value;
+  return getHistory().find(x=>String(x.id)===String(id)) || null;
+}
+function renderVariantCard(which){
+  const item=selectedVariant(which), box=$("variant"+which+"Card");
+  if(!item){ box.textContent="Noch keine Variante gewählt."; return; }
+  const count=(item.score?.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);
+  box.innerHTML=`<strong>${esc(item.title)}</strong><div class="historymeta">${esc(String(item.provider||"").toUpperCase())} · ${esc(item.model||"")}<br>${esc(item.score?.bpm||"")} BPM · ${esc(item.score?.k||"")} · ${count} Noten</div>${item.concept?`<div style="margin-top:7px;font-size:12px;color:var(--muted);">${esc(item.concept).slice(0,240)}</div>`:""}`;
+}
+function loadVariant(which){
+  const item=selectedVariant(which); if(!item) return;
+  lastScore=item.score; lastProvider=item.provider; lastModel=item.model; lastConcept=item.concept||""; lastMidiBytes=buildMidi(item.score);
+  $("downloadBtn").disabled=false; $("jsonBtn").disabled=false;
+  $("conceptView").innerHTML=lastConcept?`<strong>${esc(String(item.provider||"").toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`:"Keine Kompositionsidee gespeichert.";
+  $("lastResult").innerHTML=`<strong>${esc(item.score.ti||"Komposition")} (Variante ${which})</strong><br>${esc(item.score.bpm)} BPM · ${esc(item.score.k||"")} · ${esc(item.score.tr?.length||1)} Spur(en)`;
+  renderChatContext(); validateScore(item.score); $("status").innerHTML=`<span class="ok">Variante ${which} in den Editor geladen.</span>`;
+}
+function downloadVariant(which){
+  const item=selectedVariant(which); if(!item) return;
+  downloadBlob(buildMidi(item.score), `${item.title.replace(/[^a-z0-9_-]/gi,"_")}_Variante_${which}.mid`, "audio/midi");
+}
+
+// --- MIDI Upload Parser ---
+function readVLQ(bytes, pos){
+  let val = 0, b;
+  do {
+    if(pos.i >= bytes.length) throw new Error("MIDI EOF");
+    b = bytes[pos.i++];
+    val = (val << 7) | (b & 0x7f);
+  } while(b & 0x80);
+  return val;
+}
+
+function parseUploadedMidi(buffer){
+  const bytes = new Uint8Array(buffer), dv = new DataView(buffer);
+  if(String.fromCharCode(...bytes.slice(0,4)) !== "MThd") throw new Error("Keine gültige MIDI-Datei");
+
+  const format = dv.getUint16(8);
+  const ntrks = dv.getUint16(10);
+  const division = dv.getUint16(12);
+  if(division & 0x8000) throw new Error("SMPTE-Zeitbasis wird derzeit nicht unterstützt.");
+  const ppq = division;
+
+  let off = 8 + dv.getUint32(4);
+  const tracks = [];
+  let tempo = 96, ts = {n:4, d:4}, title = "Upload";
+
+  for(let t=0; t<ntrks; t++){
+    if(off + 8 > bytes.length || String.fromCharCode(...bytes.slice(off, off+4)) !== "MTrk") break;
+    const len = dv.getUint32(off+4), end = Math.min(off + 8 + len, bytes.length);
+    let i = off + 8, tick = 0, run = null;
+    let trkName = `Track ${t+1}`;
+
+    // Eine MIDI-Spur kann mehrere Kanäle enthalten. Deshalb intern nach Kanal trennen.
+    const byChannel = new Map();
+    const getChannel = ch => {
+      if(!byChannel.has(ch)) byChannel.set(ch, {
+        ch, pg: 0, notes: [], controls: [], active: new Map(), hasProgram:false
+      });
+      return byChannel.get(ch);
+    };
+
+    while(i < end){
+      const pos = {i}; const delta = readVLQ(bytes, pos); i = pos.i; tick += delta;
+      if(i >= end) break;
+
+      let status = bytes[i++];
+      if(status < 0x80){
+        if(run == null) throw new Error("Ungültiger Running-Status in MIDI-Datei");
+        i--; status = run;
+      } else if(status < 0xf0){
+        run = status;
+      }
+
+      if(status === 0xff){
+        if(i >= end) break;
+        const metaType = bytes[i++], posL = {i}, l = readVLQ(bytes, posL); i = posL.i;
+        const dataEnd = Math.min(i + l, end);
+        const data = bytes.slice(i, dataEnd); i = dataEnd;
+        if(metaType === 0x03) trkName = new TextDecoder().decode(data);
+        if(metaType === 0x01 && title === "Upload") {
+          const txt = new TextDecoder().decode(data).trim();
+          if(txt) title = txt;
+        }
+        if(metaType === 0x51 && l === 3 && data.length === 3){
+          const mpqn = (data[0]<<16)|(data[1]<<8)|data[2];
+          if(mpqn > 0) tempo = Math.round(60000000 / mpqn);
+        }
+        if(metaType === 0x58 && l >= 2 && data.length >= 2) ts = {n:data[0], d:2**data[1]};
+        continue;
+      }
+
+      // SysEx
+      if(status === 0xf0 || status === 0xf7){
+        const posL = {i}, l = readVLQ(bytes, posL); i = Math.min(posL.i + l, end);
+        run = null;
+        continue;
+      }
+
+      // Andere Systemmeldungen defensiv überspringen.
+      if(status >= 0xf0){
+        const lengths = {0xf1:1,0xf2:2,0xf3:1,0xf6:0,0xf8:0,0xfa:0,0xfb:0,0xfc:0,0xfe:0};
+        i = Math.min(i + (lengths[status] ?? 0), end);
+        continue;
+      }
+
+      const type = status & 0xf0, ch = status & 0x0f;
+      const c = getChannel(ch);
+      const d1 = bytes[i++];
+      const d2 = (type === 0xc0 || type === 0xd0) ? 0 : bytes[i++];
+      const beat = +(tick / ppq).toFixed(4);
+
+      if(type === 0xc0){
+        c.pg = d1;
+        c.hasProgram = true;
+      } else if(type === 0xb0){
+        // Alle CCs erhalten, nicht nur Sustain (CC64).
+        c.controls.push([beat, d1, d2]);
+      } else if(type === 0x90 && d2 > 0){
+        const arr = c.active.get(d1) || [];
+        arr.push({beat, vel:d2});
+        c.active.set(d1, arr);
+      } else if(type === 0x80 || (type === 0x90 && d2 === 0)){
+        const arr = c.active.get(d1) || [];
+        const on = arr.shift();
+        if(on) c.notes.push([on.beat, +Math.max(0, beat - on.beat).toFixed(4), d1, on.vel, 0, 1.0]);
+      }
+    }
+
+    for(const c of byChannel.values()){
+      // Offene Noten am Spur-Ende sinnvoll schließen.
+      const endBeat = +(tick / ppq).toFixed(4);
+      for(const [pitch, arr] of c.active){
+        for(const on of arr){
+          const dur = Math.max(1/ppq, endBeat - on.beat);
+          c.notes.push([on.beat, +dur.toFixed(4), +pitch, on.vel, 0, 1.0]);
+        }
+      }
+
+      if(c.notes.length || c.controls.length || c.hasProgram){
+        const suffix = byChannel.size > 1 ? ` · Ch ${c.ch+1}` : "";
+        tracks.push({nm:trkName + suffix, ch:c.ch, pg:c.pg, nt:c.notes, ct:c.controls});
+      }
+    }
+    off = end;
+  }
+
+  return {ti:title, bpm:tempo, ts, k:"unknown", sm:`Hochgeladene MIDI-Datei (Format ${format})`, tr:tracks};
+}
+
+$("uploadInput").addEventListener("change", async e => {
+  const f = e.target.files?.[0];
+  if(!f) return;
+  try {
+    uploadedName = f.name;
+    if(f.name.endsWith(".json") || f.type === "application/json"){
+      uploadedScore = JSON.parse(await f.text());
+    } else {
+      uploadedScore = parseUploadedMidi(await f.arrayBuffer());
+    }
+    const count = (uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0), 0);
+    $("uploadInfo").textContent = `Geladen: ${f.name} (${count} Noten)`;
+    $("status").textContent = "Material geladen. Wird als Referenz mitgesendet.";
+  } catch(err) {
+    uploadedScore = null;
+    $("uploadInfo").textContent = "Fehler beim Lesen des Uploads.";
+    $("status").innerHTML = `<span class="err">${esc(err.message)}</span>`;
+  }
+});
+
+$("clearUploadBtn").addEventListener("click", () => {
+  uploadedScore = null;
+  $("uploadInput").value = "";
+  $("uploadInfo").textContent = "Kein Material geladen.";
+});
+
+// --- API Router ---
+async function callLLM(provider, model, apiKey, systemPrompt, userPrompt, wantJson = false){
+  if(provider === "anthropic"){
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key":apiKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({
+        model,
+        max_tokens:32000,
+        output_config:{effort:$("reasoningEffort").value || "medium"},
+        system:systemPrompt,
+        messages:[{role:"user", content:userPrompt}]
+      })
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data?.error?.message || `Anthropic HTTP ${r.status}`);
+    const text = data.content?.filter(x=>x.type==="text").map(x=>x.text).join("") || "";
+    return {text, usage:{in:data.usage?.input_tokens||0, out:data.usage?.output_tokens||0}};
+  }
+  if(provider === "gemini"){
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const cfg = {
+      maxOutputTokens:32000,
+      thinkingConfig:{thinkingLevel:($("reasoningEffort").value || "medium").toUpperCase()}
+    };
+    if(wantJson) cfg.responseMimeType = "application/json";
+
+    const r = await fetch(url, {
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({
+        system_instruction:{parts:[{text:systemPrompt}]},
+        contents:[{role:"user", parts:[{text:userPrompt}]}],
+        generationConfig:cfg
+      })
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data?.error?.message || `Gemini HTTP ${r.status}`);
+    const text = data.candidates?.[0]?.content?.parts?.map(x=>x.text||"").join("") || "";
+    return {text, usage:{in:data.usageMetadata?.promptTokenCount||0, out:data.usageMetadata?.candidatesTokenCount||0}};
+  }
+  if(provider === "openai"){
+    const reqBody = {
+      model,
+      messages:[{role:"system", content:systemPrompt}, {role:"user", content:userPrompt}],
+      reasoning_effort:$("reasoningEffort").value || "medium"
+    };
+    if(wantJson){
+      reqBody.response_format = {type:"json_object"};
+    }
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method:"POST",
+      headers:{"content-type":"application/json", "authorization":`Bearer ${apiKey}`},
+      body:JSON.stringify(reqBody)
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data?.error?.message || `OpenAI HTTP ${r.status}`);
+    const text = data.choices?.[0]?.message?.content || "";
+    return {text, usage:{in:data.usage?.prompt_tokens||0, out:data.usage?.completion_tokens||0}};
+  }
+}
+
+function extractJSON(str){
+  str = str.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const s = str.indexOf("{"), e = str.lastIndexOf("}");
+  if(s < 0 || e < s) throw new Error("Kein valides JSON in Modellantwort gefunden.");
+  return JSON.parse(str.slice(s, e+1));
+}
+
+// --- MIDI Builder ---
+function vlq(v){
+  v = Math.max(0, Math.round(v)); let buf = v & 0x7f, out = [];
+  while((v >>= 7)){ buf <<= 8; buf |= ((v & 0x7f) | 0x80); }
+  while(true){ out.push(buf & 0xff); if(buf & 0x80) buf >>= 8; else break; }
+  return out;
+}
+function u16(n){ return [(n>>8)&255, n&255]; }
+function u32(n){ return [(n>>24)&255, (n>>16)&255, (n>>8)&255, n&255]; }
+function strB(s){ return Array.from(new TextEncoder().encode(s)); }
+
+function buildMidi(score){
+  const PPQ = 480, tracks = [];
+  const tempo = Math.max(20, Math.min(300, +score.bpm || 96));
+  const ts = score.ts || {n:4, d:4};
+  
+  const cond = [];
+  const mpqn = Math.round(60000000 / tempo);
+  cond.push({t:0, b:[0xff,0x51,0x03,(mpqn>>16)&255,(mpqn>>8)&255,mpqn&255]});
+  cond.push({t:0, b:[0xff,0x58,0x04,+ts.n||4,Math.round(Math.log2(+ts.d||4)),24,8]});
+  cond.push({t:0, b:[0xff,0x03,...vlq(strB(score.ti||"Composition").length),...strB(score.ti||"Composition")]});
+  tracks.push(encodeMTrk(cond));
+
+  (score.tr || []).forEach((tr, idx) => {
+    const ch = Math.min(15, +tr.ch || 0);
+    const ev = [];
+    ev.push({t:0, b:[0xff,0x03,...vlq(strB(tr.nm||`Track ${idx+1}`).length),...strB(tr.nm||`Track ${idx+1}`)]});
+    ev.push({t:0, b:[0xc0|ch, Math.max(0, Math.min(127, +tr.pg||0))]});
+
+    for(const c of (tr.ct||[])){
+      ev.push({t:Math.round(+c[0]*PPQ), b:[0xb0|ch, Math.min(127,+c[1]), Math.min(127,+c[2])]});
+    }
+    for(const n of (tr.nt||[])){
+      const start = Math.round(+n[0]*PPQ);
+      const gate = Number.isFinite(+n[5]) ? +n[5] : 0.95;
+      const end = Math.max(start+1, Math.round((+n[0] + (+n[1]*gate))*PPQ));
+      const p = Math.max(0, Math.min(127, Math.round(+n[2])));
+      const v = Math.max(1, Math.min(127, Math.round(+n[3]||80)));
+      ev.push({t:start, b:[0x90|ch, p, v]});
+      ev.push({t:end, b:[0x80|ch, p, 0]});
+    }
+    tracks.push(encodeMTrk(ev));
+  });
+
+  const header = [...strB("MThd"), ...u32(6), ...u16(1), ...u16(tracks.length), ...u16(PPQ)];
+  return new Uint8Array([...header, ...tracks.flat()]);
+}
+
+function encodeMTrk(events){
+  events.sort((a,b)=>a.t-b.t);
+  let last = 0, data = [];
+  for(const e of events){
+    data.push(...vlq(e.t - last), ...e.b);
+    last = e.t;
+  }
+  data.push(0, 0xff, 0x2f, 0);
+  return [...strB("MTrk"), ...u32(data.length), ...data];
+}
+
+function downloadBlob(data, name, type){
+  if (window.AndroidBridge && window.AndroidBridge.saveBlob) {
+    const reader = new FileReader();
+    reader.onloadend = () => window.AndroidBridge.saveBlob(reader.result, name, type);
+    reader.readAsDataURL(new Blob([data], {type}));
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], {type}));
+  a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+}
+
+// --- Kompositions-Logik ---
+async function compose(){
+  saveCurrentState();
+  const provider = $("provider").value;
+  const model = $("model").value.trim();
+  const apiKeyVal = $("apiKey").value.trim();
+  if(!apiKeyVal){ $("status").innerHTML = `<span class="err">Bitte API-Key für ${provider.toUpperCase()} eingeben.</span>`; return; }
+
+  $("composeBtn").disabled = true;
+  $("status").innerHTML = '<span class="ok">KI entwickelt musikalischen Impuls …</span>';
+
+  try {
+    let promptText = `Besetzung: ${$("ensemble").value}\nTakte: ${$("measures").value}\nTaktart: ${$("meter").value}\nTempo: ${$("tempo").value} BPM\nTonart: ${$("musicalKey").value}\n\nAuftrag:\n${$("prompt").value}`;
+    if(uploadedScore){
+      promptText += `\n\nVORHANDENES MATERIAL (${uploadedName}):\n` + JSON.stringify(uploadedScore);
+    }
+
+    const conceptRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, `Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${promptText}`, false);
+    lastConcept = conceptRes.text || "";
+    $("conceptView").innerHTML = `<strong>${esc(provider.toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`;
+
+    $("status").innerHTML = '<span class="ok">KI komponiert …</span>';
+    const compPrompt = `${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${promptText}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
+    const scoreRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, compPrompt, true);
+    const score = extractJSON(scoreRes.text);
+
+    lastScore = score;
+    lastProvider = provider;
+    lastModel = model;
+    lastMidiBytes = buildMidi(score);
+
+    $("downloadBtn").disabled = false;
+    $("jsonBtn").disabled = false;
+    
+    const rate = TOKEN_RATES[model] || {in:1.0, out:4.0};
+    const cost = ((scoreRes.usage.in * rate.in + scoreRes.usage.out * rate.out) / 1000000).toFixed(4);
+    
+    $("lastResult").innerHTML = `<strong>${esc(score.ti || "Komposition")}</strong><br>${esc(score.bpm)} BPM · ${esc(score.k || "")} · ${esc(score.tr?.length||1)} Spur(en)<br><small>${esc(score.sm || "")}</small><div class="costmeta">Tokens: ${scoreRes.usage.in} In / ${scoreRes.usage.out} Out (ca. $${cost})</div>`;
+
+    validateScore(score);
+    renderChatContext();
+    addHistory(score, provider, model, lastConcept);
+    $("status").innerHTML = '<span class="ok">Komposition erfolgreich abgeschlossen!</span>';
+  } catch(err) {
+    $("status").innerHTML = `<span class="err">Fehler: ${esc(err.message)}</span>`;
+  } finally {
+    $("composeBtn").disabled = false;
+  }
+}
+
+function validateScore(score){
+  const errors = [], warnings = [];
+  let noteCount = 0, ccCount = 0, maxBeat = 0;
+
+  const bpm = +score?.bpm;
+  if(!Number.isFinite(bpm) || bpm < 20 || bpm > 300) errors.push(`Tempo ungültig: ${score?.bpm}`);
+
+  const tsN = +score?.ts?.n, tsD = +score?.ts?.d;
+  if(!Number.isInteger(tsN) || tsN < 1 || tsN > 32) errors.push(`Taktzähler ungültig: ${score?.ts?.n}`);
+  if(![1,2,4,8,16,32,64].includes(tsD)) errors.push(`Taktnenner ungültig: ${score?.ts?.d}`);
+
+  const beatsPerMeasure = (Number.isFinite(tsN) && Number.isFinite(tsD) && tsD > 0) ? tsN * 4 / tsD : null;
+  const requestedMeasures = +$("measures").value;
+  const expectedBeats = beatsPerMeasure && Number.isFinite(requestedMeasures) ? requestedMeasures * beatsPerMeasure : null;
+
+  const tracks = Array.isArray(score?.tr) ? score.tr : [];
+  if(!tracks.length) warnings.push("Keine Spuren vorhanden.");
+
+  tracks.forEach((t, ti) => {
+    const notes = Array.isArray(t.nt) ? t.nt : [];
+    const controls = Array.isArray(t.ct) ? t.ct : [];
+    noteCount += notes.length;
+    ccCount += controls.length;
+
+    const ch = +t.ch, pg = +t.pg;
+    if(!Number.isInteger(ch) || ch < 0 || ch > 15) errors.push(`Spur ${ti+1}: MIDI-Kanal ${t.ch} ungültig`);
+    if(!Number.isInteger(pg) || pg < 0 || pg > 127) errors.push(`Spur ${ti+1}: Programm ${t.pg} ungültig`);
+    if(!notes.length && !controls.length) warnings.push(`Spur ${ti+1} ist leer.`);
+
+    const lastByPitch = new Map();
+    notes.forEach((n, ni) => {
+      if(!Array.isArray(n) || n.length < 4){ errors.push(`Spur ${ti+1}, Note ${ni+1}: ungültiges Notenformat`); return; }
+      const start = +n[0], dur = +n[1], pitch = +n[2], vel = +n[3];
+      const staff = n.length > 4 ? +n[4] : 0;
+      const gate = n.length > 5 ? +n[5] : 0.95;
+
+      if(!Number.isFinite(start) || start < 0) errors.push(`Spur ${ti+1}, Note ${ni+1}: Start ${n[0]} ungültig`);
+      if(!Number.isFinite(dur) || dur <= 0) errors.push(`Spur ${ti+1}, Note ${ni+1}: Dauer ${n[1]} ungültig`);
+      if(!Number.isInteger(pitch) || pitch < 0 || pitch > 127) errors.push(`Spur ${ti+1}, Note ${ni+1}: Pitch ${n[2]} ungültig`);
+      if(!Number.isInteger(vel) || vel < 1 || vel > 127) errors.push(`Spur ${ti+1}, Note ${ni+1}: Velocity ${n[3]} ungültig`);
+      if(![0,1,2].includes(staff)) warnings.push(`Spur ${ti+1}, Note ${ni+1}: Staff ${n[4]} ungewöhnlich`);
+      if(!Number.isFinite(gate) || gate <= 0 || gate > 4) errors.push(`Spur ${ti+1}, Note ${ni+1}: Gate ${n[5]} ungültig`);
+
+      if(Number.isFinite(start) && Number.isFinite(dur)){
+        const soundingEnd = start + dur * (Number.isFinite(gate) ? gate : 0.95);
+        maxBeat = Math.max(maxBeat, start + dur, soundingEnd);
+
+        if(expectedBeats && start + dur > expectedBeats + 1e-6){
+          warnings.push(`Spur ${ti+1}, Note ${ni+1}: endet hinter der gewünschten Stücklänge (${(start+dur).toFixed(2)} > ${expectedBeats.toFixed(2)} Beats)`);
+        }
+
+        // Nur identische Tonhöhen derselben Spur prüfen; Akkorde bleiben unbeanstandet.
+        if(Number.isInteger(pitch)){
+          const prevEnd = lastByPitch.get(pitch);
+          if(prevEnd !== undefined && start < prevEnd - 1e-6){
+            warnings.push(`Spur ${ti+1}, Note ${ni+1}: überlappt denselben Pitch ${pitch}`);
+          }
+          lastByPitch.set(pitch, Math.max(prevEnd ?? -Infinity, soundingEnd));
+        }
+      }
+    });
+
+    controls.forEach((c, ci) => {
+      if(!Array.isArray(c) || c.length < 3){ errors.push(`Spur ${ti+1}, CC ${ci+1}: ungültiges Controllerformat`); return; }
+      const beat = +c[0], cc = +c[1], val = +c[2];
+      if(!Number.isFinite(beat) || beat < 0) errors.push(`Spur ${ti+1}, CC ${ci+1}: Beat ${c[0]} ungültig`);
+      if(!Number.isInteger(cc) || cc < 0 || cc > 127) errors.push(`Spur ${ti+1}, CC ${ci+1}: Controller ${c[1]} ungültig`);
+      if(!Number.isInteger(val) || val < 0 || val > 127) errors.push(`Spur ${ti+1}, CC ${ci+1}: Wert ${c[2]} ungültig`);
+      if(Number.isFinite(beat)) maxBeat = Math.max(maxBeat, beat);
+    });
+  });
+
+  if(expectedBeats){
+    const diff = maxBeat - expectedBeats;
+    if(diff < -beatsPerMeasure * 0.75) warnings.push(`Stück ist deutlich kürzer als angefordert: ca. ${(maxBeat/beatsPerMeasure).toFixed(1)} statt ${requestedMeasures} Takte.`);
+    else if(diff > beatsPerMeasure * 0.25) warnings.push(`Stück ist länger als angefordert: ca. ${(maxBeat/beatsPerMeasure).toFixed(1)} statt ${requestedMeasures} Takte.`);
+  }
+
+  const lines = [
+    `Geprüfte Noten: ${noteCount}`,
+    `Controller-Ereignisse: ${ccCount}`,
+    `Spuren: ${tracks.length}`,
+    beatsPerMeasure ? `Ermittelte Länge: ca. ${(maxBeat/beatsPerMeasure).toFixed(2)} Takte` : `Ermittelte Länge: ${maxBeat.toFixed(2)} Beats`
+  ];
+
+  if(errors.length){
+    lines.push("", "FEHLER:", ...errors.map(x => "- " + x));
+  }
+  if(warnings.length){
+    lines.push("", "WARNUNGEN:", ...warnings.map(x => "- " + x));
+  }
+  if(!errors.length && !warnings.length){
+    lines.push("", "Keine technischen Auffälligkeiten gefunden.");
+  } else if(!errors.length){
+    lines.push("", "Keine harten MIDI-Fehler gefunden; siehe Warnungen oben.");
+  }
+
+  $("validation").textContent = lines.join("\n");
+}
+
+// --- Chat & Revision ---
+function renderChatContext(){
+  $("chatContext").innerHTML = lastScore 
+    ? `Aktives Stück: <strong>${esc(lastScore.ti||"Unbenannt")}</strong> (mit ${$("provider").value.toUpperCase()})` 
+    : "Noch kein aktives Stück geladen.";
+}
+
+async function sendChat(){
+  const msg = $("chatInput").value.trim();
+  if(!msg || !lastScore) return;
+  const apiKeyVal = $("apiKey").value.trim();
+  const provider = $("provider").value;
+  const model = $("model").value.trim();
+  if(!apiKeyVal){ alert("Bitte API-Key eingeben."); return; }
+
+  appendChat("user", msg);
+  $("chatInput").value = "";
+  $("status").innerHTML = '<span class="ok">KI überarbeitet Partitur …</span>';
+
+  try {
+    const chatPrompt = `${TECHNICAL_PROMPT}\n\nURSPRÜNGLICHE / AKTUELLE KOMPOSITIONSIDEE:\n${lastConcept || "Keine Kompositionsidee gespeichert."}\n\nAKTUELLE PARTITUR (JSON):\n${JSON.stringify(lastScore)}\n\nNUTZER-ANWEISUNG / FRAGE:\n${msg}\n\nDu kannst mit dem Nutzer sowohl die Kompositionsidee als auch die konkrete Partitur besprechen. Wenn der Nutzer nur eine Frage stellt, ändere nichts. Wenn er ausdrücklich die Kompositionsidee ändern möchte, gib die überarbeitete vollständige Kompositionsidee im Feld concept zurück. Wenn er Änderungen an der Musik verlangt, darfst du die Partitur entsprechend ändern. Bewahre nicht verlangte Aspekte nach Möglichkeit unverändert.\n\nAntworte ausschließlich mit einem JSON-Objekt im Format: {"reply":"Deine Textantwort", "concept": null ODER "vollständige geänderte Kompositionsidee", "score": null ODER modifizierte Partitur falls Noten geändert wurden}`;
+    const res = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, chatPrompt, true);
+    const envelope = extractJSON(res.text);
+
+    appendChat("ai", envelope.reply || "Änderung umgesetzt.");
+    let changed = false;
+    if(typeof envelope.concept === "string" && envelope.concept.trim()){
+      lastConcept = envelope.concept.trim();
+      $("conceptView").innerHTML = `<strong>${esc(provider.toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`;
+      changed = true;
+    }
+    if(envelope.score){
+      lastScore = envelope.score;
+      lastMidiBytes = buildMidi(lastScore);
+      $("lastResult").innerHTML = `<strong>${esc(lastScore.ti)} (Überarbeitet)</strong>`;
+      validateScore(lastScore);
+      changed = true;
+    }
+    if(changed) addHistory(lastScore, provider, model, lastConcept);
+    $("status").innerHTML = '<span class="ok">Antwort erhalten.</span>';
+  } catch(err) {
+    appendChat("ai", "Fehler: " + err.message);
+    $("status").innerHTML = `<span class="err">${esc(err.message)}</span>`;
+  }
+}
+
+function appendChat(role, text){
+  const d = document.createElement("div");
+  d.className = `chatmsg chat${role}`;
+  d.textContent = (role==="user"?"Du: ":"KI: ") + text;
+  $("chatLog").appendChild(d);
+  $("chatLog").scrollTop = $("chatLog").scrollHeight;
+}
+
+// --- Robuste Verlaufs-Speicherung ---
+function addHistory(score, provider, model, concept=""){
+  try {
+    let h = [];
+    try { h = JSON.parse(localStorage.getItem(HISTORY_ID) || "[]"); } catch(_) { h = []; }
+    
+    h.unshift({
+      id: Date.now(),
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
+      title: score.ti || "Komposition",
+      score: score,
+      provider: provider,
+      model: model,
+      concept: concept || ""
+    });
+
+    if (h.length > 15) h = h.slice(0, 15);
+
+    localStorage.setItem(HISTORY_ID, JSON.stringify(h));
+  } catch(err) {
+    console.warn("Konnte Verlauf nicht im LocalStorage speichern:", err);
+  }
+  renderHistory();
+}
+
+function renderHistory(){
+  let h = [];
+  try {
+    h = JSON.parse(localStorage.getItem(HISTORY_ID) || "[]");
+  } catch(_) {
+    h = [];
+  }
+
+  const box = $("historyList");
+  if(!h || !h.length){
+    box.innerHTML = '<span style="color:var(--muted); font-size:13px;">Noch kein Verlauf vorhanden. Komponierte Stücke erscheinen hier dauerhaft.</span>';
+    renderCompareSelectors();
+    return;
+  }
+
+  box.innerHTML = "";
+  h.forEach((item) => {
+    const d = document.createElement("div");
+    d.className = "historyitem";
+    
+    const count = (item.score?.tr || []).reduce((sum, trk) => sum + (trk.nt?.length || 0), 0);
+    const bpm = item.score?.bpm || 96;
+    const musKey = item.score?.k || "";
+
+    d.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <strong>${esc(item.title)}</strong>
+        <span style="font-size:11px; color:var(--muted);">${esc(item.time)}</span>
+      </div>
+      <div class="historymeta">${esc(item.provider.toUpperCase())} (${esc(item.model)}) · ${bpm} BPM ${musKey ? '· '+esc(musKey) : ''} · ${count} Noten</div>
+      ${item.concept ? `<details style="margin-top:7px;"><summary style="cursor:pointer; font-size:12px; font-weight:700;">Kompositionsidee</summary><div style="margin-top:5px; font-size:12px; line-height:1.45; white-space:pre-wrap; color:var(--muted);">${esc(item.concept)}</div></details>` : ''}
+      <div class="historyactions">
+        <button class="secondary smallbtn" data-act="load">📥 In Editor laden</button>
+        <button class="secondary smallbtn" data-act="midi">🎵 MIDI (.mid)</button>
+        <button class="secondary smallbtn" data-act="json">📋 JSON</button>
+      </div>
+    `;
+
+    d.querySelector('[data-act="load"]').onclick = () => {
+      lastScore = item.score;
+      lastProvider = item.provider;
+      lastModel = item.model;
+      lastConcept = item.concept || "";
+      lastMidiBytes = buildMidi(item.score);
+      $("conceptView").innerHTML = lastConcept
+        ? `<strong>${esc(item.provider.toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`
+        : "Für diesen älteren Verlaufseintrag ist keine Kompositionsidee gespeichert.";
+      $("downloadBtn").disabled = false;
+      $("jsonBtn").disabled = false;
+      $("lastResult").innerHTML = `<strong>${esc(item.score.ti || "Komposition")} (aus Verlauf)</strong><br>${esc(item.score.bpm)} BPM · ${esc(item.score.k || "")} · ${esc(item.score.tr?.length||1)} Spur(en)`;
+      renderChatContext();
+      validateScore(item.score);
+      $("status").innerHTML = `<span class="ok">„${esc(item.title)}“ aus dem Verlauf geladen.</span>`;
+    };
+
+    d.querySelector('[data-act="midi"]').onclick = () => {
+      const bytes = buildMidi(item.score);
+      downloadBlob(bytes, `${item.title.replace(/[^a-z0-9_-]/gi,'_')}.mid`, "audio/midi");
+    };
+
+    d.querySelector('[data-act="json"]').onclick = () => {
+      downloadBlob(JSON.stringify(item.score, null, 2), `${item.title.replace(/[^a-z0-9_-]/gi,'_')}.json`, "application/json");
+    };
+
+    box.appendChild(d);
+  });
+  renderCompareSelectors();
+}
+
+$("clearHistoryBtn").onclick = () => {
+  if(confirm("Möchtest du den gesamten Verlauf wirklich leeren?")){
+    localStorage.removeItem(HISTORY_ID);
+    renderHistory();
+    $("status").textContent = "Verlauf geleert.";
+  }
+};
+
+$("composeBtn").onclick = compose;
+$("chatSendBtn").onclick = sendChat;
+$("chatInput").onkeydown = e => { if(e.key==="Enter" && (e.ctrlKey||e.metaKey)) sendChat(); };
+$("downloadBtn").onclick = () => lastMidiBytes && downloadBlob(lastMidiBytes, `${lastScore?.ti||"composition"}.mid`, "audio/midi");
+$("jsonBtn").onclick = () => lastScore && downloadBlob(JSON.stringify(lastScore,null,2), `${lastScore?.ti||"composition"}.json`, "application/json");
+$("inspirationBtn").onclick = generateInspiration;
+$("randomFreeBtn").onclick = () => generateRandomMusic(false);
+$("randomGuidedBtn").onclick = () => generateRandomMusic(true);
+$("randomToTemplateBtn").onclick = useRandomAsTemplate;
+$("variantA").onchange = () => renderVariantCard("A");
+$("variantB").onchange = () => renderVariantCard("B");
+$("loadVariantA").onclick = () => loadVariant("A");
+$("loadVariantB").onclick = () => loadVariant("B");
+$("midiVariantA").onclick = () => downloadVariant("A");
+$("midiVariantB").onclick = () => downloadVariant("B");
+
+initApp();
+</script>
+
+<script>
+/* PWA-Standalone ja, Offline-Service-Worker nein:
+   Entfernt einen eventuell noch installierten Service Worker der vorigen Version. */
+window.addEventListener("load", async () => {
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ("caches" in window) {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter(name => name.startsWith("ai-midi-composer-pwa-"))
+          .map(name => caches.delete(name))
+      );
+    }
+  } catch (e) {
+    console.warn("PWA-Bereinigung:", e);
+  }
+});
+</script>
+
+</body>
+</html>
