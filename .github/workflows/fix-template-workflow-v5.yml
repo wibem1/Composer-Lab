@@ -13,9 +13,10 @@ jobs:
       - run: python tools/fix_template_workflow_v5.py
       - run: python tools/comparison_synthesis_lab_v8.py
       - run: python tools/imported_midi_player_analysis_v9.py
+      - run: python tools/safe_import_playback_v10.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Add imported MIDI playback and analysis"
+          git diff --cached --quiet || git commit -m "Fix imported MIDI playback"
           git push origin HEAD:composition-lab-v2
