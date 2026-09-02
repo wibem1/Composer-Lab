@@ -2016,6 +2016,8 @@ ${JSON.stringify(src.B)}`;
     if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
     if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
     box.style.display="block";
     box.textContent="KI analysiert die importierte MIDI-Datei …";
     try{
@@ -2524,6 +2526,7 @@ ${JSON.stringify(uploadedScore)}`;
   if(msg){sessionStorage.removeItem('composition_lab_restore_message'); setTimeout(()=>status(msg),100);}
 })();
 </script>
+
 
 </body>
 </html>
