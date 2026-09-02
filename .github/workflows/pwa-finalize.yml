@@ -1,0 +1,67 @@
+name: Finalize Composition Lab PWA
+
+on:
+  push:
+    branches:
+      - composition-lab-v2
+    paths:
+      - .github/workflows/pwa-finalize.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - name: Enable service worker registration
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '''<script>
+/* PWA-Standalone ja, Offline-Service-Worker nein:
+   Entfernt einen eventuell noch installierten Service Worker der vorigen Version. */
+window.addEventListener("load", async () => {
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ("caches" in window) {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter(name => name.startsWith("ai-midi-composer-pwa-"))
+          .map(name => caches.delete(name))
+      );
+    }
+  } catch (e) {
+    console.warn("PWA-Bereinigung:", e);
+  }
+});
+</script>'''
+          new = '''<script>
+window.addEventListener("load", () => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js").catch(err =>
+      console.warn("Service Worker konnte nicht registriert werden:", err)
+    );
+  }
+});
+</script>'''
+          if old not in s:
+              raise SystemExit('Expected old PWA cleanup block not found; refusing to alter index.html')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+      - name: Commit change
+        run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Enable standalone PWA service worker"
+          git push origin composition-lab-v2
