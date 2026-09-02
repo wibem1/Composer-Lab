@@ -36,3 +36,4 @@ if 'id="fold-state-persistence-v7"' not in s and marker in s:
     s=s.replace(marker,script,1)
 
 p.write_text(s,encoding='utf-8')
+# v7 trigger
