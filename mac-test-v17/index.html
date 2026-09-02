@@ -1,0 +1,13 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Composition Lab – Mac Test V17</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8ebef}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="app" src="../mac-test-v16/?v17=20260903-1"></iframe><script>
+const outer=document.getElementById('app');
+outer.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{tries++;try{let d=outer.contentDocument;for(let i=0;i<4;i++){const f=d?.getElementById('app');if(f?.contentDocument)d=f.contentDocument;else break}if(!d?.getElementById('composeBtn')){if(tries>400)clearInterval(timer);return}clearInterval(timer);const s=d.createElement('script');s.textContent=`(()=>{
+const VERSION='17';
+const about=document.getElementById('aboutBtn');if(about){about.textContent='Über Composition Lab – Version '+VERSION;about.onclick=()=>alert('Composition Lab\\nMac Test Version '+VERSION+'\\nStand: 3. September 2026')}
+const cmp=document.getElementById('compare');if(!cmp)return;
+function clean(){const history=document.getElementById('v15CompareHistory');const historyCard=history?.closest('.card');const chat=document.getElementById('compareChat');const chatCard=chat?.closest('.card');if(chatCard){[...chatCard.querySelectorAll('h1,h2,h3,h4')].forEach(h=>{if(/vergleichsverlauf/i.test((h.textContent||'').trim())){let n=h.nextElementSibling;if(n&&n!==history&&(/history|verlauf/i.test(n.id||'')||n.classList.contains('list')))n.remove();h.remove()}});[...chatCard.querySelectorAll('*')].forEach(e=>{if(e===history||e.closest('.card')===historyCard)return;const id=e.id||'';if(/compare.*history|comparisonhistory|vergleich.*verlauf/i.test(id))e.remove()})}
+// Nur genau eine Überschrift Vergleichsverlauf behalten: die in der mittleren Verlaufskarte.
+[...cmp.querySelectorAll('h1,h2,h3,h4')].filter(h=>/vergleichsverlauf/i.test((h.textContent||'').trim())).forEach(h=>{if(!historyCard||h.closest('.card')!==historyCard){const n=h.nextElementSibling;if(n&&n!==history&&n.classList.contains('list'))n.remove();h.remove()}});
+if(historyCard&&chatCard){const left=[...cmp.children].find(c=>c.classList?.contains('card')&&c!==historyCard&&c!==chatCard);if(left)cmp.append(left,historyCard,chatCard)}}
+clean();let n=0;const z=setInterval(()=>{clean();if(++n>80)clearInterval(z)},250);
+})();`;d.body.appendChild(s)}catch(e){if(tries>400)clearInterval(timer)}},100)});
+</script></body></html>
