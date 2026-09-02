@@ -16,9 +16,10 @@ jobs:
       - run: python tools/import_playback_v11.py
       - run: python tools/fix_memory_init_v11.py
       - run: python tools/localstorage_recovery_v12.py
+      - run: python tools/compact_interactive_analysis_v12.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Add local storage recovery"
+          git diff --cached --quiet || git commit -m "Add compact interactive MIDI analysis"
           git push origin HEAD:composition-lab-v2
