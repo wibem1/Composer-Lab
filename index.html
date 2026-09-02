@@ -132,48 +132,14 @@
     <label for="prompt">Kompositionsauftrag</label>
     <textarea id="prompt">Komponiere ein eigenständiges, musikalisch überzeugendes Stück. Entwickle einen klar erkennbaren musikalischen Gedanken mit abwechslungsreicher Dynamik und Artikulation.</textarea>
 
-    <details class="labbox" id="experimentSection" open>
-      <summary>Experimentierlabor</summary>
-      <div class="foldcontent">
-        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>
-        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>
-        <select id="templateLength">
-          <option value="2">2 Takte</option>
-          <option value="4" selected>4 Takte</option>
-          <option value="8">8 Takte</option>
-        </select>
-        <div class="uploadinfo" style="margin-bottom:9px;">Nur die Länge der Vorlage. Die oben eingestellte Taktzahl bestimmt weiterhin die Länge des fertigen Stücks.</div>
-        <div class="labbuttons">
-          <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
-          <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
-          <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
-          <button type="button" class="secondary" id="randomToTemplateBtn">↗ Als Vorlage verwenden</button>
-        </div>
-        <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
-        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
-          <strong id="randomTemplateName" style="flex:1 1 100%;">KI-Vorlage</strong>
-          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Abspielen</button>
-          <button type="button" class="secondary smallbtn" id="templatePauseBtn">⏸ Pause</button>
-          <button type="button" class="secondary smallbtn" id="templateStopBtn">⏹ Stop</button>
-          <button type="button" class="secondary smallbtn" id="templateLoopBtn">🔁 Loop: Aus</button>
-          <label for="templateVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
-            <input id="templateVolume" type="range" min="0" max="100" value="75">
-          </label>
-          <span class="playerstatus" id="templatePlayerStatus">KI-Vorlage bereit.</span>
-          <div style="flex-basis:100%;height:0"></div>
-          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 MIDI speichern</button>
-          <button type="button" class="secondary smallbtn" id="templateUseBtn">🤖 Als Vorlage verwenden</button>
-          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
-        </div>
-      </div>
-    </details>
+    
 
-    <label>Vorhandenes Material hochladen (MIDI oder JSON)</label>
+    <label>Vorlage / vorhandenes Material (MIDI oder JSON)</label>
     <div class="uploadrow">
       <input id="uploadInput" type="file" accept=".mid,.midi,.json,application/json,audio/midi">
       <button type="button" class="secondary smallbtn" id="clearUploadBtn">Entfernen</button>
     </div>
-    <div class="uploadinfo" id="uploadInfo">Kein Material geladen.</div>
+    <div class="uploadinfo" id="uploadInfo">Keine Vorlage geladen.</div>
 
     <button class="primary" id="composeBtn">Mit gewählter KI komponieren</button>
 
@@ -264,6 +230,42 @@
       </div>
     </details>
   </section>
+
+  <details class="labbox" id="experimentSection" style="grid-column:1 / -1; margin-top:8px;">
+      <summary>Experimentierlabor · optional</summary>
+      <div class="foldcontent">
+        <p class="labhint">Optionaler Arbeitsbereich für musikalische Versuche. Experimentiere hier unabhängig von der eigentlichen Komposition. Erst wenn dir eine Vorlage gefällt, übernimmst du sie als vorhandenes Material und arbeitest oben mit der eigentlichen Kompositionsengine weiter.</p>
+        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>
+        <select id="templateLength">
+          <option value="2">2 Takte</option>
+          <option value="4" selected>4 Takte</option>
+          <option value="8">8 Takte</option>
+        </select>
+        <div class="uploadinfo" style="margin-bottom:9px;">Länge der experimentellen Vorlage. Sie ist vollständig unabhängig von der oben eingestellten Länge des fertigen Stücks.</div>
+        <div class="labbuttons">
+          <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
+          <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
+          <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
+          <button type="button" class="secondary" id="randomToTemplateBtn">🎼 KI-Vorlage erzeugen</button>
+        </div>
+        <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
+        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
+          <strong id="randomTemplateName" style="flex:1 1 100%;">KI-Vorlage</strong>
+          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Abspielen</button>
+          <button type="button" class="secondary smallbtn" id="templatePauseBtn">⏸ Pause</button>
+          <button type="button" class="secondary smallbtn" id="templateStopBtn">⏹ Stop</button>
+          <button type="button" class="secondary smallbtn" id="templateLoopBtn">🔁 Loop: Aus</button>
+          <label for="templateVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+            <input id="templateVolume" type="range" min="0" max="100" value="75">
+          </label>
+          <span class="playerstatus" id="templatePlayerStatus">KI-Vorlage bereit.</span>
+          <div style="flex-basis:100%;height:0"></div>
+          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 MIDI speichern</button>
+          <button type="button" class="secondary smallbtn" id="templateUseBtn">↗ In Komposition übernehmen</button>
+          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
+        </div>
+      </div>
+    </details>
 
   <details style="grid-column:1 / -1;" class="foldbox" id="technicalSection">
       <summary>Technisches</summary>
@@ -800,7 +802,7 @@ $("uploadInput").addEventListener("change", async e => {
 $("clearUploadBtn").addEventListener("click", () => {
   uploadedScore = null;
   $("uploadInput").value = "";
-  $("uploadInfo").textContent = "Kein Material geladen.";
+  $("uploadInfo").textContent = "Keine Vorlage geladen.";
 });
 
 // --- API Router ---
@@ -1627,7 +1629,7 @@ window.addEventListener("load", () => {
     $("status").innerHTML = '<span class="ok">Die gewählte KI komponiert eine musikalische Vorlage …</span>';
 
     try {
-      const measures = Math.max(2, Math.min(32, parseInt($("measures").value,10) || 8));
+      const measures = [2,4,8].includes(parseInt($("templateLength").value,10)) ? parseInt($("templateLength").value,10) : 4;
       const meter = $("meter").value || "4/4";
       const bpm = Math.max(20, Math.min(300, parseInt($("tempo").value,10) || 96));
       const key = $("musicalKey").value || "C major";
@@ -1667,8 +1669,11 @@ window.addEventListener("load", () => {
     uploadedScore = JSON.parse(JSON.stringify(randomTemplateScore));
     uploadedName = randomTemplateFileName || `${randomTemplateScore.ti}.mid`;
     const count = (uploadedScore.tr || []).reduce((sum,t) => sum + (t.nt?.length || 0), 0);
-    $("uploadInfo").textContent = `Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;
-    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ ist jetzt als KI-Vorlage aktiviert.</span>`;
+    $("uploadInfo").textContent = `Geladen: ${uploadedName} (${count} Noten) · aus Experimentierlabor`;
+    $("prompt").value = "";
+    saveCurrentState();
+    if($("experimentSection")) $("experimentSection").open = false;
+    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde als Vorlage in die eigentliche Komposition übernommen.</span>`;
   }
 
   $("randomToTemplateBtn").onclick = createTemplate;
