@@ -1,5 +1,7 @@
-name: Fix Main Player And Fold State V7
-on: push
+name: Fix Main Player And Fold State V8
+on:
+  push:
+    branches: [composition-lab-v2]
 jobs:
   patch:
     if: github.actor != 'github-actions[bot]'
@@ -10,10 +12,60 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: composition-lab-v2
-      - run: python tools/fix_main_player_and_fold_state_v7.py
+      - name: Patch central state and player
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          save_marker='    localStorage.setItem(STORAGE_ID, JSON.stringify(data));\n  } catch(_) {}\n}\n\nfunction initApp(){'
+          if save_marker in s and 'data.foldStates = {};' not in s:
+              s=s.replace(save_marker,'''    data.foldStates = {};
+    document.querySelectorAll("details[id]").forEach(el => { data.foldStates[el.id] = !!el.open; });
+    localStorage.setItem(STORAGE_ID, JSON.stringify(data));
+  } catch(_) {}
+}
+
+function initApp(){''',1)
+
+          init_marker='  syncUIForProvider(p);\n  renderHistory();\n}\n'
+          if init_marker in s and 'if(data.foldStates && typeof data.foldStates === "object")' not in s:
+              s=s.replace(init_marker,'''  if(data.foldStates && typeof data.foldStates === "object"){
+    document.querySelectorAll("details[id]").forEach(el => {
+      if(Object.prototype.hasOwnProperty.call(data.foldStates, el.id)) el.open = !!data.foldStates[el.id];
+    });
+  }
+  syncUIForProvider(p);
+  renderHistory();
+}
+''',1)
+
+          listener='$("rememberApiKey").addEventListener("change", saveCurrentState);\n'
+          if listener in s and 'details[id]").forEach(el => el.addEventListener("toggle", saveCurrentState)' not in s:
+              s=s.replace(listener,listener+'document.querySelectorAll("details[id]").forEach(el => el.addEventListener("toggle", saveCurrentState));\n',1)
+
+          old='    mainPlayerScore = uploadedScore;\n    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Vorlage: ${randomTemplateScore.ti || "Vorlage"}`;'
+          if old in s:
+              s=s.replace(old,'    mainPlayerScore = uploadedScore;\n    lastScore = uploadedScore;\n    lastMidiBytes = buildMidi(uploadedScore);\n    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Vorlage: ${randomTemplateScore.ti || "Vorlage"}`;',1)
+
+          old='applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;if($("mainPlayerTitle"))'
+          if old in s:
+              s=s.replace(old,'applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;lastScore=uploadedScore;lastMidiBytes=buildMidi(uploadedScore);if($("mainPlayerTitle"))',1)
+
+          s=s.replace('playGMScore(mainPlayerScore || lastScore || uploadedScore)','playGMScore(mainPlayerScore || uploadedScore || lastScore)')
+          s=s.replace('bindSeek("playerSeek",()=>mainPlayerScore || lastScore || uploadedScore);','bindSeek("playerSeek",()=>mainPlayerScore || uploadedScore || lastScore);')
+          s=s.replace('navigator.serviceWorker.register("./service-worker.js")','navigator.serviceWorker.register("./service-worker.js?v=8")')
+          p.write_text(s,encoding='utf-8')
+
+          sw=Path('service-worker.js')
+          w=sw.read_text(encoding='utf-8')
+          w=w.replace("const CACHE_NAME = 'composition-lab-v2-1';","const CACHE_NAME = 'composition-lab-v2-8';")
+          w=w.replace('fetch(event.request)\n      .then(response => {',"fetch(event.request, (event.request.mode === 'navigate' || event.request.url.endsWith('/index.html')) ? {cache:'no-store'} : undefined)\n      .then(response => {",1)
+          sw.write_text(w,encoding='utf-8')
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add index.html
-          git diff --cached --quiet || git commit -m "Fix template player handoff and persist fold states"
+          git add index.html service-worker.js
+          git diff --cached --quiet || git commit -m "Make template handoff and fold states reliable"
           git push origin HEAD:composition-lab-v2
