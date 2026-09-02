@@ -23,9 +23,10 @@ jobs:
       - run: python tools/fix_comparison_progress_v17.py
       - run: python tools/backup_restore_v18.py
       - run: python tools/fix_import_analysis_v19.py
+      - run: python tools/fix_import_analysis_v20.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Fix imported MIDI analysis"
+          git diff --cached --quiet || git commit -m "Make imported MIDI analysis robust"
           git push origin HEAD:composition-lab-v2
