@@ -1,0 +1,56 @@
+name: Upgrade template length
+on:
+  push:
+    paths:
+      - '.github/workflows/upgrade-template-length.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          def rep(old, new):
+              global s
+              if old not in s:
+                  raise SystemExit('Expected text not found:\n' + old[:300])
+              s = s.replace(old, new, 1)
+
+          rep('''        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>\n        <div class="labbuttons">''', '''        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>\n        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>\n        <select id="templateLength">\n          <option value="2">2 Takte</option>\n          <option value="4" selected>4 Takte</option>\n          <option value="8">8 Takte</option>\n        </select>\n        <div class="uploadinfo" style="margin-bottom:9px;">Nur die Länge der Vorlage. Die oben eingestellte Taktzahl bestimmt weiterhin die Länge des fertigen Stücks.</div>\n        <div class="labbuttons">''')
+
+          rep('''          <button type="button" class="secondary" id="randomToTemplateBtn" disabled>↗ Zufall als Vorlage</button>''', '''          <button type="button" class="secondary" id="randomToTemplateBtn" disabled>↗ Als Vorlage verwenden</button>''')
+
+          rep('''        <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>''', '''        <div class="uploadinfo" id="experimentInfo">Die Vorlagenlänge gilt nur für das erzeugte Ausgangsmaterial. Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>''')
+
+          rep('''      ensemble: $("ensemble").value,\n      prompt: $("prompt").value''', '''      ensemble: $("ensemble").value,\n      prompt: $("prompt").value,\n      templateLength: $("templateLength").value''')
+
+          rep('''    if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;''', '''    if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;\n    if(data.form.templateLength !== undefined && ["2","4","8"].includes(String(data.form.templateLength))) $("templateLength").value = String(data.form.templateLength);''')
+
+          rep('''["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt"].forEach(id => {''', '''["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength"].forEach(id => {''')
+
+          rep('''function randomScore(useCurrentLimits){\n  let measures, meterN, meterD, bpm, trackCount;\n  if(useCurrentLimits){\n    measures = Math.max(1, Math.min(256, parseInt($("measures").value,10) || 16));''', '''function randomScore(useCurrentLimits){\n  let measures, meterN, meterD, bpm, trackCount;\n  const selectedTemplateLength = parseInt($("templateLength").value,10);\n  measures = [2,4,8].includes(selectedTemplateLength) ? selectedTemplateLength : 4;\n  if(useCurrentLimits){''')
+
+          rep('''  } else {\n    measures = randBetween(1,32);\n    meterN = randBetween(1,12);''', '''  } else {\n    meterN = randBetween(1,12);''')
+
+          rep('''    $("measures").value = measures;\n    $("meter").value = `${meterN}/${meterD}`;''', '''    $("meter").value = `${meterN}/${meterD}`;''')
+
+          rep('''function useRandomAsTemplate(){\n  if(!lastScore) return;\n  uploadedScore = JSON.parse(JSON.stringify(lastScore));\n  uploadedName = `${lastScore.ti || "Zufall"}.json`;\n  const count=(uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);\n  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;\n  $("status").innerHTML='<span class="ok">Aktuelle Zufallsmusik ist jetzt Vorlage für die KI.</span>';\n}''', '''function useRandomAsTemplate(){\n  if(!lastScore) return;\n  uploadedScore = JSON.parse(JSON.stringify(lastScore));\n  uploadedName = `${lastScore.ti || "Vorlage"}.json`;\n  const count=(uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);\n\n  if(Number.isFinite(+uploadedScore.bpm)) $("tempo").value = Math.round(+uploadedScore.bpm);\n  if(uploadedScore.ts?.n && uploadedScore.ts?.d) $("meter").value = `${uploadedScore.ts.n}/${uploadedScore.ts.d}`;\n  if(uploadedScore.k && uploadedScore.k !== "unknown") $("musicalKey").value = uploadedScore.k;\n\n  $("prompt").value = "";\n  saveCurrentState();\n  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten, ${$("templateLength").value} Takte)`;\n  $("status").innerHTML='<span class="ok">Vorlage übernommen. Der Kompositionsauftrag wurde geleert; die Taktzahl des fertigen Stücks bleibt unverändert.</span>';\n}''')
+
+          rep('''    let promptText = `Besetzung: ${$("ensemble").value}\\nTakte: ${$("measures").value}\\nTaktart: ${$("meter").value}\\nTempo: ${$("tempo").value} BPM\\nTonart: ${$("musicalKey").value}\\n\\nAuftrag:\\n${$("prompt").value}`;''', '''    let promptText = `VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\\nBesetzung: ${$("ensemble").value}\\nTakte des fertigen Stücks: ${$("measures").value}\\nTaktart: ${$("meter").value}\\nTempo: ${$("tempo").value} BPM\\nTonart: ${$("musicalKey").value}\\n\\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\\n${$("prompt").value}`;''')
+
+          p.write_text(s, encoding='utf-8')
+      - name: Commit upgraded index and remove one-off workflow
+        run: |
+          rm .github/workflows/upgrade-template-length.yml
+          git config user.name "Composition Lab Upgrader"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html .github/workflows/upgrade-template-length.yml
+          git commit -m "Add separate 2/4/8-bar template length"
+          git push
