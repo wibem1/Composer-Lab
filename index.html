@@ -144,7 +144,17 @@
       <button type="button" class="secondary smallbtn" id="playImportedBtn" disabled>▶ Im Player anhören</button>
       <button type="button" class="secondary smallbtn" id="analyzeImportedBtn" disabled>Mit KI analysieren</button>
     </div>
-    <div id="importedAnalysis" class="resultcard" style="display:none;margin-top:8px;white-space:pre-wrap;">Noch keine Analyse.</div>
+    <details id="importedAnalysisSection" class="foldbox" style="display:none;margin-top:8px;">
+      <summary>KI-Analyse der importierten MIDI-Datei</summary>
+      <div class="foldcontent">
+        <div id="importedAnalysis" class="resultcard" style="white-space:pre-wrap;">Noch keine Analyse.</div>
+        <div class="chatrow" style="margin-top:9px;">
+          <textarea id="importedAnalysisQuestion" style="min-height:58px;" placeholder="Frage zur Analyse, z. B. „Was würdest du verbessern?“"></textarea>
+          <button id="askImportedAnalysisBtn" class="secondary" type="button">KI fragen</button>
+        </div>
+        <div id="importedAnalysisAnswer" class="resultcard" style="display:none;margin-top:8px;white-space:pre-wrap;"></div>
+      </div>
+    </details>
 
     <button class="primary" id="composeBtn">Mit gewählter KI komponieren</button>
 
@@ -1943,22 +1953,21 @@ ${JSON.stringify(src.B)}`;
       return;
     }
     analyseBtn.disabled=true;
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
     box.style.display="block";
     box.textContent="KI analysiert die importierte MIDI-Datei …";
     try{
-      const task=`Analysiere die folgende importierte MIDI-Komposition musikalisch und nicht nur technisch. Untersuche insbesondere:
-- Form und Spannungsverlauf
-- Hauptmotive und ihre Entwicklung
-- Melodik und Phrasierung
-- Harmonik und Tonalität
-- Rhythmik und Metrik
-- Begleitmuster und Satzstruktur
-- Stimmführung bzw. Zusammenspiel der Instrumente
-- Dynamik und Artikulation, soweit aus den MIDI-Daten erkennbar
-- charakteristische Stärken und mögliche handwerkliche oder musikalische Schwächen
-- konkrete Möglichkeiten zur Weiterentwicklung, Variation oder Fortsetzung
+      const task=`Gib eine kompakte musikalische Analyse der folgenden importierten MIDI-Komposition. Schreibe für einen Musiker, nicht als technische MIDI-Dokumentation. Maximal etwa 250 Wörter und möglichst ohne unnötige Zahlenwerte.
 
-Trenne Beobachtung und Bewertung sauber. Erfinde nichts, was aus den MIDI-Daten nicht ableitbar ist. Beziehe dich bei wichtigen Aussagen möglichst konkret auf musikalische Ereignisse oder Abschnitte.
+Gliedere nur in:
+1. Charakter und musikalische Idee
+2. Form, Motive, Harmonik und Rhythmik – knapp zusammengefasst
+3. Stärken
+4. Mögliche Schwächen
+5. Zwei oder drei konkrete Verbesserungsideen
+
+Technische MIDI-Details wie Kanalnummern, exakte Velocities, Beat-Positionen oder Gate-Zeiten nur nennen, wenn sie für die musikalische Beurteilung wirklich entscheidend sind. Erfinde nichts, was aus den MIDI-Daten nicht ableitbar ist.
 
 DATEI: ${uploadedName||uploadedScore.ti||"Import"}
 
@@ -2208,5 +2217,116 @@ ${JSON.stringify(uploadedScore)}`;
 })();
 </script>
 
+
+<script id="localstorage-recovery-v12">
+(()=>{
+  function parse(k){try{return JSON.parse(localStorage.getItem(k));}catch(_){return null;}}
+  function nonEmptyObj(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length>0;}
+  function historyScore(v){
+    if(!Array.isArray(v)) return -1;
+    let n=0;
+    for(const x of v){ if(x&&typeof x==='object'&&(x.score||x.title||x.provider||x.meta)) n++; }
+    return n;
+  }
+  function settingsScore(v){
+    if(!nonEmptyObj(v)) return -1;
+    const fields=['provider','keys','remember','measures','meter','tempo','musicalKey','ensemble','prompt','foldStates','reasoningEffort'];
+    return fields.reduce((n,k)=>n+(Object.prototype.hasOwnProperty.call(v,k)?1:0),0);
+  }
+  function snapshot(){
+    const out=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i); if(!k) continue;
+      const v=parse(k); out.push({k,v,hs:historyScore(v),ss:settingsScore(v)});
+    }
+    return out;
+  }
+  function recover(show=true){
+    const items=snapshot();
+    const currentSettings=parse(STORAGE_ID), currentHistory=parse(HISTORY_ID), currentExp=parse(EXPERIMENT_HISTORY_ID);
+    let changed=false, notes=[];
+
+    // Settings: only restore from another richer object; originals are never deleted.
+    const curSS=settingsScore(currentSettings);
+    const settingCandidates=items.filter(x=>x.k!==STORAGE_ID&&x.ss>curSS&&/(midi|composer|composition|setting)/i.test(x.k)).sort((a,b)=>b.ss-a.ss);
+    if(settingCandidates[0]){
+      localStorage.setItem(STORAGE_ID, JSON.stringify(settingCandidates[0].v));
+      changed=true; notes.push('Einstellungen aus „'+settingCandidates[0].k+'“ wiederhergestellt.');
+    }
+
+    // Normal history: prefer the richest compatible legacy array when current history is empty/smaller.
+    const curHS=historyScore(currentHistory);
+    const historyCandidates=items.filter(x=>x.k!==HISTORY_ID&&x.hs>curHS&&/(history|verlauf|midi|composer|composition)/i.test(x.k)).sort((a,b)=>b.hs-a.hs);
+    if(historyCandidates[0]){
+      localStorage.setItem(HISTORY_ID, JSON.stringify(historyCandidates[0].v));
+      changed=true; notes.push('Kompositionsverlauf aus „'+historyCandidates[0].k+'“ wiederhergestellt ('+historyCandidates[0].v.length+' Einträge).');
+    }
+
+    // Experimental templates: don't confuse them with normal history; use keys that look experimental/template-like.
+    const curEH=historyScore(currentExp);
+    const expCandidates=items.filter(x=>x.k!==EXPERIMENT_HISTORY_ID&&x.hs>curEH&&/(experiment|template|vorlage)/i.test(x.k)).sort((a,b)=>b.hs-a.hs);
+    if(expCandidates[0]){
+      localStorage.setItem(EXPERIMENT_HISTORY_ID, JSON.stringify(expCandidates[0].v));
+      changed=true; notes.push('Vorlagenverlauf aus „'+expCandidates[0].k+'“ wiederhergestellt ('+expCandidates[0].v.length+' Einträge).');
+    }
+
+    if(changed){
+      try{initApp();}catch(_){ try{renderHistory();}catch(__){} }
+      try{window.compositionLabRefreshComparisonSources&&window.compositionLabRefreshComparisonSources();}catch(_){}
+    }
+    if(show){
+      const st=document.getElementById('status');
+      if(st){
+        if(changed) st.innerHTML='<span class="ok">'+notes.map(esc).join('<br>')+'</span>';
+        else {
+          const keys=items.map(x=>x.k);
+          st.innerHTML='<span class="warn">Kein älterer lokaler Speicherstand gefunden. Vorhandene LocalStorage-Schlüssel: '+esc(keys.length?keys.join(', '):'keine')+'.</span>';
+        }
+      }
+    }
+    return changed;
+  }
+
+  window.compositionLabRecoverLocalStorage=recover;
+  // One automatic, non-destructive recovery attempt on every load.
+  recover(false);
+
+  // Add a visible diagnostic/recovery button near the history controls.
+  const clear=document.getElementById('clearHistoryBtn');
+  if(clear && !document.getElementById('recoverMemoryBtn')){
+    const b=document.createElement('button');
+    b.type='button'; b.id='recoverMemoryBtn'; b.className='secondary smallbtn'; b.textContent='Gedächtnis prüfen';
+    b.addEventListener('click',()=>recover(true));
+    clear.parentElement && clear.parentElement.appendChild(b);
+  }
+})();
+</script>
+
+
+<script id="interactive-import-analysis-v12">
+(()=>{
+  const btn=document.getElementById('askImportedAnalysisBtn');
+  const input=document.getElementById('importedAnalysisQuestion');
+  const answer=document.getElementById('importedAnalysisAnswer');
+  if(!btn||!input||!answer) return;
+  btn.addEventListener('click',async()=>{
+    const q=input.value.trim();
+    if(!q){ answer.style.display='block'; answer.textContent='Bitte zuerst eine Frage eingeben.'; return; }
+    if(typeof uploadedScore==='undefined'||!uploadedScore){ answer.style.display='block'; answer.textContent='Keine importierte MIDI-Datei geladen.'; return; }
+    const p=document.getElementById('provider')?.value;
+    const model=document.getElementById('model')?.value;
+    const apiKey=document.getElementById('apiKey')?.value.trim();
+    if(!apiKey){ answer.style.display='block'; answer.textContent='Bitte zuerst den API-Schlüssel eintragen.'; return; }
+    const analysis=document.getElementById('importedAnalysis')?.textContent||'';
+    btn.disabled=true; answer.style.display='block'; answer.textContent='KI denkt über deine Frage nach …';
+    try{
+      const task=`Du besprichst mit einem Musiker eine importierte MIDI-Komposition. Antworte konkret, knapp und musikalisch auf seine Frage. Nutze die vorhandene Kurzanalyse und bei Bedarf die strukturierten MIDI-Daten. Technische MIDI-Zahlen nur nennen, wenn sie wirklich nötig sind.\n\nBisherige Analyse:\n${analysis}\n\nFrage:\n${q}\n\nMIDI-Daten:\n${JSON.stringify(uploadedScore)}`;
+      const text=await callLLM(p,model,apiKey,task);
+      answer.textContent=text;
+    }catch(err){ answer.textContent='Fehler bei der KI-Frage: '+(err?.message||err); }
+    finally{ btn.disabled=false; }
+  });
+})();
+</script>
 </body>
 </html>
