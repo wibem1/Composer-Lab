@@ -1,5 +1,8 @@
 name: Fix Template Workflow V5
-on: push
+on:
+  push:
+    branches:
+      - composition-lab-v2
 jobs:
   patch:
     if: github.actor != 'github-actions[bot]'
