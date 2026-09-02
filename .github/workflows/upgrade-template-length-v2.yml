@@ -1,0 +1,57 @@
+name: Upgrade template length V2
+on:
+  push:
+    branches: [composition-lab-v2]
+    paths:
+      - '.github/workflows/upgrade-template-length-v2.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old='''        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>\n        <div class="labbuttons">'''
+          new='''        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>\n        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>\n        <select id="templateLength">\n          <option value="2">2 Takte</option>\n          <option value="4" selected>4 Takte</option>\n          <option value="8">8 Takte</option>\n        </select>\n        <div class="uploadinfo" style="margin-bottom:9px;">Nur die Länge der Vorlage. Die oben eingestellte Taktzahl bestimmt weiterhin die Länge des fertigen Stücks.</div>\n        <div class="labbuttons">'''
+          if old not in s: raise SystemExit('UI anchor not found')
+          s=s.replace(old,new,1)
+          s=s.replace('↗ Zufall als Vorlage','↗ Als Vorlage verwenden',1)
+
+          old='''function randomScore(useCurrentLimits){\n  let measures, meterN, meterD, bpm, trackCount;\n  if(useCurrentLimits){\n    measures = Math.max(1, Math.min(256, parseInt($("measures").value,10) || 16));'''
+          new='''function randomScore(useCurrentLimits){\n  let measures, meterN, meterD, bpm, trackCount;\n  const selectedTemplateLength = parseInt($("templateLength").value,10);\n  measures = [2,4,8].includes(selectedTemplateLength) ? selectedTemplateLength : 4;\n  if(useCurrentLimits){'''
+          if old not in s: raise SystemExit('randomScore anchor not found')
+          s=s.replace(old,new,1)
+          s=s.replace('''  } else {\n    measures = randBetween(1,32);\n    meterN = randBetween(1,12);''','''  } else {\n    meterN = randBetween(1,12);''',1)
+          s=s.replace('''    $("measures").value = measures;\n    $("meter").value = `${meterN}/${meterD}`;''','''    $("meter").value = `${meterN}/${meterD}`;''',1)
+
+          # Save/restore template length without touching piece length.
+          s=s.replace('''      ensemble: $("ensemble").value,\n      prompt: $("prompt").value''','''      ensemble: $("ensemble").value,\n      prompt: $("prompt").value,\n      templateLength: $("templateLength").value''',1)
+          s=s.replace('''    if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;''','''    if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;\n    if(data.form.templateLength !== undefined && ["2","4","8"].includes(String(data.form.templateLength))) $("templateLength").value = String(data.form.templateLength);''',1)
+          s=s.replace('''["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt"]''','''["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength"]''',1)
+
+          # All paths that activate generated template should clear free prompt; keep final piece measures intact.
+          marker='''  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;'''
+          if marker in s:
+            s=s.replace(marker,'''  $("prompt").value = "";\n  saveCurrentState();\n  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten, ${$("templateLength").value} Takte)`;''',1)
+
+          # Template player button path in V2 may separately activate randomTemplateScore.
+          s=s.replace('''$("templateUseBtn").onclick = () => {\n  if(!randomTemplateScore) return;''','''$("templateUseBtn").onclick = () => {\n  if(!randomTemplateScore) return;\n  $("prompt").value = "";''',1)
+
+          p.write_text(s,encoding='utf-8')
+      - name: Commit upgraded app and remove one-off workflow
+        run: |
+          rm .github/workflows/upgrade-template-length-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/upgrade-template-length-v2.yml
+          git commit -m "Add selectable 2/4/8-bar template length"
+          git push origin composition-lab-v2
