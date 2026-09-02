@@ -1,0 +1,68 @@
+name: Patch V2.3 Player Loop and Random Templates
+
+on:
+  push:
+    branches: [android-v2-3]
+    paths: ['.github/workflows/patch-player-template-v23.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+          fetch-depth: 0
+      - name: Patch web app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'id="randomTemplateBox"' in s:
+              print('Patch already present')
+              raise SystemExit(0)
+
+          s=s.replace(
+          '      <button class="secondary" id="stopBtn" type="button">⏹ Stop</button>\n',
+          '      <button class="secondary" id="stopBtn" type="button">⏹ Stop</button>\n      <button class="secondary" id="loopBtn" type="button">🔁 Loop: Aus</button>\n',1)
+
+          marker='''        <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>'''
+          addition=marker+'''\n        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">\n          <strong id="randomTemplateName" style="flex:1 1 100%;">Zufallsvorlage</strong>\n          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Vorlage anhören</button>\n          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 Vorlage speichern</button>\n          <button type="button" class="secondary smallbtn" id="templateUseBtn">🤖 Als Vorlage verwenden</button>\n          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neu würfeln</button>\n        </div>'''
+          if marker not in s:
+              raise SystemExit('Experiment marker not found')
+          s=s.replace(marker,addition,1)
+          s=s.replace('id="randomToTemplateBtn" disabled','id="randomToTemplateBtn"',1)
+
+          old='''  playerEndTimer = setTimeout(() => {\n    if(playerPlaying && !playerPaused){\n      playerPlaying = false;\n      $("playerStatus").textContent = "Wiedergabe beendet.";\n    }\n  }, totalMs);'''
+          new='''  playerEndTimer = setTimeout(() => {\n    if(playerPlaying && !playerPaused){\n      if(playerLoopEnabled){\n        const loopScore = score;\n        stopGMPlayback(false);\n        playGMScore(loopScore).catch(err => {\n          $("playerStatus").textContent = "Player-Fehler: " + err.message;\n        });\n      } else {\n        stopGMPlayback(false);\n        $("playerStatus").textContent = "Wiedergabe beendet.";\n      }\n    }\n  }, totalMs);'''
+          if old not in s:
+              raise SystemExit('Player end timer marker not found')
+          s=s.replace(old,new,1)
+
+          s=s.replace('let playerPlaying = false;\nlet playerEndTimer = null;', 'let playerPlaying = false;\nlet playerLoopEnabled = false;\nlet playerEndTimer = null;',1)
+
+          stop_line='''$("stopBtn").addEventListener("click", () => stopGMPlayback(true));'''
+          loop_code=stop_line+'''\n$("loopBtn").addEventListener("click", () => {\n  playerLoopEnabled = !playerLoopEnabled;\n  $("loopBtn").textContent = playerLoopEnabled ? "🔁 Loop: Ein" : "🔁 Loop: Aus";\n  $("playerStatus").textContent = playerLoopEnabled ? "Loop eingeschaltet." : "Loop ausgeschaltet.";\n});'''
+          if stop_line not in s:
+              raise SystemExit('Stop button marker not found')
+          s=s.replace(stop_line,loop_code,1)
+
+          insert='''\n<script id="v23-template-controls">\n(() => {\n  let randomTemplateScore = null;\n  let randomTemplateFileName = "";\n\n  const titles = [\n    "Leiser Bogen","Offener Kreis","Verborgener Puls","Heller Umweg",\n    "Dunkler Faden","Schwebende Frage","Späte Wendung","Nebelspur",\n    "Kleine Irritation","Ruhiger Gegenstrom","Flüchtige Antwort","Unbekannter Weg"\n  ];\n\n  function safeFileName(text){\n    return String(text||"Vorlage")\n      .normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")\n      .replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"");\n  }\n\n  function createTemplate(){\n    const score = randomScore(true);\n    const title = pick(titles);\n    score.ti = title;\n    score.sm = `Zufallsvorlage „${title}“ · ${$("ensemble").value} · ${$("meter").value} · ${$("tempo").value} BPM · ${$("musicalKey").value}`;\n    randomTemplateScore = score;\n    const measures = $("measures").value || "";\n    const meter = String($("meter").value||"").replace("/","-");\n    const bpm = $("tempo").value || score.bpm;\n    randomTemplateFileName = `${safeFileName(title)}_${measures}T_${meter}_${bpm}BPM.mid`;\n    $("randomTemplateName").textContent = `${title} · ${$("ensemble").value} · ${measures} Takte · ${$("meter").value} · ${bpm} BPM`;\n    $("randomTemplateBox").style.display = "flex";\n    $("experimentInfo").textContent = "Zufallsvorlage erzeugt. Du kannst sie anhören, als MIDI speichern, neu würfeln oder erst dann als KI-Vorlage aktivieren.";\n    $("status").innerHTML = '<span class="ok">Zufallsvorlage „' + esc(title) + '“ erzeugt.</span>';\n  }\n\n  function useTemplate(){\n    if(!randomTemplateScore) return;\n    uploadedScore = JSON.parse(JSON.stringify(randomTemplateScore));\n    uploadedName = randomTemplateFileName || `${randomTemplateScore.ti}.mid`;\n    const count=(uploadedScore.tr||[]).reduce((sum,t)=>sum+(t.nt?.length||0),0);\n    $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;\n    $("status").innerHTML='<span class="ok">Zufallsvorlage aktiviert. Die nächste KI-Komposition verwendet genau dieses Material.</span>';\n  }\n\n  $("randomToTemplateBtn").onclick = createTemplate;\n  $("templateRerollBtn").onclick = createTemplate;\n  $("templatePlayBtn").onclick = async () => {\n    if(!randomTemplateScore) return;\n    try { await playGMScore(randomTemplateScore); }\n    catch(err){ $("playerStatus").textContent = "Player-Fehler: " + err.message; }\n  };\n  $("templateSaveBtn").onclick = () => {\n    if(!randomTemplateScore) return;\n    downloadBlob(buildMidi(randomTemplateScore), randomTemplateFileName || "Zufallsvorlage.mid", "audio/midi");\n  };\n  $("templateUseBtn").onclick = useTemplate;\n\n  const info=$("experimentInfo");\n  if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ würfelt plausible Eckdaten. „Zufall mit Eckdaten“ behält deine Werte. „Zufall als Vorlage“ erzeugt hör- und speicherbares MIDI-Ausgangsmaterial.';\n})();\n</script>\n'''
+          s=s.replace('\n</body>\n</html>',insert+'\n</body>\n</html>',1)
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "V2.3: Loop-Schalter und hörbare Zufallsvorlagen"
+            git push origin HEAD:composition-lab-v2
+          fi
