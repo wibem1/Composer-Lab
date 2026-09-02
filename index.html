@@ -1933,7 +1933,7 @@ window.addEventListener("load", () => {
   async function compare(makePrompt=false){
     if(!src.A||!src.B)throw new Error("Bitte zuerst Quelle A und Quelle B laden.");
     const provider=$c("provider").value,model=$c("model").value,key=$c("apiKey").value.trim();if(!key)throw new Error("API-Key fehlt.");
-    const task=makePrompt?"Erstelle aus der Analyse einen konkreten, editierbaren Kompositionsauftrag. Benenne ausdrücklich, welche musikalischen Merkmale aus Quelle A und welche aus Quelle B übernommen, kombiniert oder weiterentwickelt werden sollen. Das Ergebnis soll ein eigenständiges neues Stück C ermöglichen.":"Vergleiche beide musikalischen Quellen präzise. Untersuche Motivik, Rhythmik, Harmonik, Begleitmuster, Form, Satztechnik, Instrumentation, Artikulation, Dynamik und Charakter. Benenne besonders brauchbare Merkmale beider Quellen und sinnvolle Möglichkeiten ihrer Kombination. Keine bloße Siegerwertung.";
+    const task=makePrompt?"Erstelle aus dem Vergleich einen kurzen, konkreten und editierbaren Kompositionsauftrag. Benenne klar, welche 1–2 Merkmale aus Quelle A und welche 1–2 Merkmale aus Quelle B übernommen oder weiterentwickelt werden sollen. Maximal etwa 120 Wörter. Das Ergebnis soll ein eigenständiges neues Stück C ermöglichen.":"Vergleiche beide musikalischen Quellen kurz und musikalisch. Maximal etwa 220 Wörter. Keine technische Detailanalyse und keine langen Einzelkapitel. Gliedere nur in: 1. Quelle A – charakteristische Idee und stärkste Merkmale, 2. Quelle B – charakteristische Idee und stärkste Merkmale, 3. wichtigste Unterschiede, 4. zwei oder drei besonders sinnvolle Möglichkeiten der Kombination. MIDI-Technik, Kanalnummern, exakte Velocities, Beat-Positionen und ähnliche Zahlen nur nennen, wenn sie musikalisch wirklich entscheidend sind. Keine bloße Siegerwertung.";
     const text=`${task}
 
 QUELLE A – ${names.A}:
@@ -1982,6 +1982,8 @@ ${JSON.stringify(src.B)}`;
       return;
     }
     analyseBtn.disabled=true;
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
     if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
