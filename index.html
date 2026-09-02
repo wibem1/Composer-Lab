@@ -1702,11 +1702,22 @@ window.addEventListener("load", () => {
     uploadedScore = JSON.parse(JSON.stringify(randomTemplateScore));
     uploadedName = randomTemplateFileName || `${randomTemplateScore.ti}.mid`;
     const count = (uploadedScore.tr || []).reduce((sum,t) => sum + (t.nt?.length || 0), 0);
+    if(typeof window.compositionLabApplyTemplate === "function") {
+      window.compositionLabApplyTemplate(uploadedScore,{
+        ensemble: $("labInstrumentCombo")?.value || "",
+        idea: uploadedScore.sm || ""
+      });
+    } else {
+      const ts = uploadedScore.ts || {n:4,d:4};
+      $("meter").value = `${Number(ts.n)||4}/${Number(ts.d)||4}`;
+      $("tempo").value = Number(uploadedScore.bpm)||96;
+      $("musicalKey").value = uploadedScore.k||"C major";
+      $("ensemble").value = $("labInstrumentCombo")?.value || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;
+      $("prompt").value = `Vorlage: ${uploadedScore.ti||"Vorlage"}. ${uploadedScore.sm||"Entwickle den musikalischen Grundgedanken der Vorlage weiter."}`;
+    }
     $("uploadInfo").textContent = `Geladen: ${uploadedName} (${count} Noten) · aus Experimentierlabor`;
-    if(typeof applyTemplateToComposition === "function") applyTemplateToComposition(uploadedScore,{ensemble:$("labInstrumentCombo")?.value||""});
     saveCurrentState();
-    if($("experimentSection")) $("experimentSection").open = false;
-    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde als Vorlage in die eigentliche Komposition übernommen.</span>`;
+    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde mit Einstellungen und Kompositionsidee übernommen. Das Experimentierlabor bleibt unverändert geöffnet oder geschlossen.</span>`;
   }
 
   $("randomToTemplateBtn").onclick = createTemplate;
