@@ -1566,7 +1566,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=16").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=17").catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
@@ -2002,6 +2002,8 @@ ${JSON.stringify(src.B)}`;
     if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
     if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
     box.style.display="block";
     box.textContent="KI analysiert die importierte MIDI-Datei …";
     try{
@@ -2159,10 +2161,10 @@ ${JSON.stringify(uploadedScore)}`;
     baseTime=ac.currentTime+.12;
 
     const isImport=(typeof uploadedScore!=='undefined' && score===uploadedScore);
-    let comparisonSide=null;
+    let comparisonSide=window.__compositionLabComparisonPlaybackSide||null;
     try{
-      if(window.compositionLabGetComparisonSource?.('A')===score) comparisonSide='A';
-      else if(window.compositionLabGetComparisonSource?.('B')===score) comparisonSide='B';
+      if(!comparisonSide && window.compositionLabGetComparisonSource?.('A')===score) comparisonSide='A';
+      else if(!comparisonSide && window.compositionLabGetComparisonSource?.('B')===score) comparisonSide='B';
     }catch(_){}
     const status=document.getElementById(comparisonSide ? ('statusSource'+comparisonSide) : 'playerStatus');
     const tracks=(score.tr||[]).filter(t=>Array.isArray(t.nt)&&t.nt.length);
@@ -2214,6 +2216,12 @@ ${JSON.stringify(uploadedScore)}`;
     }
 
     playerPlaying=true; playerPaused=false;
+    if(comparisonSide){
+      const rr=document.getElementById('seekSource'+comparisonSide);
+      const tt=document.getElementById('timeSource'+comparisonSide);
+      if(rr) rr.value=String(Math.round((activeMax?activeStart/activeMax:0)*1000));
+      if(tt) tt.textContent=`${fmt(activeStart*activeSpb)} / ${fmt(activeMax*activeSpb)}`;
+    }
     if(status) status.textContent=lowMemoryImport?'Wiedergabe läuft (speicherschonende Vorschau).':'Wiedergabe läuft.';
 
     const lookAheadSec=1.25;
@@ -2399,8 +2407,13 @@ ${JSON.stringify(uploadedScore)}`;
   async function play(w,fromBeat=0){
     const sc=getScore(w);if(!sc){setStatus(w,'Bitte zuerst eine Quelle laden.');return;}
     activeSide=w;applyVolume(w);setStatus(w,'GM-Klänge werden geladen …');
-    try{await playGMScore(sc,fromBeat);setStatus(w,'▶ Wiedergabe läuft.');}
+    try{
+      window.__compositionLabComparisonPlaybackSide=w;
+      await playGMScore(sc,fromBeat);
+      setStatus(w,'▶ Wiedergabe läuft.');
+    }
     catch(e){setStatus(w,'Player-Fehler: '+(e?.message||e));}
+    finally{window.__compositionLabComparisonPlaybackSide=null;}
   }
   ['A','B'].forEach(w=>{
     const playBtn=$("playSource"+w),pauseBtn=$("pauseSource"+w),stopBtn=$("stopSource"+w),loopBtn=$("loopSource"+w),vol=$("volumeSource"+w),seek=$("seekSource"+w);
@@ -2417,6 +2430,7 @@ ${JSON.stringify(uploadedScore)}`;
   syncLoops();
 })();
 </script>
+
 
 
 </body>
