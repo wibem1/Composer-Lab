@@ -1513,12 +1513,12 @@ $("inspirationBtn").onclick = generateInspiration;
 $("randomFreeBtn").onclick = () => generateRandomMusic(false);
 $("randomGuidedBtn").onclick = () => generateRandomMusic(true);
 $("randomToTemplateBtn").onclick = useRandomAsTemplate;
-$("variantA").onchange = () => renderVariantCard("A");
-$("variantB").onchange = () => renderVariantCard("B");
-$("loadVariantA").onclick = () => loadVariant("A");
-$("loadVariantB").onclick = () => loadVariant("B");
-$("midiVariantA").onclick = () => downloadVariant("A");
-$("midiVariantB").onclick = () => downloadVariant("B");
+if($("variantA")) $("variantA").onchange = () => renderVariantCard("A");
+if($("variantB")) $("variantB").onchange = () => renderVariantCard("B");
+if($("loadVariantA")) $("loadVariantA").onclick = () => loadVariant("A");
+if($("loadVariantB")) $("loadVariantB").onclick = () => loadVariant("B");
+if($("midiVariantA")) $("midiVariantA").onclick = () => downloadVariant("A");
+if($("midiVariantB")) $("midiVariantB").onclick = () => downloadVariant("B");
 
 initApp();
 </script>
@@ -1526,7 +1526,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=13").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=14").catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
