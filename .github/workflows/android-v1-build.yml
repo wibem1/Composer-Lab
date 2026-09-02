@@ -1,8 +1,8 @@
-name: Build Composition Lab Android V2.2 Unsigned
+name: Build Composition Lab Android V2.3 Unsigned
 
 on:
   push:
-    branches: [android-v2]
+    branches: [android-v2-3]
     paths:
       - 'android-v1/**'
       - '.github/workflows/android-v1-build.yml'
@@ -40,25 +40,11 @@ jobs:
         run: gradle :app:assembleRelease --stacktrace --no-daemon
 
       - name: Rename unsigned APK
-        run: cp android-v1/app/build/outputs/apk/release/app-release-unsigned.apk Composition-Lab-Android-V2.2-unsigned.apk
-
-      - name: Prepare signing tools bundle
-        run: |
-          mkdir -p signer-tools/lib
-          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" signer-tools/
-          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" signer-tools/
-          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" signer-tools/lib/
+        run: cp android-v1/app/build/outputs/apk/release/app-release-unsigned.apk Composition-Lab-Android-V2.3-unsigned.apk
 
       - name: Upload unsigned APK
         uses: actions/upload-artifact@v4
         with:
-          name: Composition-Lab-Android-V2.2-unsigned
-          path: Composition-Lab-Android-V2.2-unsigned.apk
-          if-no-files-found: error
-
-      - name: Upload Android signing tools
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-signing-tools-35
-          path: signer-tools
+          name: Composition-Lab-Android-V2.3-unsigned
+          path: Composition-Lab-Android-V2.3-unsigned.apk
           if-no-files-found: error
