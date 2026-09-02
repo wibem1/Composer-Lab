@@ -1,8 +1,8 @@
-name: Build Composition Lab Android V1
+name: Build Composition Lab Android V2
 
 on:
   push:
-    branches: [android-v1]
+    branches: [android-v2]
     paths:
       - 'android-v1/**'
       - '.github/workflows/android-v1-build.yml'
@@ -40,11 +40,11 @@ jobs:
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Rename APK
-        run: cp android-v1/app/build/outputs/apk/debug/app-debug.apk Composition-Lab-Android-V1.apk
+        run: cp android-v1/app/build/outputs/apk/debug/app-debug.apk Composition-Lab-Android-V2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Composition-Lab-Android-V1
-          path: Composition-Lab-Android-V1.apk
+          name: Composition-Lab-Android-V2
+          path: Composition-Lab-Android-V2.apk
           if-no-files-found: error
