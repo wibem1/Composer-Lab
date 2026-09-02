@@ -229,9 +229,15 @@
             <option value="8">8 Takte</option>
           </select>
           <div class="uploadinfo" style="margin-bottom:9px;">Länge der experimentellen Vorlage. Sie ist vollständig unabhängig von der oben eingestellten Länge des fertigen Stücks.</div>
+          <label for="labTempo">Tempo (BPM)</label>
+          <input id="labTempo" type="number" min="20" max="300" value="96" placeholder="z. B. 90">
+          <div class="uploadinfo" style="margin-bottom:9px;">Tempo der experimentellen Vorlage.</div>
           <label for="labEnsemble">Besetzung / Instrumente</label>
           <input id="labEnsemble" value="Klavier solo" placeholder="z. B. Violine und Klavier, Streichquartett, Flöte solo">
           <div class="uploadinfo" style="margin-bottom:9px;">Besetzung frei eingeben. Die KI verwendet diese Angabe für die experimentelle Vorlage.</div>
+          <label for="labStyle">Charakter / Stil</label>
+          <input id="labStyle" value="" placeholder="z. B. klassisch, modern, romantisch, experimentell, ruhig und geheimnisvoll">
+          <div class="uploadinfo" style="margin-bottom:9px;">Freie ästhetische Vorgabe für die Vorlage. Tonart, Taktart, Motivik und Harmonik darf die KI weiterhin selbst gestalten.</div>
           <div class="labbuttons">
             <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
             <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
@@ -444,7 +450,10 @@ function saveCurrentState(){
       musicalKey: $("musicalKey").value,
       ensemble: $("ensemble").value,
       prompt: $("prompt").value,
-      templateLength: $("templateLength").value
+      templateLength: $("templateLength").value,
+      labTempo: $("labTempo")?.value || "96",
+      labEnsemble: $("labEnsemble")?.value || "",
+      labStyle: $("labStyle")?.value || ""
     };
 
     data.foldStates = {};
@@ -468,6 +477,9 @@ function initApp(){
     if(data.form.ensemble !== undefined) $("ensemble").value = data.form.ensemble;
     if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;
     if(data.form.templateLength !== undefined && ["2","4","8"].includes(String(data.form.templateLength))) $("templateLength").value = String(data.form.templateLength);
+    if(data.form.labTempo !== undefined && $("labTempo")) $("labTempo").value = data.form.labTempo;
+    if(data.form.labEnsemble !== undefined && $("labEnsemble")) $("labEnsemble").value = data.form.labEnsemble;
+    if(data.form.labStyle !== undefined && $("labStyle")) $("labStyle").value = data.form.labStyle;
   }
 
   if(data.foldStates && typeof data.foldStates === "object"){
@@ -486,7 +498,7 @@ $("provider").addEventListener("change", (e) => {
 });
 
 // Automatisches Speichern bei jeder Änderung
-["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength"].forEach(id => {
+["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength", "labTempo", "labEnsemble", "labStyle"].forEach(id => {
   $(id).addEventListener("input", saveCurrentState);
   $(id).addEventListener("change", saveCurrentState);
 });
@@ -1500,7 +1512,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=8").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=9").catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
@@ -1666,23 +1678,22 @@ window.addEventListener("load", () => {
 
     try {
       const measures = [2,4,8].includes(parseInt($("templateLength").value,10)) ? parseInt($("templateLength").value,10) : 4;
-      const meter = $("meter").value || "4/4";
-      const bpm = Math.max(20, Math.min(300, parseInt($("tempo").value,10) || 96));
-      const key = $("musicalKey").value || "C major";
+      const bpm = Math.max(20, Math.min(300, parseInt($("labTempo")?.value,10) || 96));
       const ensemble = $("labEnsemble")?.value.trim() || $("ensemble").value || "Piano solo";
+      const style = $("labStyle")?.value.trim() || "frei";
       const seed = `${pick(seedMotifs)}; Charakter: ${pick(seedChars)}; ${pick(seedDevelopments)}.`;
 
       const task = `Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Schreibe in das Feld "sm" eine prägnante musikalische Kompositionsidee für genau diese Vorlage: charakteristische Motive, Gestus, Rhythmik/Harmonik und mögliche Entwicklungsrichtung. Sie ist Teil der Vorlage und soll später gemeinsam mit MIDI und Einstellungen weiterverwendet werden.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
 
       const res = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, task, true);
       const score = extractJSON(res.text);
-      score.bpm = Number(score.bpm) || bpm;
-      score.k = score.k || key;
+      score.bpm = bpm;
+      score.k = score.k || "C major";
       score.ti = String(score.ti || "KI-Vorlage").trim();
-      score.sm = score.sm || `KI-Ausgangsvorlage · ${ensemble} · ${meter} · ${bpm} BPM · ${key}. Kompositorische Idee: ${seed}`;
+      score.sm = score.sm || `KI-Ausgangsvorlage · ${ensemble} · ${bpm} BPM · Charakter/Stil: ${style}. Kompositorische Idee: ${seed}`;
       randomTemplateScore = score;
 
-      const meterFile = String(score.ts?.n || meter.split('/')[0]) + "-" + String(score.ts?.d || meter.split('/')[1]);
+      const meterFile = String(score.ts?.n || 4) + "-" + String(score.ts?.d || 4);
       randomTemplateFileName = `${safeFileName(score.ti)}_${measures}T_${meterFile}_${score.bpm}BPM.mid`;
       const trackNames = (score.tr || []).map(t => t.nm).filter(Boolean).join(" + ");
       $("randomTemplateName").textContent = `${score.ti} · ${trackNames || ensemble} · ${measures} Takte · ${score.ts?.n || ""}/${score.ts?.d || ""} · ${score.bpm} BPM`;
@@ -1692,7 +1703,7 @@ window.addEventListener("load", () => {
       if($("templateIdeaText")) $("templateIdeaText").textContent = score.sm || seed;
       if(typeof window.compositionLabAddTemplateHistory === "function") {
         window.compositionLabAddTemplateHistory(score, "KI-Vorlage", {
-          ensemble, idea: score.sm || seed, measures, meter, bpm: score.bpm || bpm, key: score.k || key
+          ensemble, style, idea: score.sm || seed, measures, meter: `${score.ts?.n || 4}/${score.ts?.d || 4}`, bpm, key: score.k || "C major"
         });
       }
       $("status").innerHTML = `<span class="ok">KI-Vorlage „${esc(score.ti)}“ erzeugt und im Vorlagen-Verlauf gespeichert.</span>`;
@@ -1715,6 +1726,7 @@ window.addEventListener("load", () => {
     if(typeof window.compositionLabApplyTemplate === "function") {
       window.compositionLabApplyTemplate(uploadedScore,{
         ensemble: $("labEnsemble")?.value.trim() || "",
+        style: $("labStyle")?.value.trim() || "",
         idea: uploadedScore.sm || ""
       });
     } else {
@@ -1806,9 +1818,9 @@ window.addEventListener("load", () => {
 
 <script id="experiment-lab-v3-enhancements">
 (() => {
-  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;}catch(_){}
-  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
-  if($("labEnsemble"))$("labEnsemble").addEventListener("input",saveLabPrefs);
+  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;if(d.form?.labTempo&&$("labTempo"))$("labTempo").value=d.form.labTempo;if(d.form?.labStyle&&$("labStyle"))$("labStyle").value=d.form.labStyle;}catch(_){}
+  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";d.form.labTempo=$("labTempo")?.value||"96";d.form.labStyle=$("labStyle")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
+  ["labEnsemble","labTempo","labStyle"].forEach(id=>{if($(id))$(id).addEventListener("input",saveLabPrefs);});
 
   function templateMeasures(score){const n=Number(score?.ts?.n)||4,d=Number(score?.ts?.d)||4,bpmBeats=n*4/d;let max=0;(score?.tr||[]).forEach(t=>(t.nt||[]).forEach(x=>{max=Math.max(max,(Number(x[0])||0)+(Number(x[1])||0));}));return Math.max(1,Math.round(max/bpmBeats));}
   window.compositionLabTemplateMeasures = templateMeasures;
@@ -1816,7 +1828,7 @@ window.addEventListener("load", () => {
   function applyTemplateToComposition(score,meta={}){if(!score)return;const meter=meta.meter||`${Number(score.ts?.n)||4}/${Number(score.ts?.d)||4}`;const ensemble=meta.ensemble||templateEnsemble(score,$("ensemble").value||"Piano solo");$("measures").value=meta.measures||meta.targetMeasures||templateMeasures(score);$("meter").value=meter;$("tempo").value=Number(meta.bpm||score.bpm)||96;$("musicalKey").value=meta.key||score.k||"C major";$("ensemble").value=ensemble;const idea=String(meta.idea||score.sm||"").trim();$("prompt").value=idea||`Entwickle den musikalischen Grundgedanken der Vorlage „${score.ti||"Vorlage"}“ weiter.`;saveCurrentState();}
   window.compositionLabApplyTemplate=applyTemplateToComposition;
   function hist(){try{return JSON.parse(localStorage.getItem(EXPERIMENT_HISTORY_ID)||"[]")}catch(_){return[]}}
-  function renderHist(){const box=$("experimentHistoryList");if(!box)return;const h=hist();if(!h.length){box.textContent="Noch keine Vorlagen vorhanden.";return;}box.innerHTML="";h.forEach(it=>{const d=document.createElement("div");d.className="historyitem";const m=it.meta||{};const ts=m.meter||`${it.score?.ts?.n||4}/${it.score?.ts?.d||4}`;const bpm=m.bpm||it.score?.bpm||96;const key=m.key||it.score?.k||"";const ens=m.ensemble||templateEnsemble(it.score,"");const idea=m.idea||it.score?.sm||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}</div>${idea?`<div style="margin-top:6px;font-size:12px;white-space:pre-wrap;color:var(--muted);"><strong>Idee:</strong> ${esc(idea)}</div>`:""}<div class="historyactions"><button class="secondary smallbtn" data-p>▶ Laden & anhören</button><button class="secondary smallbtn" data-u>↗ In Komposition übernehmen</button></div>`;d.querySelector('[data-p]').onclick=()=>{if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);playGMScore(it.score,0).catch(()=>{});};d.querySelector('[data-u]').onclick=()=>{uploadedScore=JSON.parse(JSON.stringify(it.score));uploadedName=(it.title||"Vorlage")+".mid";applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;lastScore=uploadedScore;lastMidiBytes=buildMidi(uploadedScore);if($("mainPlayerTitle"))$("mainPlayerTitle").textContent=`Vorlage: ${it.title||"Vorlage"}`;if($("playerSeek"))$("playerSeek").value="0";if($("playerTime"))$("playerTime").textContent="0:00 / 0:00";if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);const n=(uploadedScore.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);$("uploadInfo").textContent=`Vorlage geladen: ${uploadedName} (${n} Noten)`;if($("playerStatus"))$("playerStatus").textContent=`Vorlage „${it.title||"Vorlage"}“ im Hauptplayer bereit.`;saveCurrentState();$("status").innerHTML=`<span class="ok">Vorlagenpaket „${esc(it.title||"Vorlage")}“ vollständig übernommen.</span>`;};box.appendChild(d);});}
+  function renderHist(){const box=$("experimentHistoryList");if(!box)return;const h=hist();if(!h.length){box.textContent="Noch keine Vorlagen vorhanden.";return;}box.innerHTML="";h.forEach(it=>{const d=document.createElement("div");d.className="historyitem";const m=it.meta||{};const ts=m.meter||`${it.score?.ts?.n||4}/${it.score?.ts?.d||4}`;const bpm=m.bpm||it.score?.bpm||96;const key=m.key||it.score?.k||"";const ens=m.ensemble||templateEnsemble(it.score,"");const idea=m.idea||it.score?.sm||"";const style=m.style||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}${style?" · "+esc(style):""}</div>${idea?`<div style="margin-top:6px;font-size:12px;white-space:pre-wrap;color:var(--muted);"><strong>Idee:</strong> ${esc(idea)}</div>`:""}<div class="historyactions"><button class="secondary smallbtn" data-p>▶ Laden & anhören</button><button class="secondary smallbtn" data-u>↗ In Komposition übernehmen</button></div>`;d.querySelector('[data-p]').onclick=()=>{if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);playGMScore(it.score,0).catch(()=>{});};d.querySelector('[data-u]').onclick=()=>{uploadedScore=JSON.parse(JSON.stringify(it.score));uploadedName=(it.title||"Vorlage")+".mid";applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;lastScore=uploadedScore;lastMidiBytes=buildMidi(uploadedScore);if($("mainPlayerTitle"))$("mainPlayerTitle").textContent=`Vorlage: ${it.title||"Vorlage"}`;if($("playerSeek"))$("playerSeek").value="0";if($("playerTime"))$("playerTime").textContent="0:00 / 0:00";if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);const n=(uploadedScore.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);$("uploadInfo").textContent=`Vorlage geladen: ${uploadedName} (${n} Noten)`;if($("playerStatus"))$("playerStatus").textContent=`Vorlage „${it.title||"Vorlage"}“ im Hauptplayer bereit.`;saveCurrentState();$("status").innerHTML=`<span class="ok">Vorlagenpaket „${esc(it.title||"Vorlage")}“ vollständig übernommen.</span>`;};box.appendChild(d);});}
   function addHist(score,kind,meta={}){if(!score)return;let h=hist();h.unshift({id:Date.now()+Math.random(),time:new Date().toLocaleString(),kind:kind||"Vorlage",title:score.ti||"Vorlage",score:JSON.parse(JSON.stringify(score)),meta:{...meta}});localStorage.setItem(EXPERIMENT_HISTORY_ID,JSON.stringify(h.slice(0,20)));renderHist();}
   window.compositionLabAddTemplateHistory=addHist;
   renderHist();
