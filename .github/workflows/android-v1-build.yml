@@ -1,4 +1,4 @@
-name: Build Composition Lab Android V2
+name: Build Composition Lab Android V2.2 Unsigned
 
 on:
   push:
@@ -35,16 +35,16 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Build unsigned release APK
         working-directory: android-v1
-        run: gradle :app:assembleDebug --stacktrace --no-daemon
+        run: gradle :app:assembleRelease --stacktrace --no-daemon
 
-      - name: Rename APK
-        run: cp android-v1/app/build/outputs/apk/debug/app-debug.apk Composition-Lab-Android-V2.apk
+      - name: Rename unsigned APK
+        run: cp android-v1/app/build/outputs/apk/release/app-release-unsigned.apk Composition-Lab-Android-V2.2-unsigned.apk
 
-      - name: Upload APK
+      - name: Upload unsigned APK
         uses: actions/upload-artifact@v4
         with:
-          name: Composition-Lab-Android-V2
-          path: Composition-Lab-Android-V2.apk
+          name: Composition-Lab-Android-V2.2-unsigned
+          path: Composition-Lab-Android-V2.2-unsigned.apk
           if-no-files-found: error
