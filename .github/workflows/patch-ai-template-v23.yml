@@ -18,192 +18,26 @@ jobs:
           fetch-depth: 0
       - name: Patch index.html
         shell: python
+        env:
+          OLD_HTML_B64: "ICAgICAgICA8ZGl2IGNsYXNzPSJwbGF5ZXJiYXIiIGlkPSJyYW5kb21UZW1wbGF0ZUJveCIgc3R5bGU9ImRpc3BsYXk6bm9uZTttYXJnaW4tdG9wOjEwcHg7Ij4KICAgICAgICAgIDxzdHJvbmcgaWQ9InJhbmRvbVRlbXBsYXRlTmFtZSIgc3R5bGU9ImZsZXg6MSAxIDEwMCU7Ij5adWZhbGxzdm9ybGFnZTwvc3Ryb25nPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJzZWNvbmRhcnkgc21hbGxidG4iIGlkPSJ0ZW1wbGF0ZVBsYXlCdG4iPuKWtiBWb3JsYWdlIGFuaMO2cmVuPC9idXR0b24+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9InNlY29uZGFyeSBzbWFsbGJ0biIgaWQ9InRlbXBsYXRlU2F2ZUJ0biI+8J+SviBWb3JsYWdlIHNwZWljaGVybjwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJzZWNvbmRhcnkgc21hbGxidG4iIGlkPSJ0ZW1wbGF0ZVVzZUJ0biI+8J+koCBBbHMgVm9ybGFnZSB2ZXJ3ZW5kZW48L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0ic2Vjb25kYXJ5IHNtYWxsYnRuIiBpZD0idGVtcGxhdGVSZXJvbGxCdG4iPvCfjrIgTmV1IHfDvHJmZWxuPC9idXR0b24+CiAgICAgICAgPC9kaXY+"
+          NEW_HTML_B64: "ICAgICAgICA8ZGl2IGNsYXNzPSJwbGF5ZXJiYXIiIGlkPSJyYW5kb21UZW1wbGF0ZUJveCIgc3R5bGU9ImRpc3BsYXk6bm9uZTttYXJnaW4tdG9wOjEwcHg7Ij4KICAgICAgICAgIDxzdHJvbmcgaWQ9InJhbmRvbVRlbXBsYXRlTmFtZSIgc3R5bGU9ImZsZXg6MSAxIDEwMCU7Ij5LSS1Wb3JsYWdlPC9zdHJvbmc+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9InNlY29uZGFyeSBzbWFsbGJ0biIgaWQ9InRlbXBsYXRlUGxheUJ0biI+4pa2IEFic3BpZWxlbjwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJzZWNvbmRhcnkgc21hbGxidG4iIGlkPSJ0ZW1wbGF0ZVBhdXNlQnRuIj7ij7ggUGF1c2U8L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0ic2Vjb25kYXJ5IHNtYWxsYnRuIiBpZD0idGVtcGxhdGVTdG9wQnRuIj7ij7kgU3RvcDwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJzZWNvbmRhcnkgc21hbGxidG4iIGlkPSJ0ZW1wbGF0ZUxvb3BCdG4iPvCflIEgTG9vcDogQXVzPC9idXR0b24+CiAgICAgICAgICA8bGFiZWwgZm9yPSJ0ZW1wbGF0ZVZvbHVtZSIgc3R5bGU9Im1hcmdpbjowO2ZvbnQtd2VpZ2h0OjYwMDtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2dhcDo3cHg7Ij5MYXV0c3TDpHJrZQogICAgICAgICAgICA8aW5wdXQgaWQ9InRlbXBsYXRlVm9sdW1lIiB0eXBlPSJyYW5nZSIgbWluPSIwIiBtYXg9IjEwMCIgdmFsdWU9Ijc1Ij4KICAgICAgICAgIDwvbGFiZWw+CiAgICAgICAgICA8c3BhbiBjbGFzcz0icGxheWVyc3RhdHVzIiBpZD0idGVtcGxhdGVQbGF5ZXJTdGF0dXMiPktJLVZvcmxhZ2UgYmVyZWl0Ljwvc3Bhbj4KICAgICAgICAgIDxkaXYgc3R5bGU9ImZsZXgtYmFzaXM6MTAwJTtoZWlnaHQ6MCI+PC9kaXY+CiAgICAgICAgICA8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9InNlY29uZGFyeSBzbWFsbGJ0biIgaWQ9InRlbXBsYXRlU2F2ZUJ0biI+8J+SviBNSURJIHNwZWljaGVybjwvYnV0dG9uPgogICAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIGNsYXNzPSJzZWNvbmRhcnkgc21hbGxidG4iIGlkPSJ0ZW1wbGF0ZVVzZUJ0biI+8J+koCBBbHMgVm9ybGFnZSB2ZXJ3ZW5kZW48L2J1dHRvbj4KICAgICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBjbGFzcz0ic2Vjb25kYXJ5IHNtYWxsYnRuIiBpZD0idGVtcGxhdGVSZXJvbGxCdG4iPvCfjrIgTmV1ZSBLSS1Wb3JsYWdlPC9idXR0b24+CiAgICAgICAgPC9kaXY+"
+          NEW_SCRIPT_B64: "PHNjcmlwdCBpZD0idjIzLXRlbXBsYXRlLWNvbnRyb2xzIj4KKCgpID0+IHsKICBsZXQgcmFuZG9tVGVtcGxhdGVTY29yZSA9IG51bGw7CiAgbGV0IHJhbmRvbVRlbXBsYXRlRmlsZU5hbWUgPSAiIjsKICBsZXQgdGVtcGxhdGVCdXN5ID0gZmFsc2U7CgogIGNvbnN0IHNlZWRNb3RpZnMgPSBbCiAgICAiZWluIHByw6RuZ25hbnRlcyBNb3RpdiBhdXMgZHJlaSBvZGVyIHZpZXIgVMO2bmVuIiwKICAgICJlaW5lIGtsZWluZSByaHl0aG1pc2NoZSBWZXJzY2hpZWJ1bmcsIGRpZSBzcMOkdGVyIHdpY2h0aWcgd2lyZCIsCiAgICAiZWluZSBnZXNhbmdsaWNoZSBMaW5pZSBtaXQgZWluZXIgw7xiZXJyYXNjaGVuZGVuIEludGVydmFsbHdlbmR1bmciLAogICAgImVpbmUgcnVoaWdlIEZpZ3VyLCBkaWUgendpc2NoZW4gZGVuIFN0aW1tZW4gd2FuZGVydCIsCiAgICAiZWluIGt1cnplciBGcmFnZS1BbnR3b3J0LUdlZGFua2UiLAogICAgImVpbmUgenVuw6RjaHN0IHVuc2NoZWluYmFyZSBOZWJlbnN0aW1tZSwgZGllIEVpZ2Vuc3TDpG5kaWdrZWl0IGdld2lubnQiCiAgXTsKICBjb25zdCBzZWVkQ2hhcnMgPSBbCiAgICAicnVoaWcgdW5kIGtvbnplbnRyaWVydCIsInNwaWVsZXJpc2NoLCBhYmVyIG5pY2h0IGJlbGllYmlnIiwibGVpY2h0IG1lbGFuY2hvbGlzY2giLAogICAgImtsYXIgdW5kIGthbW1lcm11c2lrYWxpc2NoIiwiZ2VzYW5nbGljaCBtaXQgaW5uZXJlciBTcGFubnVuZyIsInp1csO8Y2toYWx0ZW5kIG1pdCBlaW5lciDDvGJlcnJhc2NoZW5kZW4gV2VuZHVuZyIKICBdOwogIGNvbnN0IHNlZWREZXZlbG9wbWVudHMgPSBbCiAgICAiZW50d2lja2xlIGRhcyBNb3RpdiBlcmtlbm5iYXIgc3RhdHQgbmV1ZXMgTWF0ZXJpYWwgYW5laW5hbmRlcnp1cmVpaGVuIiwKICAgICJsYXNzZSBkaWUgU3RpbW1lbiB6dW5laG1lbmQgYXVmZWluYW5kZXIgcmVhZ2llcmVuIiwKICAgICJ2YXJpaWVyZSBSaHl0aG11cyBvZGVyIFJlZ2lzdGVyLCBvaG5lIGRlbiBHcnVuZGdlZGFua2VuIHp1IHZlcmxpZXJlbiIsCiAgICAiZsO8aHJlIHp1IGVpbmVtIGtsZWluZW4gSMO2aGVwdW5rdCB1bmQgZW5kZSBtdXNpa2FsaXNjaCBwbGF1c2liZWwiLAogICAgImxhc3NlIGF1cyBkZXIgQmVnbGVpdHVuZyB6ZWl0d2Vpc2UgZWluZSBnbGVpY2hiZXJlY2h0aWd0ZSBTdGltbWUgd2VyZGVuIgogIF07CgogIGZ1bmN0aW9uIHNhZmVGaWxlTmFtZSh0ZXh0KXsKICAgIHJldHVybiBTdHJpbmcodGV4dHx8IktJX1ZvcmxhZ2UiKQogICAgICAubm9ybWFsaXplKCJORkQiKS5yZXBsYWNlKC9bXHUwMzAwLVx1MDM2Zl0vZywiIikKICAgICAgLnJlcGxhY2UoL1teYS16QS1aMC05Xy1dKy9nLCJfIikucmVwbGFjZSgvXl8rfF8rJC9nLCIiKTsKICB9CgogIGZ1bmN0aW9uIHNldFRlbXBsYXRlU3RhdHVzKHRleHQsIGlzRXJyb3I9ZmFsc2UpewogICAgY29uc3QgZWw9JCgidGVtcGxhdGVQbGF5ZXJTdGF0dXMiKTsKICAgIGlmKGVsKSBlbC50ZXh0Q29udGVudD10ZXh0OwogICAgaWYoaXNFcnJvcikgJCgic3RhdHVzIikuaW5uZXJIVE1MPSd8PHNwYW4gY2xhc3M9ImVyciI+Jytlc2ModGV4dCkrJzwvc3Bhbj4nOwogIH0KCiAgZnVuY3Rpb24gc3luY0xvb3BCdXR0b25zKCl7CiAgICBjb25zdCB0ZXh0PXBsYXllckxvb3BFbmFibGVkID8gIvCflIEgTG9vcDogRWluIiA6ICLwn5SBIExvb3A6IEF1cyI7CiAgICBpZigkKCJsb29wQnRuIikpICQoImxvb3BCdG4iKS50ZXh0Q29udGVudD10ZXh0OwogICAgaWYoJCgidGVtcGxhdGVMb29wQnRuIikpICQoInRlbXBsYXRlTG9vcEJ0biIpLnRleHRDb250ZW50PXRleHQ7CiAgfQoKICBhc3luYyBmdW5jdGlvbiBjcmVhdGVUZW1wbGF0ZSgpewogICAgaWYodGVtcGxhdGVCdXN5KSByZXR1cm47CiAgICBjb25zdCBwcm92aWRlcj0kKCJwcm92aWRlciIpLnZhbHVlOwogICAgY29uc3QgbW9kZWw9JCgibW9kZWwiKS52YWx1ZS50cmltKCk7CiAgICBjb25zdCBhcGlLZXlWYWw9JCgiYXBpS2V5IikudmFsdWUudHJpbSgpOwogICAgaWYoIWFwaUtleVZhbCl7CiAgICAgICQoInN0YXR1cyIpLmlubmVySFRNTD1gPHNwYW4gY2xhc3M9ImVyciI+Qml0dGUgenVlcnN0IGRlbiBBUEktS2V5IGbDvHIgJHtlc2MocHJvdmlkZXJEaXNwbGF5TmFtZShwcm92aWRlcikpfSBlbmdlYmVuLiBEaWUgVm9ybGFnZSB3aXJkIGpldHp0IHZvbiBkZXIgZ2V3w6RobHRlbiBLSSBrb21wb25pZXJ0Ljwvc3Bhbj5gOwogICAgICByZXR1cm47CiAgICB9CgogICAgdGVtcGxhdGVCdXN5PXRydWU7CiAgICAkKCJyYW5kb21UZW1wbGF0ZUJ0biIpLmRpc2FibGVkPXRydWU7CiAgICBpZigkKCJ0ZW1wbGF0ZVJlcm9sbEJ0biIpKSAkKCJ0ZW1wbGF0ZVJlcm9sbEJ0biIpLmRpc2FibGVkPXRydWU7CiAgICAkKCJyYW5kb21UZW1wbGF0ZUJveCIpLnN0eWxlLmRpc3BsYXk9ImZsZXgiOwogICAgJCgicmFuZG9tVGVtcGxhdGVOYW1lIikudGV4dENvbnRlbnQ9IktJIGtvbXBvbmllcnQgZWluZSBuZXVlIFZvcmxhZ2Ug4oCmIjsKICAgIHNldFRlbXBsYXRlU3RhdHVzKCJLSSBrb21wb25pZXJ0IOKApiIpOwogICAgJCgic3RhdHVzIikuaW5uZXJIVE1MPSd8PHNwYW4gY2xhc3M9Im9rIj5EaWUgZ2V3w6RobHRlIEtJIGtvbXBvbmllcnQgZWluZSBtdXNpa2FsaXNjaGUgVm9ybGFnZSDigKY8L3NwYW4+JzsKCiAgICB0cnl7CiAgICAgIGNvbnN0IG1lYXN1cmVzPU1hdGgubWF4KDIsTWF0aC5taW4oMzIscGFyc2VJbnQoJCgibWVhc3VyZXMiKS52YWx1ZSwxMCl8fDgpKTsKICAgICAgY29uc3QgbWV0ZXI9JCgibWV0ZXIiKS52YWx1ZXx8IjQvNCI7CiAgICAgIGNvbnN0IGJwbT1NYXRoLm1heCgyMCxNYXRoLm1pbigzMDAscGFyc2VJbnQoJCgidGVtcG8iKS52YWx1ZSwxMCl8fDk2KSk7CiAgICAgIGNvbnN0IGtleT0kKCJtdXNpY2FsS2V5IikudmFsdWV8fCJDIG1ham9yIjsKICAgICAgY29uc3QgZW5zZW1ibGU9JCgiZW5zZW1ibGUiKS52YWx1ZXx8IlBpYW5vIHNvbG8iOwogICAgICBjb25zdCBzZWVkPWAke3BpY2soc2VlZE1vdGlmcyl9OyBDaGFyYWt0ZXI6ICR7cGljayhzZWVkQ2hhcnMpfTsgJHtwaWNrKHNlZWREZXZlbG9wbWVudHMpfS5gOwoKICAgICAgY29uc3QgdGFzaz1gS29tcG9uaWVyZSBLRUlOIGZlcnRpZ2VzIGdyb8OfZXMgU3TDvGNrLCBzb25kZXJuIGVpbmUgbXVzaWthbGlzY2ggYnJhdWNoYmFyZSBNSURJLUF1c2dhbmdzdm9ybGFnZSwgZGllIHNww6R0ZXIgdm9uIE1lbnNjaCB1bmQgS0kgd2VpdGVyZW50d2lja2VsdCB3ZXJkZW4ga2Fubi5cblxuRWNrZGF0ZW46XG4tIEJlc2V0enVuZzogJHtlbnNlbWJsZX1cbi0gTMO4bmdlOiAke21lYXN1cmVzfSBUYWt0ZVxuLSBUYWt0YXJ0OiAke21ldGVyfVxuLSBUZW1wbzogJHticG19IEJQTVxuLSBUb25hcnQ6ICR7a2V5fVxuLSBadWbDpGxsaWdlciBrb21wb3NpdG9yaXNjaGVyIEltcHVsczogJHtzZWVkfVxuXG5XSUNIVElHOlxuLSBEaWUgZ2VuYW5udGUgQmVzZXR6dW5nIG11c3MgdGF0c8OkY2hsaWNoIGluIGdldHJlbm50ZW4sIHBhc3NlbmQgYmVuYW5udGVuIE1JREktU3B1cmVuIG1pdCBrb3JyZWt0ZW4gR00tUHJvZ3JhbW1lbiB2b3Jrb21tZW4uIFdlbm4gendlaSBJbnN0cnVtZW50ZSBnZW5hbm50IHNpbmQsIG3DvHNzZW4gYmVpZGUgbXVzaWthbGlzY2ggaMO2cmJhciBiZXRlaWxpZ3Qgc2Vpbi5cbi0gRXJ6ZXVnZSB6dXNhbW1l bmg...?"
         run: |
+          import os,base64
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-
-          old_html='''        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
-          <strong id="randomTemplateName" style="flex:1 1 100%;">Zufallsvorlage</strong>
-          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Vorlage anhören</button>
-          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 Vorlage speichern</button>
-          <button type="button" class="secondary smallbtn" id="templateUseBtn">🤖 Als Vorlage verwenden</button>
-          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neu würfeln</button>
-        </div>'''
-          new_html='''        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
-          <strong id="randomTemplateName" style="flex:1 1 100%;">KI-Vorlage</strong>
-          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Abspielen</button>
-          <button type="button" class="secondary smallbtn" id="templatePauseBtn">⏸ Pause</button>
-          <button type="button" class="secondary smallbtn" id="templateStopBtn">⏹ Stop</button>
-          <button type="button" class="secondary smallbtn" id="templateLoopBtn">🔁 Loop: Aus</button>
-          <label for="templateVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
-            <input id="templateVolume" type="range" min="0" max="100" value="75">
-          </label>
-          <span class="playerstatus" id="templatePlayerStatus">KI-Vorlage bereit.</span>
-          <div style="flex-basis:100%;height:0"></div>
-          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 MIDI speichern</button>
-          <button type="button" class="secondary smallbtn" id="templateUseBtn">🤖 Als Vorlage verwenden</button>
-          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
-        </div>'''
-          if old_html not in s:
-              raise SystemExit('template html marker not found')
-          s=s.replace(old_html,new_html,1)
-
+          old=base64.b64decode(os.environ['OLD_HTML_B64']).decode('utf-8')
+          new=base64.b64decode(os.environ['NEW_HTML_B64']).decode('utf-8')
+          script=base64.b64decode(os.environ['NEW_SCRIPT_B64']).decode('utf-8')
+          if old not in s: raise SystemExit('template html marker not found')
+          s=s.replace(old,new,1)
           start=s.find('<script id="v23-template-controls">')
           if start<0: raise SystemExit('template script start not found')
           end=s.find('</script>',start)
           if end<0: raise SystemExit('template script end not found')
           end += len('</script>')
-
-          new_script=r'''<script id="v23-template-controls">
-(() => {
-  let randomTemplateScore = null;
-  let randomTemplateFileName = "";
-  let templateBusy = false;
-
-  const seedMotifs = [
-    "ein prägnantes Motiv aus drei oder vier Tönen",
-    "eine kleine rhythmische Verschiebung, die später wichtig wird",
-    "eine gesangliche Linie mit einer überraschenden Intervallwendung",
-    "eine ruhige Figur, die zwischen den Stimmen wandert",
-    "ein kurzer Frage-Antwort-Gedanke",
-    "eine zunächst unscheinbare Nebenstimme, die Eigenständigkeit gewinnt"
-  ];
-  const seedChars = [
-    "ruhig und konzentriert","spielerisch, aber nicht beliebig","leicht melancholisch",
-    "klar und kammermusikalisch","gesanglich mit innerer Spannung","zurückhaltend mit einer überraschenden Wendung"
-  ];
-  const seedDevelopments = [
-    "entwickle das Motiv erkennbar statt neues Material aneinanderzureihen",
-    "lasse die Stimmen zunehmend aufeinander reagieren",
-    "variiere Rhythmus oder Register, ohne den Grundgedanken zu verlieren",
-    "führe zu einem kleinen Höhepunkt und ende musikalisch plausibel",
-    "lasse aus der Begleitung zeitweise eine gleichberechtigte Stimme werden"
-  ];
-
-  function safeFileName(text){
-    return String(text||"KI_Vorlage")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"");
-  }
-
-  function setTemplateStatus(text, isError=false){
-    const el=$("templatePlayerStatus");
-    if(el) el.textContent=text;
-    if(isError) $("status").innerHTML='<span class="err">'+esc(text)+'</span>';
-  }
-
-  function syncLoopButtons(){
-    const text=playerLoopEnabled ? "🔁 Loop: Ein" : "🔁 Loop: Aus";
-    if($("loopBtn")) $("loopBtn").textContent=text;
-    if($("templateLoopBtn")) $("templateLoopBtn").textContent=text;
-  }
-
-  async function createTemplate(){
-    if(templateBusy) return;
-    const provider=$("provider").value;
-    const model=$("model").value.trim();
-    const apiKeyVal=$("apiKey").value.trim();
-    if(!apiKeyVal){
-      $("status").innerHTML=`<span class="err">Bitte zuerst den API-Key für ${esc(providerDisplayName(provider))} eingeben. Die Vorlage wird jetzt von der gewählten KI komponiert.</span>`;
-      return;
-    }
-
-    templateBusy=true;
-    $("randomToTemplateBtn").disabled=true;
-    if($("templateRerollBtn")) $("templateRerollBtn").disabled=true;
-    $("randomTemplateBox").style.display="flex";
-    $("randomTemplateName").textContent="KI komponiert eine neue Vorlage …";
-    setTemplateStatus("KI komponiert …");
-    $("status").innerHTML='<span class="ok">Die gewählte KI komponiert eine musikalische Vorlage …</span>';
-
-    try{
-      const measures=Math.max(2,Math.min(32,parseInt($("measures").value,10)||8));
-      const meter=$("meter").value||"4/4";
-      const bpm=Math.max(20,Math.min(300,parseInt($("tempo").value,10)||96));
-      const key=$("musicalKey").value||"C major";
-      const ensemble=$("ensemble").value||"Piano solo";
-      const seed=`${pick(seedMotifs)}; Charakter: ${pick(seedChars)}; ${pick(seedDevelopments)}.`;
-
-      const task=`Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
-
-      const res=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,task,true);
-      const score=extractJSON(res.text);
-      score.bpm = Number(score.bpm)||bpm;
-      score.k = score.k || key;
-      score.ti = String(score.ti||"KI-Vorlage").trim();
-      score.sm = score.sm || `KI-Ausgangsvorlage · ${ensemble} · ${meter} · ${bpm} BPM · ${key}`;
-      randomTemplateScore=score;
-
-      const meterFile=String(score.ts?.n||meter.split('/')[0])+"-"+String(score.ts?.d||meter.split('/')[1]);
-      randomTemplateFileName=`${safeFileName(score.ti)}_${measures}T_${meterFile}_${score.bpm}BPM.mid`;
-      const trackNames=(score.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ");
-      $("randomTemplateName").textContent=`${score.ti} · ${trackNames||ensemble} · ${measures} Takte · ${score.ts?.n||""}/${score.ts?.d||""} · ${score.bpm} BPM`;
-      $("experimentInfo").textContent=`KI-Vorlage mit ${providerDisplayName(provider)} erzeugt. Du kannst sie vollständig anhören, pausieren, stoppen, loopen, als MIDI speichern oder erst danach als Vorlage aktivieren.`;
-      setTemplateStatus("KI-Vorlage bereit.");
-      $("status").innerHTML=`<span class="ok">KI-Vorlage „${esc(score.ti)}“ erzeugt.</span>`;
-    }catch(err){
-      randomTemplateScore=null;
-      $("randomTemplateName").textContent="KI-Vorlage konnte nicht erzeugt werden";
-      setTemplateStatus("Fehler: "+err.message,true);
-    }finally{
-      templateBusy=false;
-      $("randomToTemplateBtn").disabled=false;
-      if($("templateRerollBtn")) $("templateRerollBtn").disabled=false;
-    }
-  }
-
-  function useTemplate(){
-    if(!randomTemplateScore) return;
-    uploadedScore=JSON.parse(JSON.stringify(randomTemplateScore));
-    uploadedName=randomTemplateFileName||`${randomTemplateScore.ti}.mid`;
-    const count=(uploadedScore.tr||[]).reduce((sum,t)=>sum+(t.nt?.length||0),0);
-    $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;
-    $("status").innerHTML=`<span class="ok">„${esc(randomTemplateScore.ti)}“ ist jetzt als KI-Vorlage aktiviert.</span>`;
-  }
-
-  $("randomToTemplateBtn").onclick=createTemplate;
-  $("templateRerollBtn").onclick=createTemplate;
-  $("templatePlayBtn").onclick=async()=>{
-    if(!randomTemplateScore) return;
-    try{
-      const vol=Number($("templateVolume").value||75);
-      if($("playerVolume")) $("playerVolume").value=String(vol);
-      if(playerMasterGain) playerMasterGain.gain.value=Math.max(0,Math.min(1,vol/100));
-      setTemplateStatus("GM-Klänge werden geladen …");
-      await playGMScore(randomTemplateScore);
-      setTemplateStatus("▶ Wiedergabe läuft.");
-    }catch(err){ setTemplateStatus("Player-Fehler: "+err.message,true); }
-  };
-  $("templatePauseBtn").onclick=()=>toggleGMPause().then(()=>setTemplateStatus(playerPaused?"⏸ Pausiert.":"▶ Wiedergabe fortgesetzt.")).catch(err=>setTemplateStatus("Player-Fehler: "+err.message,true));
-  $("templateStopBtn").onclick=()=>{ stopGMPlayback(true); setTemplateStatus("Gestoppt."); };
-  $("templateLoopBtn").onclick=()=>{
-    playerLoopEnabled=!playerLoopEnabled;
-    syncLoopButtons();
-    setTemplateStatus(playerLoopEnabled?"Loop eingeschaltet.":"Loop ausgeschaltet.");
-  };
-  $("templateVolume").oninput=e=>{
-    const v=Math.max(0,Math.min(100,Number(e.target.value)||0));
-    if($("playerVolume")) $("playerVolume").value=String(v);
-    if(playerMasterGain) playerMasterGain.gain.value=v/100;
-  };
-  $("templateSaveBtn").onclick=()=>{
-    if(!randomTemplateScore) return;
-    downloadBlob(buildMidi(randomTemplateScore),randomTemplateFileName||"KI_Vorlage.mid","audio/midi");
-  };
-  $("templateUseBtn").onclick=useTemplate;
-
-  const oldLoop=$("loopBtn");
-  if(oldLoop) oldLoop.addEventListener("click",()=>setTimeout(syncLoopButtons,0));
-  const mainVol=$("playerVolume");
-  if(mainVol) mainVol.addEventListener("input",e=>{ if($("templateVolume")) $("templateVolume").value=e.target.value; });
-
-  const info=$("experimentInfo");
-  if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ und „Zufall mit Eckdaten“ bleiben lokale Experimente. „Zufall als Vorlage“ lässt dagegen die aktuell gewählte KI ein musikalisch zusammenhängendes Ausgangsmaterial komponieren.';
-  syncLoopButtons();
-})();
-</script>'''
-          s=s[:start]+new_script+s[end:]
+          s=s[:start]+script+s[end:]
           p.write_text(s,encoding='utf-8')
       - name: Commit and push
         run: |
