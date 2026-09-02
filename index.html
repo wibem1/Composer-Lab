@@ -242,6 +242,21 @@
           <option value="8">8 Takte</option>
         </select>
         <div class="uploadinfo" style="margin-bottom:9px;">Länge der experimentellen Vorlage. Sie ist vollständig unabhängig von der oben eingestellten Länge des fertigen Stücks.</div>
+        <div class="row">
+          <div>
+            <label for="labInstrumentCount">Anzahl Instrumente</label>
+            <select id="labInstrumentCount">
+              <option value="1">1 Instrument</option>
+              <option value="2" selected>2 Instrumente</option>
+              <option value="3">3 Instrumente</option>
+              <option value="4">4 Instrumente</option>
+            </select>
+          </div>
+          <div>
+            <label for="labInstrumentCombo">Instrumentenkombination</label>
+            <select id="labInstrumentCombo"></select>
+          </div>
+        </div>
         <div class="labbuttons">
           <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
           <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
@@ -1820,7 +1835,7 @@ window.addEventListener("load", () => {
   const obsTarget=$("randomTemplateName"); if(obsTarget){new MutationObserver(()=>{const title=obsTarget.textContent||"";if(title && !title.includes('komponiert') && !title.includes('konnte') && seekScore){window.__currentLabTemplateScore=seekScore;}}).observe(obsTarget,{childList:true,subtree:true});}
 
   // Save transferred/created AI templates when the use button is clicked.
-  if($("templateUseBtn")) $("templateUseBtn").addEventListener("click",()=>{if(window.__currentLabTemplateScore)addExperimentHistory(window.__currentLabTemplateScore,"KI-Entwurf")});
+  if($("templateUseBtn")) $("templateUseBtn").addEventListener("click",()=>setTimeout(()=>{if(uploadedScore)addExperimentHistory(uploadedScore,"KI-Entwurf")},0));
 })();
 </script>
 
@@ -1896,7 +1911,7 @@ window.addEventListener("load", () => {
   const obsTarget=$("randomTemplateName"); if(obsTarget){new MutationObserver(()=>{const title=obsTarget.textContent||"";if(title && !title.includes('komponiert') && !title.includes('konnte') && seekScore){window.__currentLabTemplateScore=seekScore;}}).observe(obsTarget,{childList:true,subtree:true});}
 
   // Save transferred/created AI templates when the use button is clicked.
-  if($("templateUseBtn")) $("templateUseBtn").addEventListener("click",()=>{if(window.__currentLabTemplateScore)addExperimentHistory(window.__currentLabTemplateScore,"KI-Entwurf")});
+  if($("templateUseBtn")) $("templateUseBtn").addEventListener("click",()=>setTimeout(()=>{if(uploadedScore)addExperimentHistory(uploadedScore,"KI-Entwurf")},0));
 })();
 </script>
 
