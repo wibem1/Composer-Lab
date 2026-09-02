@@ -1,0 +1,47 @@
+name: Patch black text bug
+
+on:
+  push:
+    branches: [android-v2-3]
+    paths:
+      - '.github/workflows/patch-black-text.yml'
+  workflow_dispatch:
+
+jobs:
+  patch-web:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout web branch
+        uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+          fetch-depth: 0
+      - name: Patch dark text rendering
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='''  :root { --bg:#111318; --panel:#1a1f27; --panel2:#232a34; --text:#eef2f7; --muted:#9ba7b4; --accent:#7cc4ff; --ok:#74d99f; --warn:#ffd166; --err:#ff7b7b; --line:#303845; }\n'''
+          new='''  :root { --bg:#111318; --panel:#1a1f27; --panel2:#232a34; --text:#eef2f7; --muted:#9ba7b4; --accent:#7cc4ff; --ok:#74d99f; --warn:#ffd166; --err:#ff7b7b; --line:#303845; color-scheme: dark; }\n'''
+          if old not in s: raise SystemExit('root marker not found')
+          s=s.replace(old,new,1)
+          old2='''  input, select, textarea { width:100%; padding:9px; border-radius:7px; border:1px solid #3a4553; background:#10141a; color:var(--text); }\n'''
+          new2='''  input, select, textarea { width:100%; padding:9px; border-radius:7px; border:1px solid #3a4553; background:#10141a; color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; caret-color:var(--text); }\n  select option { background:#10141a; color:#eef2f7; }\n  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, select:-webkit-autofill { -webkit-text-fill-color:#eef2f7 !important; -webkit-box-shadow:0 0 0 1000px #10141a inset !important; box-shadow:0 0 0 1000px #10141a inset !important; }\n'''
+          if old2 not in s: raise SystemExit('input marker not found')
+          s=s.replace(old2,new2,1)
+          old3='''  .secondary { background:#303947; color:var(--text); }\n'''
+          new3='''  .secondary { background:#303947; color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; }\n'''
+          if old3 not in s: raise SystemExit('secondary marker not found')
+          s=s.replace(old3,new3,1)
+          p.write_text(s)
+          PY
+      - name: Commit web patch
+        run: |
+          git config user.name 'wibem1'
+          git config user.email 'wibem1@googlemail.com'
+          git add index.html
+          git commit -m 'Fix Android WebView black text rendering'
+          git push origin HEAD:composition-lab-v2
