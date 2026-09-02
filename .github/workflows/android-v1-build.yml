@@ -42,9 +42,23 @@ jobs:
       - name: Rename unsigned APK
         run: cp android-v1/app/build/outputs/apk/release/app-release-unsigned.apk Composition-Lab-Android-V2.2-unsigned.apk
 
+      - name: Prepare signing tools bundle
+        run: |
+          mkdir -p signer-tools/lib
+          cp "$ANDROID_HOME/build-tools/35.0.0/apksigner" signer-tools/
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" signer-tools/
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" signer-tools/lib/
+
       - name: Upload unsigned APK
         uses: actions/upload-artifact@v4
         with:
           name: Composition-Lab-Android-V2.2-unsigned
           path: Composition-Lab-Android-V2.2-unsigned.apk
+          if-no-files-found: error
+
+      - name: Upload Android signing tools
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-signing-tools-35
+          path: signer-tools
           if-no-files-found: error
