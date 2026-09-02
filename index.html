@@ -72,7 +72,7 @@
 </style>
 </head>
 <body>
-<header><h1>Composition Lab <span style="font-weight:400;color:var(--muted);font-size:13px;">· Komponieren mit künstlicher Intelligenz</span></h1></header>
+<header><h1>Composition Lab <span style="font-weight:400;color:var(--muted);font-size:13px;">· Werkstatt für gemeinsames Komponieren mit KI</span></h1></header>
 <main>
   <section class="panel">
     <label for="provider">Modell-Anbieter</label>
@@ -272,7 +272,7 @@ const TOKEN_RATES = {
 };
 
 const SYSTEM_PREFIX = `Du bist ein Kompositions- und Produktionsassistent für MIDI.
-Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
+Entwickle aus dem Auftrag einen tragenden musikalischen Gedanken und führe ihn erkennbar weiter, statt Material nur aneinanderzureihen. Achte auf eine nachvollziehbare Form, gute Stimmführung, bewusste Harmonik und Rhythmik sowie ausdrucksvolle Dynamik und Artikulation. Vermeide unbeabsichtigte Tonleiterläufe, mechanische Wiederholungen und zufällige Dissonanzen. Ungewöhnliche, experimentelle oder offene Lösungen sind ausdrücklich willkommen, wenn sie musikalisch begründet sind. Beachte Besetzung und Spielbarkeit. Wenn vorhandenes MIDI-Material gegeben ist, erfasse seine musikalische Idee und führe, variiere oder verwandle sie sinnvoll nach dem Auftrag des Nutzers.`;
 
 const TECHNICAL_PROMPT = `NOTATION UND AUSGABE:
 - "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
