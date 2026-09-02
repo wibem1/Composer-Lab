@@ -136,11 +136,18 @@
       <summary>Experimentierlabor</summary>
       <div class="foldcontent">
         <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>
+        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>
+        <select id="templateLength">
+          <option value="2">2 Takte</option>
+          <option value="4" selected>4 Takte</option>
+          <option value="8">8 Takte</option>
+        </select>
+        <div class="uploadinfo" style="margin-bottom:9px;">Nur die Länge der Vorlage. Die oben eingestellte Taktzahl bestimmt weiterhin die Länge des fertigen Stücks.</div>
         <div class="labbuttons">
           <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
           <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
           <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
-          <button type="button" class="secondary" id="randomToTemplateBtn">↗ Zufall als Vorlage</button>
+          <button type="button" class="secondary" id="randomToTemplateBtn">↗ Als Vorlage verwenden</button>
         </div>
         <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
         <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
@@ -410,7 +417,8 @@ function saveCurrentState(){
       tempo: $("tempo").value,
       musicalKey: $("musicalKey").value,
       ensemble: $("ensemble").value,
-      prompt: $("prompt").value
+      prompt: $("prompt").value,
+      templateLength: $("templateLength").value
     };
 
     localStorage.setItem(STORAGE_ID, JSON.stringify(data));
@@ -431,6 +439,7 @@ function initApp(){
     if(data.form.musicalKey !== undefined) $("musicalKey").value = data.form.musicalKey;
     if(data.form.ensemble !== undefined) $("ensemble").value = data.form.ensemble;
     if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;
+    if(data.form.templateLength !== undefined && ["2","4","8"].includes(String(data.form.templateLength))) $("templateLength").value = String(data.form.templateLength);
   }
 
   syncUIForProvider(p);
@@ -444,7 +453,7 @@ $("provider").addEventListener("change", (e) => {
 });
 
 // Automatisches Speichern bei jeder Änderung
-["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt"].forEach(id => {
+["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength"].forEach(id => {
   $(id).addEventListener("input", saveCurrentState);
   $(id).addEventListener("change", saveCurrentState);
 });
@@ -500,20 +509,19 @@ function generateInspiration(){
 
 function randomScore(useCurrentLimits){
   let measures, meterN, meterD, bpm, trackCount;
+  const selectedTemplateLength = parseInt($("templateLength").value,10);
+  measures = [2,4,8].includes(selectedTemplateLength) ? selectedTemplateLength : 4;
   if(useCurrentLimits){
-    measures = Math.max(1, Math.min(256, parseInt($("measures").value,10) || 16));
     const mm = String($("meter").value || "4/4").match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
     meterN = mm ? Math.max(1,Math.min(32,+mm[1])) : 4;
     meterD = mm && [1,2,4,8,16,32,64].includes(+mm[2]) ? +mm[2] : 4;
     bpm = Math.max(20,Math.min(300,parseInt($("tempo").value,10)||96));
     trackCount = 1;
   } else {
-    measures = randBetween(1,32);
     meterN = randBetween(1,12);
     meterD = pick([2,4,8,16]);
     bpm = randBetween(20,300);
     trackCount = randBetween(1,6);
-    $("measures").value = measures;
     $("meter").value = `${meterN}/${meterD}`;
     $("tempo").value = bpm;
     $("musicalKey").value = "frei / keine";
@@ -593,7 +601,9 @@ function useRandomAsTemplate(){
   uploadedScore = JSON.parse(JSON.stringify(lastScore));
   uploadedName = `${lastScore.ti || "Zufall"}.json`;
   const count=(uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);
-  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;
+  $("prompt").value = "";
+  saveCurrentState();
+  $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten, ${$("templateLength").value} Takte)`;
   $("status").innerHTML='<span class="ok">Aktuelle Zufallsmusik ist jetzt Vorlage für die KI.</span>';
 }
 
