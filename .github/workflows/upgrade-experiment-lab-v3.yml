@@ -1,0 +1,18 @@
+name: Upgrade Experiment Lab V3
+on: push
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - run: python3 tools/upgrade_experiment_lab_v3.py
+      - run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Improve experiment lab and players" || exit 0
+          git push
