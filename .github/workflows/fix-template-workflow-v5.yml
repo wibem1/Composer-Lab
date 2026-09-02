@@ -11,9 +11,10 @@ jobs:
         with:
           ref: composition-lab-v2
       - run: python tools/fix_template_workflow_v5.py
+      - run: python tools/comparison_synthesis_lab_v8.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Fix template history and handoff"
+          git diff --cached --quiet || git commit -m "Add comparison and synthesis lab"
           git push origin HEAD:composition-lab-v2
