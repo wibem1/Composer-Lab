@@ -1,2 +1,3 @@
-# Composer-Lab
-Composing and experimenting with AI
+# Composition Lab
+
+Werkstatt für gemeinsames Komponieren von Mensch und KI.
