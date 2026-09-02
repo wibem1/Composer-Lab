@@ -250,8 +250,11 @@
             <button type="button" class="secondary" id="randomToTemplateBtn">🎼 KI-Vorlage erzeugen</button>
           </div>
           <details class="foldbox" id="experimentHistorySection">
-            <summary>Frühere Entwürfe</summary>
-            <div class="foldcontent"><div id="experimentHistoryList">Noch keine Entwürfe vorhanden.</div></div>
+            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
+            <div class="foldcontent">
+              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>
+              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>
+            </div>
           </details>
           <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
           <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
