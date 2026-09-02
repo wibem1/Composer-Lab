@@ -256,6 +256,10 @@
             <button type="button" class="secondary smallbtn" id="templateUseBtn">↗ In Komposition übernehmen</button>
             <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
           </div>
+          <div id="templateIdeaBox" class="resultcard" style="display:none;margin-top:10px;">
+            <strong>Kompositionsidee der Vorlage</strong>
+            <div id="templateIdeaText" style="margin-top:6px;white-space:pre-wrap;">Noch keine Kompositionsidee vorhanden.</div>
+          </div>
           <details class="foldbox" id="experimentHistorySection" open>
             <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
             <div class="foldcontent">
@@ -365,6 +369,7 @@ let lastModel = null;
 let uploadedScore = null;
 let uploadedName = "";
 let lastConcept = "";
+let mainPlayerScore = null; // Vorlage nach Übernahme, später fertige Komposition
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1140,7 +1145,7 @@ async function toggleGMPause(){
 }
 
 $("playBtn").addEventListener("click", async () => {
-  try { await playGMScore(lastScore); }
+  try { await playGMScore(mainPlayerScore || lastScore || uploadedScore); }
   catch(err){ $("playerStatus").textContent = "Player-Fehler: " + err.message; }
 });
 $("pauseBtn").addEventListener("click", () => toggleGMPause().catch(err => $("playerStatus").textContent = "Player-Fehler: " + err.message));
@@ -1181,6 +1186,7 @@ async function compose(){
     const score = extractJSON(scoreRes.text);
 
     lastScore = score;
+    mainPlayerScore = score;
     lastProvider = provider;
     lastModel = model;
     lastMidiBytes = buildMidi(score);
@@ -1654,7 +1660,7 @@ window.addEventListener("load", () => {
       const ensemble = $("labEnsemble")?.value.trim() || $("ensemble").value || "Piano solo";
       const seed = `${pick(seedMotifs)}; Charakter: ${pick(seedChars)}; ${pick(seedDevelopments)}.`;
 
-      const task = `Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
+      const task = `Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Schreibe in das Feld "sm" eine prägnante musikalische Kompositionsidee für genau diese Vorlage: charakteristische Motive, Gestus, Rhythmik/Harmonik und mögliche Entwicklungsrichtung. Sie ist Teil der Vorlage und soll später gemeinsam mit MIDI und Einstellungen weiterverwendet werden.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
 
       const res = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, task, true);
       const score = extractJSON(res.text);
@@ -1670,8 +1676,12 @@ window.addEventListener("load", () => {
       $("randomTemplateName").textContent = `${score.ti} · ${trackNames || ensemble} · ${measures} Takte · ${score.ts?.n || ""}/${score.ts?.d || ""} · ${score.bpm} BPM`;
       $("experimentInfo").textContent = `KI-Vorlage mit ${providerDisplayName(provider)} erzeugt. Du kannst sie vollständig anhören, pausieren, stoppen, loopen, als MIDI speichern oder erst danach als Vorlage aktivieren.`;
       setTemplateStatus("KI-Vorlage bereit.");
+      if($("templateIdeaBox")) $("templateIdeaBox").style.display = "block";
+      if($("templateIdeaText")) $("templateIdeaText").textContent = score.sm || seed;
       if(typeof window.compositionLabAddTemplateHistory === "function") {
-        window.compositionLabAddTemplateHistory(score, "KI-Vorlage", {ensemble, idea: score.sm || seed});
+        window.compositionLabAddTemplateHistory(score, "KI-Vorlage", {
+          ensemble, idea: score.sm || seed, measures, meter, bpm: score.bpm || bpm, key: score.k || key
+        });
       }
       $("status").innerHTML = `<span class="ok">KI-Vorlage „${esc(score.ti)}“ erzeugt und im Vorlagen-Verlauf gespeichert.</span>`;
     } catch(err) {
@@ -1704,9 +1714,25 @@ window.addEventListener("load", () => {
       $("prompt").value = `Vorlage: ${uploadedScore.ti||"Vorlage"}. ${uploadedScore.sm||"Entwickle den musikalischen Grundgedanken der Vorlage weiter."}`;
     }
     $("uploadInfo").textContent = `Geladen: ${uploadedName} (${count} Noten) · aus Experimentierlabor`;
+    mainPlayerScore = uploadedScore;
+    if($("playerStatus")) $("playerStatus").textContent = `Vorlage „${randomTemplateScore.ti || "Vorlage"}“ im Hauptplayer bereit.`;
     saveCurrentState();
-    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde mit Einstellungen und Kompositionsidee übernommen. Das Experimentierlabor bleibt unverändert geöffnet oder geschlossen.</span>`;
+    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde als vollständiges Vorlagenpaket übernommen. Der Hauptplayer spielt jetzt diese Vorlage.</span>`;
   }
+
+  window.compositionLabSetCurrentTemplate = function(pkg){
+    if(!pkg || !pkg.score) return;
+    randomTemplateScore = JSON.parse(JSON.stringify(pkg.score));
+    const meta = pkg.meta || {};
+    randomTemplateFileName = pkg.fileName || `${safeFileName(randomTemplateScore.ti || "Vorlage")}.mid`;
+    $("randomTemplateBox").style.display = "flex";
+    const measures = meta.measures || (typeof window.compositionLabTemplateMeasures === "function" ? window.compositionLabTemplateMeasures(randomTemplateScore) : "");
+    const ensemble = meta.ensemble || (randomTemplateScore.tr || []).map(t=>t.nm).filter(Boolean).join(" + ");
+    $("randomTemplateName").textContent = `${randomTemplateScore.ti || "Vorlage"}${ensemble ? " · "+ensemble : ""}${measures ? " · "+measures+" Takte" : ""} · ${randomTemplateScore.ts?.n || 4}/${randomTemplateScore.ts?.d || 4} · ${randomTemplateScore.bpm || 96} BPM`;
+    if($("templateIdeaBox")) $("templateIdeaBox").style.display = "block";
+    if($("templateIdeaText")) $("templateIdeaText").textContent = meta.idea || randomTemplateScore.sm || "Keine Kompositionsidee gespeichert.";
+    setTemplateStatus("Gespeicherte Vorlage geladen.");
+  };
 
   $("randomToTemplateBtn").onclick = createTemplate;
   $("templateRerollBtn").onclick = createTemplate;
@@ -1768,13 +1794,12 @@ window.addEventListener("load", () => {
   if($("labEnsemble"))$("labEnsemble").addEventListener("input",saveLabPrefs);
 
   function templateMeasures(score){const n=Number(score?.ts?.n)||4,d=Number(score?.ts?.d)||4,bpmBeats=n*4/d;let max=0;(score?.tr||[]).forEach(t=>(t.nt||[]).forEach(x=>{max=Math.max(max,(Number(x[0])||0)+(Number(x[1])||0));}));return Math.max(1,Math.round(max/bpmBeats));}
+  window.compositionLabTemplateMeasures = templateMeasures;
   function templateEnsemble(score,fallback=""){const names=(score?.tr||[]).map(t=>String(t.nm||"").trim()).filter(Boolean);return names.length?names.join(" + "):fallback;}
-  function applyTemplateToComposition(score,meta={}){if(!score)return;const meter=`${Number(score.ts?.n)||4}/${Number(score.ts?.d)||4}`;const ensemble=meta.ensemble||templateEnsemble(score,$("ensemble").value||"Piano solo");$("measures").value=meta.targetMeasures||templateMeasures(score);$("meter").value=meter;$("tempo").value=Number(score.bpm)||96;$("musicalKey").value=score.k||"C major";$("ensemble").value=ensemble;const idea=String(meta.idea||score.sm||"").trim();$("prompt").value=idea ? `Vorlage: ${score.ti||"Vorlage"}. ${idea}
-
-Entwickle diese musikalische Idee weiter. Bewahre ihren erkennbaren Grundgedanken, variiere und entwickle ihn schlüssig und forme daraus einen überzeugenden Spannungsbogen.` : `Entwickle die übernommene Vorlage „${score.ti||"Vorlage"}“ zu einer eigenständigen Komposition weiter. Bewahre ihren erkennbaren musikalischen Grundgedanken und entwickle ihn schlüssig.`;saveCurrentState();}
+  function applyTemplateToComposition(score,meta={}){if(!score)return;const meter=meta.meter||`${Number(score.ts?.n)||4}/${Number(score.ts?.d)||4}`;const ensemble=meta.ensemble||templateEnsemble(score,$("ensemble").value||"Piano solo");$("measures").value=meta.measures||meta.targetMeasures||templateMeasures(score);$("meter").value=meter;$("tempo").value=Number(meta.bpm||score.bpm)||96;$("musicalKey").value=meta.key||score.k||"C major";$("ensemble").value=ensemble;const idea=String(meta.idea||score.sm||"").trim();$("prompt").value=idea||`Entwickle den musikalischen Grundgedanken der Vorlage „${score.ti||"Vorlage"}“ weiter.`;saveCurrentState();}
   window.compositionLabApplyTemplate=applyTemplateToComposition;
   function hist(){try{return JSON.parse(localStorage.getItem(EXPERIMENT_HISTORY_ID)||"[]")}catch(_){return[]}}
-  function renderHist(){const box=$("experimentHistoryList");if(!box)return;const h=hist();if(!h.length){box.textContent="Noch keine Vorlagen vorhanden.";return;}box.innerHTML="";h.forEach(it=>{const d=document.createElement("div");d.className="historyitem";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)}</div><div class="historyactions"><button class="secondary smallbtn" data-p>▶ Anhören</button><button class="secondary smallbtn" data-u>↗ In Komposition übernehmen</button></div>`;d.querySelector('[data-p]').onclick=()=>playGMScore(it.score,0).catch(()=>{});d.querySelector('[data-u]').onclick=()=>{uploadedScore=JSON.parse(JSON.stringify(it.score));uploadedName=(it.title||"Vorlage")+".mid";applyTemplateToComposition(uploadedScore,it.meta||{});const n=(uploadedScore.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);$("uploadInfo").textContent=`Vorlage geladen: ${uploadedName} (${n} Noten)`;saveCurrentState();$("status").innerHTML=`<span class="ok">Vorlage „${esc(it.title||"Vorlage")}“ mit ihren Einstellungen und einem editierbaren Kompositionsauftrag übernommen.</span>`;};box.appendChild(d);});}
+  function renderHist(){const box=$("experimentHistoryList");if(!box)return;const h=hist();if(!h.length){box.textContent="Noch keine Vorlagen vorhanden.";return;}box.innerHTML="";h.forEach(it=>{const d=document.createElement("div");d.className="historyitem";const m=it.meta||{};const ts=m.meter||`${it.score?.ts?.n||4}/${it.score?.ts?.d||4}`;const bpm=m.bpm||it.score?.bpm||96;const key=m.key||it.score?.k||"";const ens=m.ensemble||templateEnsemble(it.score,"");const idea=m.idea||it.score?.sm||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}</div>${idea?`<div style="margin-top:6px;font-size:12px;white-space:pre-wrap;color:var(--muted);"><strong>Idee:</strong> ${esc(idea)}</div>`:""}<div class="historyactions"><button class="secondary smallbtn" data-p>▶ Laden & anhören</button><button class="secondary smallbtn" data-u>↗ In Komposition übernehmen</button></div>`;d.querySelector('[data-p]').onclick=()=>{if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);playGMScore(it.score,0).catch(()=>{});};d.querySelector('[data-u]').onclick=()=>{uploadedScore=JSON.parse(JSON.stringify(it.score));uploadedName=(it.title||"Vorlage")+".mid";applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);const n=(uploadedScore.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);$("uploadInfo").textContent=`Vorlage geladen: ${uploadedName} (${n} Noten)`;if($("playerStatus"))$("playerStatus").textContent=`Vorlage „${it.title||"Vorlage"}“ im Hauptplayer bereit.`;saveCurrentState();$("status").innerHTML=`<span class="ok">Vorlagenpaket „${esc(it.title||"Vorlage")}“ vollständig übernommen.</span>`;};box.appendChild(d);});}
   function addHist(score,kind,meta={}){if(!score)return;let h=hist();h.unshift({id:Date.now()+Math.random(),time:new Date().toLocaleString(),kind:kind||"Vorlage",title:score.ti||"Vorlage",score:JSON.parse(JSON.stringify(score)),meta:{...meta}});localStorage.setItem(EXPERIMENT_HISTORY_ID,JSON.stringify(h.slice(0,20)));renderHist();}
   window.compositionLabAddTemplateHistory=addHist;
   renderHist();
