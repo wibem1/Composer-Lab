@@ -228,34 +228,15 @@
             <option value="8">8 Takte</option>
           </select>
           <div class="uploadinfo" style="margin-bottom:9px;">Länge der experimentellen Vorlage. Sie ist vollständig unabhängig von der oben eingestellten Länge des fertigen Stücks.</div>
-          <div class="row">
-            <div>
-              <label for="labInstrumentCount">Anzahl Instrumente</label>
-              <select id="labInstrumentCount">
-                <option value="1">1 Instrument</option>
-                <option value="2" selected>2 Instrumente</option>
-                <option value="3">3 Instrumente</option>
-                <option value="4">4 Instrumente</option>
-              </select>
-            </div>
-            <div>
-              <label for="labInstrumentCombo">Instrumentenkombination</label>
-              <select id="labInstrumentCombo"></select>
-            </div>
-          </div>
+          <label for="labEnsemble">Besetzung / Instrumente</label>
+          <input id="labEnsemble" value="Klavier solo" placeholder="z. B. Violine und Klavier, Streichquartett, Flöte solo">
+          <div class="uploadinfo" style="margin-bottom:9px;">Besetzung frei eingeben. Die KI verwendet diese Angabe für die experimentelle Vorlage.</div>
           <div class="labbuttons">
             <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
             <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
             <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
             <button type="button" class="secondary" id="randomToTemplateBtn">🎼 KI-Vorlage erzeugen</button>
           </div>
-          <details class="foldbox" id="experimentHistorySection" open>
-            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
-            <div class="foldcontent">
-              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>
-              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>
-            </div>
-          </details>
           <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
           <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
             <strong id="randomTemplateName" style="flex:1 1 100%;">KI-Vorlage</strong>
@@ -275,6 +256,13 @@
             <button type="button" class="secondary smallbtn" id="templateUseBtn">↗ In Komposition übernehmen</button>
             <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
           </div>
+          <details class="foldbox" id="experimentHistorySection" open>
+            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
+            <div class="foldcontent">
+              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>
+              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>
+            </div>
+          </details>
         </div>
       </details>
 
@@ -1663,7 +1651,7 @@ window.addEventListener("load", () => {
       const meter = $("meter").value || "4/4";
       const bpm = Math.max(20, Math.min(300, parseInt($("tempo").value,10) || 96));
       const key = $("musicalKey").value || "C major";
-      const ensemble = $("labInstrumentCombo")?.value || $("ensemble").value || "Piano solo";
+      const ensemble = $("labEnsemble")?.value.trim() || $("ensemble").value || "Piano solo";
       const seed = `${pick(seedMotifs)}; Charakter: ${pick(seedChars)}; ${pick(seedDevelopments)}.`;
 
       const task = `Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
@@ -1704,7 +1692,7 @@ window.addEventListener("load", () => {
     const count = (uploadedScore.tr || []).reduce((sum,t) => sum + (t.nt?.length || 0), 0);
     if(typeof window.compositionLabApplyTemplate === "function") {
       window.compositionLabApplyTemplate(uploadedScore,{
-        ensemble: $("labInstrumentCombo")?.value || "",
+        ensemble: $("labEnsemble")?.value.trim() || "",
         idea: uploadedScore.sm || ""
       });
     } else {
@@ -1712,7 +1700,7 @@ window.addEventListener("load", () => {
       $("meter").value = `${Number(ts.n)||4}/${Number(ts.d)||4}`;
       $("tempo").value = Number(uploadedScore.bpm)||96;
       $("musicalKey").value = uploadedScore.k||"C major";
-      $("ensemble").value = $("labInstrumentCombo")?.value || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;
+      $("ensemble").value = $("labEnsemble")?.value.trim() || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;
       $("prompt").value = `Vorlage: ${uploadedScore.ti||"Vorlage"}. ${uploadedScore.sm||"Entwickle den musikalischen Grundgedanken der Vorlage weiter."}`;
     }
     $("uploadInfo").textContent = `Geladen: ${uploadedName} (${count} Noten) · aus Experimentierlabor`;
@@ -1775,17 +1763,9 @@ window.addEventListener("load", () => {
 
 <script id="experiment-lab-v3-enhancements">
 (() => {
-  const comboMap={
-    "1":["Klavier solo","Violine solo","Cello solo","Flöte solo","Klarinette solo"],
-    "2":["Violine und Klavier","Cello und Klavier","Klarinette und Klavier","Flöte und Klavier","Flöte und Cello","Violine und Cello"],
-    "3":["Streichtrio","Klaviertrio (Violine, Cello, Klavier)","Flöte, Klarinette und Klavier"],
-    "4":["Streichquartett","Klavierquartett (Violine, Viola, Cello, Klavier)","Flöte, Klarinette, Cello und Klavier"]
-  };
-  function syncCombos(){const c=$("labInstrumentCount"),sel=$("labInstrumentCombo");if(!c||!sel)return;const old=sel.value;sel.innerHTML="";(comboMap[c.value]||[]).forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;sel.appendChild(o)});if([...sel.options].some(o=>o.value===old))sel.value=old;}
-  syncCombos();
-  try{const d=getStoredData();if(d.form?.labInstrumentCount&&$("labInstrumentCount"))$("labInstrumentCount").value=d.form.labInstrumentCount;syncCombos();if(d.form?.labInstrumentCombo&&$("labInstrumentCombo")&&[...$("labInstrumentCombo").options].some(o=>o.value===d.form.labInstrumentCombo))$("labInstrumentCombo").value=d.form.labInstrumentCombo;}catch(_){}
-  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labInstrumentCount=$("labInstrumentCount")?.value||"2";d.form.labInstrumentCombo=$("labInstrumentCombo")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
-  if($("labInstrumentCount"))$("labInstrumentCount").onchange=()=>{syncCombos();saveLabPrefs();};if($("labInstrumentCombo"))$("labInstrumentCombo").onchange=saveLabPrefs;
+  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;}catch(_){}
+  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
+  if($("labEnsemble"))$("labEnsemble").addEventListener("input",saveLabPrefs);
 
   function templateMeasures(score){const n=Number(score?.ts?.n)||4,d=Number(score?.ts?.d)||4,bpmBeats=n*4/d;let max=0;(score?.tr||[]).forEach(t=>(t.nt||[]).forEach(x=>{max=Math.max(max,(Number(x[0])||0)+(Number(x[1])||0));}));return Math.max(1,Math.round(max/bpmBeats));}
   function templateEnsemble(score,fallback=""){const names=(score?.tr||[]).map(t=>String(t.nm||"").trim()).filter(Boolean);return names.length?names.join(" + "):fallback;}
