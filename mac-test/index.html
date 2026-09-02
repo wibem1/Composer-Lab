@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Composition Lab – Mac Prototype V1</title>
+<style>
+:root{--bg:#e9e9ec;--panel:#f7f7f8;--line:#c8c8cc;--text:#222;--muted:#666;--accent:#4b6079;--accent2:#dde4ec;--ok:#2e7d4f;--shadow:0 8px 26px rgba(0,0,0,.08)}
+*{box-sizing:border-box} body{margin:0;font:14px -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,Arial,sans-serif;color:var(--text);background:var(--bg);min-width:1080px}.menubar{height:34px;background:#f5f5f6;border-bottom:1px solid #bbb;display:flex;align-items:center;padding:0 14px;gap:20px;user-select:none}.appname{font-weight:700;margin-right:4px}.menu{position:relative;cursor:default}.menu>span{padding:7px 3px}.menu:hover .dropdown{display:block}.dropdown{display:none;position:absolute;top:25px;left:-8px;z-index:20;background:#fff;border:1px solid #bbb;border-radius:7px;min-width:220px;padding:5px;box-shadow:var(--shadow)}.dropdown button{display:block;width:100%;border:0;background:transparent;text-align:left;padding:7px 10px;border-radius:4px;font:inherit}.dropdown button:hover{background:#dce8f8}.window{height:calc(100vh - 34px);display:flex;flex-direction:column}.titlebar{height:58px;background:#f4f4f5;border-bottom:1px solid var(--line);display:grid;grid-template-columns:260px 1fr 260px;align-items:center;padding:0 18px}.brand{font-size:19px;font-weight:650}.subtitle{font-size:12px;color:var(--muted);margin-top:2px}.tabs{justify-self:center;display:inline-flex;background:#dedee1;border:1px solid #c5c5c8;border-radius:9px;padding:3px}.tab{border:0;background:transparent;padding:8px 22px;border-radius:7px;font:inherit;cursor:pointer}.tab.active{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);font-weight:600}.project{justify-self:end;color:#555}.workspace{display:none;flex:1;min-height:0;padding:16px;gap:16px}.workspace.active{display:grid}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.04);padding:15px;min-height:0}.card h2{font-size:16px;margin:0 0 13px}.card h3{font-size:13px;margin:17px 0 8px;color:#444}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}.field label{font-size:12px;color:#555}.field input,.field select,.field textarea{width:100%;border:1px solid #bdbdc2;border-radius:6px;background:#fff;padding:8px 9px;font:inherit}.field textarea{resize:vertical;min-height:82px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #aaa;border-radius:6px;background:#fff;padding:8px 12px;font:inherit;cursor:pointer}.btn.primary{background:var(--accent);color:white;border-color:var(--accent)}.btn:hover{filter:brightness(.98)}.player{border:1px solid #c2c2c6;background:white;border-radius:8px;padding:12px;margin-top:10px}.playerline{display:grid;grid-template-columns:auto auto auto 1fr auto;gap:8px;align-items:center}.progress{height:7px;border-radius:5px;background:#ddd;overflow:hidden}.progress>span{display:block;width:36%;height:100%;background:#6b7f97}.status{color:var(--ok);font-size:12px;margin-top:8px}.scroll{overflow:auto}.composition{grid-template-columns:340px minmax(430px,1fr) 390px}.experiment{grid-template-columns:330px minmax(440px,1fr) 370px}.compare{grid-template-columns:minmax(330px,1fr) minmax(330px,1fr) 430px}.bigtext{min-height:170px!important}.chat{height:100%;display:flex;flex-direction:column}.chatlog{flex:1;overflow:auto;border:1px solid #c5c5c8;background:white;border-radius:8px;padding:10px;min-height:220px}.msg{padding:9px 10px;border-radius:8px;margin:0 0 8px;max-width:92%;line-height:1.4}.ai{background:#eef0f3}.user{background:#dbe7f3;margin-left:auto}.chatinput{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:9px}.chatinput textarea{min-height:64px;border:1px solid #bdbdc2;border-radius:7px;padding:8px;font:inherit;resize:none}.list{border:1px solid #c8c8cb;border-radius:8px;background:white;overflow:auto;max-height:290px}.item{padding:10px;border-bottom:1px solid #ececef}.item:last-child{border-bottom:0}.item strong{display:block}.item small{color:#666}.source-title{display:flex;justify-content:space-between;align-items:center}.hint{font-size:12px;color:#666;line-height:1.45}.section-sep{height:1px;background:#ddd;margin:15px 0}.badge{display:inline-block;background:var(--accent2);padding:3px 7px;border-radius:10px;font-size:11px;color:#485b70}.footer-note{position:fixed;bottom:7px;right:14px;color:#777;font-size:11px;pointer-events:none}@media(max-width:1180px){.composition,.experiment{grid-template-columns:300px 1fr 340px}.compare{grid-template-columns:1fr 1fr 370px}}
+</style>
+</head>
+<body>
+<div class="menubar">
+  <div class="appname">Composition Lab</div>
+  <div class="menu"><span>Datei</span><div class="dropdown"><button>Neues Projekt</button><button>Projekt öffnen …</button><button>Projekt speichern</button><button>Speichern unter …</button><hr><button>MIDI importieren …</button><button>MIDI exportieren …</button><hr><button>Sicherung erstellen …</button><button>Sicherung wiederherstellen …</button></div></div>
+  <div class="menu"><span>Bearbeiten</span><div class="dropdown"><button>Rückgängig</button><button>Wiederholen</button><hr><button>Ausschneiden</button><button>Kopieren</button><button>Einfügen</button></div></div>
+  <div class="menu"><span>Ansicht</span><div class="dropdown"><button data-open="composition">Komposition</button><button data-open="experiment">Experimentallabor</button><button data-open="compare">Vergleichslabor</button></div></div>
+  <div class="menu"><span>KI</span><div class="dropdown"><button>KI-Anbieter und Modell …</button><button>API-Einstellungen …</button></div></div>
+  <div class="menu"><span>Hilfe</span><div class="dropdown"><button>Benutzerhandbuch</button><button>Über Composition Lab</button></div></div>
+</div>
+<div class="window">
+  <div class="titlebar">
+    <div><div class="brand">Composition Lab</div><div class="subtitle">Musikalische Werkstatt für Mensch und KI</div></div>
+    <div class="tabs"><button class="tab active" data-open="composition">Komposition</button><button class="tab" data-open="experiment">Experimentallabor</button><button class="tab" data-open="compare">Vergleichslabor</button></div>
+    <div class="project">Projekt: <strong>Unbenannt</strong></div>
+  </div>
+
+  <main id="composition" class="workspace composition active">
+    <section class="card scroll">
+      <h2>Rahmenbedingungen</h2>
+      <div class="field"><label>Besetzung / Instrumente</label><input value="Klavier solo"></div>
+      <div class="grid2"><div class="field"><label>Tonart</label><select><option>d-Moll</option><option>C-Dur</option><option>frei</option></select></div><div class="field"><label>Taktart</label><select><option>4/4</option><option>3/4</option><option>6/8</option></select></div></div>
+      <div class="grid2"><div class="field"><label>Tempo</label><input type="number" value="92"></div><div class="field"><label>Länge</label><select><option>32 Takte</option><option>16 Takte</option><option>48 Takte</option></select></div></div>
+      <h3>Ausgangsmaterial</h3>
+      <div class="field"><label>Vorlage / MIDI</label><input value="Keine Vorlage geladen" readonly></div>
+      <div class="toolbar"><button class="btn">MIDI laden …</button><button class="btn">Vorlage entfernen</button></div>
+      <p class="hint">Eine im Experimentallabor erzeugte Vorlage erscheint hier zusammen mit ihren Einstellungen und ihrer Kompositionsidee.</p>
+      <div class="section-sep"></div>
+      <h3>KI</h3>
+      <div class="field"><label>Anbieter</label><select><option>OpenAI</option><option>Anthropic</option><option>Gemini</option></select></div>
+      <div class="field"><label>Modell</label><input value=""></div>
+      <button class="btn">API-Einstellungen …</button>
+    </section>
+
+    <section class="card scroll">
+      <h2>Kompositionsauftrag</h2>
+      <div class="field"><textarea class="bigtext">Entwickle aus dem vorhandenen Material ein geschlossenes, motivisch nachvollziehbares Klavierstück. Die Vorlage darf verändert und weiterentwickelt werden.</textarea></div>
+      <div class="toolbar"><button class="btn primary">Komponieren</button><button class="btn">Zufallsimpuls</button></div>
+      <h3>Aktuelle Komposition</h3>
+      <div class="player"><strong>Noch keine neue Komposition</strong><div class="playerline" style="margin-top:10px"><button class="btn">▶</button><button class="btn">Ⅱ</button><button class="btn">■</button><div class="progress"><span></span></div><span>0:00 / 0:00</span></div><div class="status">Bereit.</div></div>
+      <div class="toolbar" style="margin-top:10px"><button class="btn">MIDI speichern …</button><button class="btn">Zur Historie</button></div>
+      <h3>Kompositionshistorie</h3>
+      <div class="list"><div class="item"><strong>Beispiel: Spuren im Herbstnebel</strong><small>Klavier solo · 32 Takte · 92 BPM</small></div><div class="item"><strong>Frühere Fassung</strong><small>Klavier solo · 16 Takte</small></div></div>
+    </section>
+
+    <section class="card chat">
+      <h2>KI-Dialog</h2>
+      <div class="chatlog"><div class="msg ai">Hier kann die aktuelle Komposition besprochen, kritisiert und weiterentwickelt werden.</div><div class="msg user">Mach den Mittelteil kontrastreicher, aber behalte das Hauptmotiv erkennbar.</div><div class="msg ai">Ich würde die harmonische Spannung erhöhen und das Motiv rhythmisch verkürzen, ohne seine Kontur aufzugeben.</div></div>
+      <div class="chatinput"><textarea placeholder="Frage oder Änderungswunsch …"></textarea><button class="btn primary">Senden</button></div>
+    </section>
+  </main>
+
+  <main id="experiment" class="workspace experiment">
+    <section class="card scroll">
+      <h2>Vorlage erzeugen</h2>
+      <div class="field"><label>Vorlagenlänge</label><select><option>4 Takte</option><option>2 Takte</option><option>8 Takte</option></select></div>
+      <div class="field"><label>Tempo (BPM)</label><input type="number" value="96"></div>
+      <div class="field"><label>Besetzung / Instrumente</label><input value="Klavier solo"></div>
+      <div class="field"><label>Charakter / Stil</label><input placeholder="z. B. impressionistisch, düster, verspielt"></div>
+      <button class="btn primary">KI-Vorlage erzeugen</button>
+      <p class="hint">Tonart und Taktart darf die KI selbst wählen. Ziel ist kein fertiges Stück, sondern interessantes Ausgangsmaterial.</p>
+      <div class="section-sep"></div>
+      <h3>Vorlagenbibliothek</h3>
+      <div class="list"><div class="item"><strong>Schwebender Quartfall</strong><small>4 Takte · Klavier · 96 BPM</small></div><div class="item"><strong>Unruhige Spiegelung</strong><small>2 Takte · Violine & Klavier · 118 BPM</small></div></div>
+    </section>
+
+    <section class="card scroll">
+      <div class="source-title"><h2>Aktuelle Vorlage</h2><span class="badge">KI-Vorlage</span></div>
+      <div class="player"><strong>Schwebender Quartfall</strong><div class="playerline" style="margin-top:10px"><button class="btn">▶</button><button class="btn">Ⅱ</button><button class="btn">■</button><div class="progress"><span style="width:58%"></span></div><span>0:11 / 0:19</span></div><div class="status">Vorlage geladen.</div></div>
+      <h3>Einstellungen</h3>
+      <div class="grid2"><div><strong>Besetzung</strong><p>Klavier solo</p></div><div><strong>Tempo</strong><p>96 BPM</p></div><div><strong>Tonart</strong><p>e-Moll</p></div><div><strong>Taktart</strong><p>4/4</p></div></div>
+      <h3>Kompositionsidee</h3>
+      <p>Ein fallendes Quartmotiv wird zwischen hoher und mittlerer Lage gespiegelt. Die Harmonik bleibt zunächst offen und verdichtet sich erst im vierten Takt.</p>
+      <div class="toolbar"><button class="btn primary" data-open="composition">In Komposition übernehmen →</button><button class="btn">Vorlage speichern</button></div>
+    </section>
+
+    <section class="card chat">
+      <h2>Ideen mit der KI</h2>
+      <div class="chatlog"><div class="msg ai">Wir können die Vorlage frei untersuchen oder verändern, ohne daraus sofort eine vollständige Komposition zu machen.</div></div>
+      <div class="chatinput"><textarea placeholder="z. B. Erzeuge eine rhythmisch mutigere Variante …"></textarea><button class="btn primary">Senden</button></div>
+    </section>
+  </main>
+
+  <main id="compare" class="workspace compare">
+    <section class="card scroll">
+      <div class="source-title"><h2>Quelle A</h2><button class="btn">Laden …</button></div>
+      <div class="field"><label>Quelle</label><select><option>Spuren im Herbstnebel</option><option>Vorlage: Schwebender Quartfall</option></select></div>
+      <div class="player"><strong>Spuren im Herbstnebel</strong><div class="playerline" style="margin-top:10px"><button class="btn">▶</button><button class="btn">Ⅱ</button><button class="btn">■</button><div class="progress"><span style="width:29%"></span></div><span>0:37 / 2:06</span></div><div class="status">Quelle A bereit.</div></div>
+      <h3>Informationen</h3><p>Klavier solo · 32 Takte · d-Moll · 92 BPM</p>
+      <div class="toolbar"><button class="btn">Als Ausgangsmaterial verwenden</button></div>
+    </section>
+
+    <section class="card scroll">
+      <div class="source-title"><h2>Quelle B</h2><button class="btn">Laden …</button></div>
+      <div class="field"><label>Quelle</label><select><option>Vorlage: Schwebender Quartfall</option><option>Frühere Fassung</option></select></div>
+      <div class="player"><strong>Schwebender Quartfall</strong><div class="playerline" style="margin-top:10px"><button class="btn">▶</button><button class="btn">Ⅱ</button><button class="btn">■</button><div class="progress"><span style="width:51%"></span></div><span>0:09 / 0:19</span></div><div class="status">Quelle B bereit.</div></div>
+      <h3>Informationen</h3><p>Klavier solo · 4 Takte · e-Moll · 96 BPM</p>
+      <div class="toolbar"><button class="btn">Als Ausgangsmaterial verwenden</button></div>
+    </section>
+
+    <section class="card chat">
+      <h2>Freier KI-Dialog</h2>
+      <div class="chatlog"><div class="msg ai">Quelle A und B sind geladen. Du entscheidest selbst, ob du analysieren, vergleichen, kritisieren oder daraus neue Ideen entwickeln möchtest.</div></div>
+      <div class="chatinput"><textarea placeholder="z. B. Vergleiche die motivische Entwicklung beider Stücke …"></textarea><button class="btn primary">Senden</button></div>
+      <div class="toolbar" style="margin-top:10px"><button class="btn" data-open="composition">Letzte KI-Antwort als Kompositionsauftrag übernehmen →</button></div>
+    </section>
+  </main>
+</div>
+<div class="footer-note">Mac-Oberflächenprototyp V1 · noch ohne produktive MIDI-/KI-Anbindung</div>
+<script>
+const pages=[...document.querySelectorAll('.workspace')], tabs=[...document.querySelectorAll('.tab')];
+function openPage(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));tabs.forEach(t=>t.classList.toggle('active',t.dataset.open===id));}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(b){openPage(b.dataset.open);}});
+</script>
+</body>
+</html>
