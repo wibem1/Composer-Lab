@@ -1,0 +1,44 @@
+name: Patch Composition Lab V2
+
+on:
+  push:
+    branches:
+      - composition-lab-v2
+    paths:
+      - .github/workflows/patch-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - name: Update musical guidance
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          old = '''const SYSTEM_PREFIX = `Du bist ein Kompositions- und Produktionsassistent für MIDI.
+          Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;'''
+          new = '''const SYSTEM_PREFIX = `Du bist ein Kompositions- und Produktionsassistent für MIDI.
+          Entwickle aus dem Auftrag einen tragenden musikalischen Gedanken und führe ihn erkennbar weiter, statt Material nur aneinanderzureihen. Achte auf eine nachvollziehbare Form, gute Stimmführung, bewusste Harmonik und Rhythmik sowie ausdrucksvolle Dynamik und Artikulation. Vermeide unbeabsichtigte Tonleiterläufe, mechanische Wiederholungen und zufällige Dissonanzen. Ungewöhnliche, experimentelle oder offene Lösungen sind ausdrücklich willkommen, wenn sie musikalisch begründet sind. Beachte Besetzung und Spielbarkeit. Wenn vorhandenes MIDI-Material gegeben ist, erfasse seine musikalische Idee und führe, variiere oder verwandle sie sinnvoll nach dem Auftrag des Nutzers.`;'''
+          old = old.replace("          Erfinde", "Erfinde")
+          new = new.replace("          Entwickle", "Entwickle")
+          if old not in s:
+              raise SystemExit("Expected SYSTEM_PREFIX not found; refusing to modify index.html")
+          s = s.replace(old, new, 1)
+          s = s.replace('· Komponieren mit künstlicher Intelligenz', '· Werkstatt für gemeinsames Komponieren mit KI', 1)
+          p.write_text(s, encoding="utf-8")
+      - name: Commit patch
+        run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Refine Composition Lab musical guidance"
+          git push origin composition-lab-v2
