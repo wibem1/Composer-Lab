@@ -1,0 +1,12 @@
+{
+  "name": "Composition Lab",
+  "short_name": "Composition Lab",
+  "description": "Musikalische Werkstatt für gemeinsames Komponieren von Mensch und KI",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111318",
+  "theme_color": "#0d0f13",
+  "orientation": "any",
+  "icons": []
+}
