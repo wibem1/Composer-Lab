@@ -1,0 +1,27 @@
+from pathlib import Path
+p=Path('index.html')
+s=p.read_text(encoding='utf-8')
+
+old='''          <div class="row">\n            <div>\n              <label for="labInstrumentCount">Anzahl Instrumente</label>\n              <select id="labInstrumentCount">\n                <option value="1">1 Instrument</option>\n                <option value="2" selected>2 Instrumente</option>\n                <option value="3">3 Instrumente</option>\n                <option value="4">4 Instrumente</option>\n              </select>\n            </div>\n            <div>\n              <label for="labInstrumentCombo">Instrumentenkombination</label>\n              <select id="labInstrumentCombo"></select>\n            </div>\n          </div>\n'''
+new='''          <label for="labEnsemble">Besetzung / Instrumente</label>\n          <input id="labEnsemble" value="Klavier solo" placeholder="z. B. Violine und Klavier, Streichquartett, Flöte solo">\n          <div class="uploadinfo" style="margin-bottom:9px;">Besetzung frei eingeben. Die KI verwendet diese Angabe für die experimentelle Vorlage.</div>\n'''
+if old not in s:
+    raise SystemExit('instrument block not found')
+s=s.replace(old,new,1)
+
+hist='''          <details class="foldbox" id="experimentHistorySection" open>\n            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>\n            <div class="foldcontent">\n              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>\n              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>\n            </div>\n          </details>\n'''
+if hist not in s:
+    raise SystemExit('history block not found')
+s=s.replace(hist,'',1)
+marker='''          </div>\n        </div>\n      </details>\n\n    <details class="foldbox" id="historySection" open>'''
+insert='''          </div>\n          <details class="foldbox" id="experimentHistorySection" open>\n            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>\n            <div class="foldcontent">\n              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>\n              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>\n            </div>\n          </details>\n        </div>\n      </details>\n\n    <details class="foldbox" id="historySection" open>'''
+if marker not in s:
+    raise SystemExit('player end marker not found')
+s=s.replace(marker,insert,1)
+
+s=s.replace('const ensemble = $("labInstrumentCombo")?.value || $("ensemble").value || "Piano solo";','const ensemble = $("labEnsemble")?.value.trim() || $("ensemble").value || "Piano solo";')
+s=s.replace('ensemble: $("labInstrumentCombo")?.value || "",','ensemble: $("labEnsemble")?.value.trim() || "",')
+s=s.replace('$("ensemble").value = $("labInstrumentCombo")?.value || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;','$("ensemble").value = $("labEnsemble")?.value.trim() || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;')
+s=s.replace('const comboMap={\n    "1":["Klavier solo","Violine solo","Cello solo","Flöte solo","Klarinette solo"],\n    "2":["Violine und Klavier","Cello und Klavier","Klarinette und Klavier","Flöte und Klavier","Flöte und Cello","Violine und Cello"],\n    "3":["Streichtrio","Klaviertrio (Violine, Cello, Klavier)","Flöte, Klarinette und Klavier"],\n    "4":["Streichquartett","Klavierquartett (Violine, Viola, Cello, Klavier)","Flöte, Klarinette, Cello und Klavier"]\n  };\n  function syncCombos(){const c=$("labInstrumentCount"),sel=$("labInstrumentCombo");if(!c||!sel)return;const old=sel.value;sel.innerHTML="";(comboMap[c.value]||[]).forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;sel.appendChild(o)});if([...sel.options].some(o=>o.value===old))sel.value=old;}\n  syncCombos();\n  try{const d=getStoredData();if(d.form?.labInstrumentCount&&$("labInstrumentCount"))$("labInstrumentCount").value=d.form.labInstrumentCount;syncCombos();if(d.form?.labInstrumentCombo&&$("labInstrumentCombo")&&[...$("labInstrumentCombo").options].some(o=>o.value===d.form.labInstrumentCombo))$("labInstrumentCombo").value=d.form.labInstrumentCombo;}catch(_){}\n  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labInstrumentCount=$("labInstrumentCount")?.value||"2";d.form.labInstrumentCombo=$("labInstrumentCombo")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}\n  if($("labInstrumentCount"))$("labInstrumentCount").onchange=()=>{syncCombos();saveLabPrefs();};if($("labInstrumentCombo"))$("labInstrumentCombo").onchange=saveLabPrefs;','''try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;}catch(_){}\n  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}\n  if($("labEnsemble"))$("labEnsemble").addEventListener("input",saveLabPrefs);''')
+s=s.replace('{ensemble:$("labInstrumentCombo")?.value||$("ensemble")?.value||""}', '{ensemble:$("labEnsemble")?.value.trim()||$("ensemble")?.value||""}')
+
+p.write_text(s,encoding='utf-8')
