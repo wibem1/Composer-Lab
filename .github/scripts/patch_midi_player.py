@@ -1,0 +1,217 @@
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1] if len(sys.argv) > 1 else 'index.html')
+s = p.read_text(encoding='utf-8')
+if 'id="gmPlayer"' in s:
+    print('GM Player already present')
+    raise SystemExit(0)
+
+s = s.replace('</head>', '<script src="soundfont-player.js"></script>\n</head>', 1)
+
+css_marker = '  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }'
+css_add = css_marker + '''
+  .playerbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 10px; padding:9px; border:1px solid var(--line); border-radius:8px; background:#121820; }
+  .playerbar button { padding:8px 11px; }
+  .playerbar input[type=range] { width:120px; padding:0; accent-color:var(--accent); }
+  .playerstatus { color:var(--muted); font-size:12px; flex:1 1 180px; }'''
+if css_marker not in s:
+    raise SystemExit('CSS marker not found')
+s = s.replace(css_marker, css_add, 1)
+
+toolbar = '''    <div class="toolbar">
+      <button class="secondary" id="downloadBtn" disabled>MIDI herunterladen</button>
+      <button class="secondary" id="jsonBtn" disabled>JSON herunterladen</button>
+    </div>'''
+player_html = toolbar + '''
+    <div class="playerbar" id="gmPlayer">
+      <button class="secondary" id="playBtn" type="button">▶ Abspielen</button>
+      <button class="secondary" id="pauseBtn" type="button">⏸ Pause</button>
+      <button class="secondary" id="stopBtn" type="button">⏹ Stop</button>
+      <label for="playerVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+        <input id="playerVolume" type="range" min="0" max="100" value="75">
+      </label>
+      <span class="playerstatus" id="playerStatus">GM-Player bereit.</span>
+    </div>'''
+if toolbar not in s:
+    raise SystemExit('Toolbar marker not found')
+s = s.replace(toolbar, player_html, 1)
+
+js_marker = '// --- Kompositions-Logik ---'
+gm_js = r'''
+// --- Integrierter GM-SoundFont-Player ---
+const GM_INSTRUMENTS = [
+  "acoustic_grand_piano","bright_acoustic_piano","electric_grand_piano","honkytonk_piano","electric_piano_1","electric_piano_2","harpsichord","clavinet",
+  "celesta","glockenspiel","music_box","vibraphone","marimba","xylophone","tubular_bells","dulcimer",
+  "drawbar_organ","percussive_organ","rock_organ","church_organ","reed_organ","accordion","harmonica","tango_accordion",
+  "acoustic_guitar_nylon","acoustic_guitar_steel","electric_guitar_jazz","electric_guitar_clean","electric_guitar_muted","overdriven_guitar","distortion_guitar","guitar_harmonics",
+  "acoustic_bass","electric_bass_finger","electric_bass_pick","fretless_bass","slap_bass_1","slap_bass_2","synth_bass_1","synth_bass_2",
+  "violin","viola","cello","contrabass","tremolo_strings","pizzicato_strings","orchestral_harp","timpani",
+  "string_ensemble_1","string_ensemble_2","synth_strings_1","synth_strings_2","choir_aahs","voice_oohs","synth_choir","orchestra_hit",
+  "trumpet","trombone","tuba","muted_trumpet","french_horn","brass_section","synth_brass_1","synth_brass_2",
+  "soprano_sax","alto_sax","tenor_sax","baritone_sax","oboe","english_horn","bassoon","clarinet",
+  "piccolo","flute","recorder","pan_flute","blown_bottle","shakuhachi","whistle","ocarina",
+  "lead_1_square","lead_2_sawtooth","lead_3_calliope","lead_4_chiff","lead_5_charang","lead_6_voice","lead_7_fifths","lead_8_bass__lead",
+  "pad_1_new_age","pad_2_warm","pad_3_polysynth","pad_4_choir","pad_5_bowed","pad_6_metallic","pad_7_halo","pad_8_sweep",
+  "fx_1_rain","fx_2_soundtrack","fx_3_crystal","fx_4_atmosphere","fx_5_brightness","fx_6_goblins","fx_7_echoes","fx_8_scifi",
+  "sitar","banjo","shamisen","koto","kalimba","bag_pipe","fiddle","shanai",
+  "tinkle_bell","agogo","steel_drums","woodblock","taiko_drum","melodic_tom","synth_drum","reverse_cymbal",
+  "guitar_fret_noise","breath_noise","seashore","bird_tweet","telephone_ring","helicopter","applause","gunshot"
+];
+
+let playerAudioCtx = null;
+let playerMasterGain = null;
+let playerInstrumentCache = new Map();
+let playerPaused = false;
+let playerPlaying = false;
+let playerEndTimer = null;
+
+function gmProgramName(pg){
+  pg = Math.max(0, Math.min(127, Number(pg) || 0));
+  return GM_INSTRUMENTS[pg] || "acoustic_grand_piano";
+}
+
+function ensurePlayerAudio(){
+  if(!playerAudioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) throw new Error("Web Audio wird auf diesem Gerät nicht unterstützt.");
+    playerAudioCtx = new AC();
+    playerMasterGain = playerAudioCtx.createGain();
+    playerMasterGain.gain.value = Number($("playerVolume")?.value || 75) / 100;
+    playerMasterGain.connect(playerAudioCtx.destination);
+  }
+  return playerAudioCtx;
+}
+
+async function loadGMInstrument(program, channel){
+  const key = channel === 9 ? "drums" : String(Math.max(0, Math.min(127, Number(program)||0)));
+  if(playerInstrumentCache.has(key)) return playerInstrumentCache.get(key);
+  if(typeof Soundfont === "undefined") throw new Error("SoundFont-Modul konnte nicht geladen werden.");
+  const name = channel === 9 ? "synth_drum" : gmProgramName(program);
+  const promise = Soundfont.instrument(ensurePlayerAudio(), name, {
+    soundfont: "FluidR3_GM",
+    format: "mp3",
+    destination: playerMasterGain
+  });
+  playerInstrumentCache.set(key, promise);
+  try {
+    return await promise;
+  } catch(err){
+    playerInstrumentCache.delete(key);
+    if(name !== "acoustic_grand_piano"){
+      const fallback = Soundfont.instrument(ensurePlayerAudio(), "acoustic_grand_piano", {
+        soundfont: "FluidR3_GM", format: "mp3", destination: playerMasterGain
+      });
+      playerInstrumentCache.set(key, fallback);
+      return await fallback;
+    }
+    throw err;
+  }
+}
+
+function stopGMPlayback(update=true){
+  if(playerEndTimer){ clearTimeout(playerEndTimer); playerEndTimer = null; }
+  playerInstrumentCache.forEach(p => Promise.resolve(p).then(inst => { try { inst.stop(); } catch(_){} }).catch(()=>{}));
+  playerPaused = false;
+  playerPlaying = false;
+  if(update && $("playerStatus")) $("playerStatus").textContent = "Gestoppt.";
+}
+
+function scoreMaxBeat(score){
+  let max = 0;
+  (score?.tr || []).forEach(t => (t.nt || []).forEach(n => {
+    const start = Number(n[0]) || 0;
+    const dur = Number(n[1]) || 0;
+    const gate = n.length > 5 ? (Number(n[5]) || 0.95) : 0.95;
+    max = Math.max(max, start + dur * Math.max(0.05, gate));
+  }));
+  return max;
+}
+
+async function playGMScore(score){
+  if(!score || !Array.isArray(score.tr) || !score.tr.length){
+    $("playerStatus").textContent = "Noch keine Komposition zum Abspielen.";
+    return;
+  }
+  const ac = ensurePlayerAudio();
+  if(ac.state === "suspended") await ac.resume();
+  stopGMPlayback(false);
+  $("playerStatus").textContent = "GM-Klänge werden geladen …";
+
+  const used = [];
+  const seen = new Set();
+  for(const t of score.tr){
+    const ch = Math.max(0, Math.min(15, Number(t.ch)||0));
+    const pg = Math.max(0, Math.min(127, Number(t.pg)||0));
+    const key = ch === 9 ? "drums" : String(pg);
+    if(!seen.has(key)){ seen.add(key); used.push([pg,ch]); }
+  }
+  await Promise.all(used.map(([pg,ch]) => loadGMInstrument(pg,ch)));
+
+  const bpm = Math.max(20, Math.min(300, Number(score.bpm)||96));
+  const secPerBeat = 60 / bpm;
+  const base = ac.currentTime + 0.12;
+  for(const t of score.tr){
+    const ch = Math.max(0, Math.min(15, Number(t.ch)||0));
+    const pg = Math.max(0, Math.min(127, Number(t.pg)||0));
+    const inst = await loadGMInstrument(pg,ch);
+    for(const n of (t.nt || [])){
+      const start = Math.max(0, Number(n[0])||0);
+      const dur = Math.max(0.02, Number(n[1])||0.25);
+      const pitch = Math.max(0, Math.min(127, Math.round(Number(n[2])||60)));
+      const vel = Math.max(1, Math.min(127, Number(n[3])||80));
+      const gate = n.length > 5 ? Math.max(0.05, Math.min(4, Number(n[5])||0.95)) : 0.95;
+      try {
+        inst.play(pitch, base + start * secPerBeat, {
+          duration: Math.max(0.03, dur * gate * secPerBeat),
+          gain: Math.max(0.02, Math.min(1, vel / 127))
+        });
+      } catch(err){ console.warn("GM note playback failed", err); }
+    }
+  }
+
+  playerPlaying = true;
+  playerPaused = false;
+  $("playerStatus").textContent = `▶ Wiedergabe · FluidR3 GM · ${bpm} BPM`;
+  const totalMs = Math.max(250, (scoreMaxBeat(score) * secPerBeat + 0.6) * 1000);
+  playerEndTimer = setTimeout(() => {
+    if(playerPlaying && !playerPaused){
+      playerPlaying = false;
+      $("playerStatus").textContent = "Wiedergabe beendet.";
+    }
+  }, totalMs);
+}
+
+async function toggleGMPause(){
+  if(!playerAudioCtx || !playerPlaying){
+    $("playerStatus").textContent = "Keine laufende Wiedergabe.";
+    return;
+  }
+  if(playerAudioCtx.state === "running"){
+    await playerAudioCtx.suspend();
+    playerPaused = true;
+    if(playerEndTimer){ clearTimeout(playerEndTimer); playerEndTimer = null; }
+    $("playerStatus").textContent = "⏸ Pausiert.";
+  } else {
+    await playerAudioCtx.resume();
+    playerPaused = false;
+    $("playerStatus").textContent = "▶ Wiedergabe fortgesetzt.";
+  }
+}
+
+$("playBtn").addEventListener("click", async () => {
+  try { await playGMScore(lastScore); }
+  catch(err){ $("playerStatus").textContent = "Player-Fehler: " + err.message; }
+});
+$("pauseBtn").addEventListener("click", () => toggleGMPause().catch(err => $("playerStatus").textContent = "Player-Fehler: " + err.message));
+$("stopBtn").addEventListener("click", () => stopGMPlayback(true));
+$("playerVolume").addEventListener("input", e => {
+  if(playerMasterGain) playerMasterGain.gain.value = Math.max(0, Math.min(1, Number(e.target.value)/100));
+});
+
+'''
+if js_marker not in s:
+    raise SystemExit('JS marker not found')
+s = s.replace(js_marker, gm_js + js_marker, 1)
+p.write_text(s, encoding='utf-8')
+print('GM player patched')
