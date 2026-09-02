@@ -1242,5 +1242,100 @@ window.addEventListener("load", () => {
 });
 </script>
 
+
+<script id="v23-random-override">
+(() => {
+  const v23Ensembles = [
+    {label:"Klavier solo", tracks:[{nm:"Piano",pg:0,lo:48,hi:84}]},
+    {label:"Cello solo", tracks:[{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Violine und Klavier", tracks:[{nm:"Violine",pg:40,lo:55,hi:91},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Cello und Klavier", tracks:[{nm:"Cello",pg:42,lo:36,hi:67},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Klarinette und Klavier", tracks:[{nm:"Klarinette",pg:71,lo:50,hi:86},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Flöte und Cello", tracks:[{nm:"Flöte",pg:73,lo:60,hi:96},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Streichtrio", tracks:[{nm:"Violine",pg:40,lo:55,hi:91},{nm:"Viola",pg:41,lo:48,hi:79},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Streichquartett", tracks:[{nm:"Violine I",pg:40,lo:57,hi:93},{nm:"Violine II",pg:40,lo:55,hi:88},{nm:"Viola",pg:41,lo:48,hi:79},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Zwei Klaviere", tracks:[{nm:"Piano I",pg:0,lo:48,hi:88},{nm:"Piano II",pg:0,lo:40,hi:80}]}
+  ];
+  const v23Keys = ["C major","G major","F major","D major","B-flat major","A major","E-flat major","a minor","e minor","d minor","g minor","b minor","c minor"];
+  const v23Meters = [[4,4],[4,4],[4,4],[3,4],[3,4],[2,4],[6,8],[6,8],[5,4],[7,8],[9,8],[12,8]];
+  const v23Measures = [8,8,12,16,16,16,20,24,24,32];
+  const v23Tempi = [48,54,60,66,72,76,80,84,88,92,96,100,104,108,112,116,120,126,132,138,144,152,160,168,176];
+  const majorScale=[0,2,4,5,7,9,11], minorScale=[0,2,3,5,7,8,10];
+  const rootMap={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+
+  function v23Pitch(lo,hi,keyText){
+    const scale=/minor|moll/i.test(keyText)?minorScale:majorScale;
+    const m=String(keyText||'C major').match(/^([A-G])/i);
+    const root=m?rootMap[m[1].toUpperCase()]:0;
+    for(let i=0;i<50;i++){
+      const p=randBetween(lo,hi);
+      if(scale.includes((p-root+120)%12)) return p;
+    }
+    return randBetween(lo,hi);
+  }
+
+  randomScore = function(useCurrentLimits){
+    let measures,meterN,meterD,bpm,ensembleLabel,trackDefs,keyText;
+    if(useCurrentLimits){
+      measures=Math.max(1,Math.min(256,parseInt($("measures").value,10)||16));
+      const mm=String($("meter").value||"4/4").match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+      meterN=mm?Math.max(1,Math.min(32,+mm[1])):4;
+      meterD=mm&&[1,2,4,8,16,32,64].includes(+mm[2])?+mm[2]:4;
+      bpm=Math.max(20,Math.min(300,parseInt($("tempo").value,10)||96));
+      ensembleLabel=$("ensemble").value||"Piano solo";
+      keyText=$("musicalKey").value||"C major";
+      trackDefs=[{nm:ensembleLabel,pg:0,lo:45,hi:84}];
+    } else {
+      measures=pick(v23Measures);
+      const meter=pick(v23Meters); meterN=meter[0]; meterD=meter[1];
+      bpm=pick(v23Tempi);
+      const e=pick(v23Ensembles); ensembleLabel=e.label; trackDefs=e.tracks;
+      keyText=pick(v23Keys);
+      $("measures").value=measures;
+      $("meter").value=`${meterN}/${meterD}`;
+      $("tempo").value=bpm;
+      $("musicalKey").value=keyText;
+      $("ensemble").value=ensembleLabel;
+      saveCurrentState();
+    }
+
+    const beatsPerMeasure=meterN*4/meterD;
+    const totalBeats=measures*beatsPerMeasure;
+    const durations=[0.25,0.5,0.5,0.75,1,1,1,1.5,2,2,3,4];
+    const tracks=[];
+    trackDefs.forEach((def,ti)=>{
+      const nt=[];
+      let pos=0;
+      while(pos<totalBeats-0.01){
+        let dur=Math.min(pick(durations),totalBeats-pos);
+        if(randomUint(100)>=18){
+          nt.push([+pos.toFixed(6),+dur.toFixed(6),v23Pitch(def.lo,def.hi,keyText),randBetween(48,102),0,pick([0.78,0.9,0.95,1,1.06])]);
+        }
+        pos+=dur;
+      }
+      tracks.push({nm:def.nm,ch:ti%16,pg:def.pg,nt,ct:[]});
+    });
+    return {
+      ti:useCurrentLimits?"Zufall mit Eckdaten":"Musikalischer Zufall",
+      bpm,
+      ts:{n:meterN,d:meterD},
+      k:keyText,
+      sm:useCurrentLimits?"Zufällig erzeugtes Ausgangsmaterial innerhalb der sichtbaren Eckdaten.":"Musikalisch begrenzter Zufall: Die sichtbaren Eckdaten wurden aus plausiblen musikalischen Möglichkeiten gewählt.",
+      tr:tracks
+    };
+  };
+
+  generateRandomMusic = function(useCurrentLimits){
+    const score=randomScore(useCurrentLimits);
+    installGeneratedScore(score,useCurrentLimits
+      ? "Zufall innerhalb deiner sichtbaren Eckdaten."
+      : "Musikalischer Zufall: Taktzahl, Taktart, Tempo, Tonart und Besetzung wurden aus plausiblen Möglichkeiten gewählt und sichtbar in die Felder eingetragen.");
+  };
+
+  const info=$("experimentInfo");
+  if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ würfelt musikalisch plausible Eckdaten und trägt sie sichtbar in die Felder ein. „Zufall mit Eckdaten“ behält deine eingetragenen Werte bei.';
+})();
+</script>
+
 </body>
 </html>
