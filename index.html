@@ -140,6 +140,11 @@
       <button type="button" class="secondary smallbtn" id="clearUploadBtn">Entfernen</button>
     </div>
     <div class="uploadinfo" id="uploadInfo">Keine Vorlage geladen.</div>
+    <div class="toolbar" style="margin-top:8px;">
+      <button type="button" class="secondary smallbtn" id="playImportedBtn" disabled>▶ Im Player anhören</button>
+      <button type="button" class="secondary smallbtn" id="analyzeImportedBtn" disabled>Mit KI analysieren</button>
+    </div>
+    <div id="importedAnalysis" class="resultcard" style="display:none;margin-top:8px;white-space:pre-wrap;">Noch keine Analyse.</div>
 
     <button class="primary" id="composeBtn">Mit gewählter KI komponieren</button>
 
@@ -833,7 +838,15 @@ $("uploadInput").addEventListener("change", async e => {
     }
     const count = (uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0), 0);
     $("uploadInfo").textContent = `Geladen: ${f.name} (${count} Noten)`;
-    $("status").textContent = "Material geladen. Wird als Referenz mitgesendet.";
+    mainPlayerScore = uploadedScore;
+    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Import: ${f.name}`;
+    if($("playerSeek")) $("playerSeek").value = "0";
+    if($("playerTime")) $("playerTime").textContent = "0:00 / 0:00";
+    if($("playerStatus")) $("playerStatus").textContent = `Import „${f.name}“ im Hauptplayer bereit.`;
+    if($("playImportedBtn")) $("playImportedBtn").disabled = false;
+    if($("analyzeImportedBtn")) $("analyzeImportedBtn").disabled = false;
+    if($("importedAnalysis")){ $("importedAnalysis").style.display="none"; $("importedAnalysis").textContent="Noch keine Analyse."; }
+    $("status").textContent = "Material geladen. Es kann angehört, analysiert und als Referenz mitgesendet werden.";
   } catch(err) {
     uploadedScore = null;
     $("uploadInfo").textContent = "Fehler beim Lesen des Uploads.";
@@ -845,6 +858,9 @@ $("clearUploadBtn").addEventListener("click", () => {
   uploadedScore = null;
   $("uploadInput").value = "";
   $("uploadInfo").textContent = "Keine Vorlage geladen.";
+  if($("playImportedBtn")) $("playImportedBtn").disabled = true;
+  if($("analyzeImportedBtn")) $("analyzeImportedBtn").disabled = true;
+  if($("importedAnalysis")){ $("importedAnalysis").style.display="none"; $("importedAnalysis").textContent="Noch keine Analyse."; }
 });
 
 // --- API Router ---
@@ -1510,7 +1526,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=10").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=11").catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
@@ -1894,6 +1910,70 @@ ${JSON.stringify(src.B)}`;
   if($c("suggestSynthesisBtn"))$c("suggestSynthesisBtn").onclick=async()=>{try{$c("synthesisPrompt").value="KI erstellt Syntheseauftrag …";$c("synthesisPrompt").value=await compare(true)}catch(e){$c("synthesisPrompt").value="";$c("aiCompareResult").innerHTML=`<span class="err">${esc(e.message)}</span>`}};
   if($c("useSynthesisBtn"))$c("useSynthesisBtn").onclick=()=>{if(!src.A||!src.B){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst A und B laden.</span>';return}const t=$c("synthesisPrompt").value.trim();if(!t){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst einen Syntheseauftrag formulieren.</span>';return}$c("prompt").value=t;window.comparisonSynthesisSources={a:JSON.parse(JSON.stringify(src.A)),b:JSON.parse(JSON.stringify(src.B)),nameA:names.A,nameB:names.B};saveCurrentState();$c("status").innerHTML='<span class="ok">Syntheseauftrag übernommen. Quelle A und B werden beim nächsten Komponieren gemeinsam an die KI übergeben.</span>';window.scrollTo({top:0,behavior:"smooth"})};
   fill();window.compositionLabRefreshComparisonSources=fill;
+})();
+</script>
+
+
+<script id="imported-midi-analysis-v9">
+(()=>{
+  const playBtn=document.getElementById("playImportedBtn");
+  const analyseBtn=document.getElementById("analyzeImportedBtn");
+  const box=document.getElementById("importedAnalysis");
+
+  if(playBtn) playBtn.addEventListener("click",()=>{
+    if(!uploadedScore){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst eine MIDI- oder JSON-Datei laden.</span>';
+      return;
+    }
+    mainPlayerScore=uploadedScore;
+    if(document.getElementById("mainPlayerTitle")) document.getElementById("mainPlayerTitle").textContent=`Import: ${uploadedName||uploadedScore.ti||"MIDI-Datei"}`;
+    playGMScore(uploadedScore,0).catch(err=>{document.getElementById("status").innerHTML=`<span class="err">${esc(err.message)}</span>`});
+  });
+
+  if(analyseBtn) analyseBtn.addEventListener("click",async()=>{
+    if(!uploadedScore){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst eine MIDI- oder JSON-Datei laden.</span>';
+      return;
+    }
+    const provider=document.getElementById("provider").value;
+    const model=document.getElementById("model").value.trim();
+    const apiKeyVal=document.getElementById("apiKey").value.trim();
+    if(!apiKeyVal){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst den API-Key der gewählten KI eingeben.</span>';
+      return;
+    }
+    analyseBtn.disabled=true;
+    box.style.display="block";
+    box.textContent="KI analysiert die importierte MIDI-Datei …";
+    try{
+      const task=`Analysiere die folgende importierte MIDI-Komposition musikalisch und nicht nur technisch. Untersuche insbesondere:
+- Form und Spannungsverlauf
+- Hauptmotive und ihre Entwicklung
+- Melodik und Phrasierung
+- Harmonik und Tonalität
+- Rhythmik und Metrik
+- Begleitmuster und Satzstruktur
+- Stimmführung bzw. Zusammenspiel der Instrumente
+- Dynamik und Artikulation, soweit aus den MIDI-Daten erkennbar
+- charakteristische Stärken und mögliche handwerkliche oder musikalische Schwächen
+- konkrete Möglichkeiten zur Weiterentwicklung, Variation oder Fortsetzung
+
+Trenne Beobachtung und Bewertung sauber. Erfinde nichts, was aus den MIDI-Daten nicht ableitbar ist. Beziehe dich bei wichtigen Aussagen möglichst konkret auf musikalische Ereignisse oder Abschnitte.
+
+DATEI: ${uploadedName||uploadedScore.ti||"Import"}
+
+MIDI-DATEN:
+${JSON.stringify(uploadedScore)}`;
+      const res=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,task,false);
+      box.textContent=res.text||"Die KI hat keine Analyse zurückgegeben.";
+      document.getElementById("status").innerHTML='<span class="ok">Analyse der importierten MIDI-Datei erstellt.</span>';
+    }catch(err){
+      box.innerHTML=`<span class="err">${esc(err.message)}</span>`;
+      document.getElementById("status").innerHTML=`<span class="err">Analyse fehlgeschlagen: ${esc(err.message)}</span>`;
+    }finally{
+      analyseBtn.disabled=false;
+    }
+  });
 })();
 </script>
 
