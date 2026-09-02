@@ -1,10 +1,52 @@
 name: Patch Composition Lab V2
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - composition-lab-v2
+    paths:
+      - .github/workflows/patch-v2.yml
+
+permissions:
+  contents: write
 
 jobs:
-  noop:
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Composition Lab V2"
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - name: Enable PWA service worker
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          start = s.find('<script>\n/* PWA-Standalone ja, Offline-Service-Worker nein:')
+          if start < 0:
+              raise SystemExit("Expected old PWA cleanup block not found")
+          end = s.find('</script>', start)
+          if end < 0:
+              raise SystemExit("Expected closing script tag not found")
+          end += len('</script>')
+          new = '''<script>
+          window.addEventListener("load", () => {
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.register("./service-worker.js").catch(err =>
+                console.warn("Service Worker konnte nicht registriert werden:", err)
+              );
+            }
+          });
+          </script>'''
+          new = new.replace("          window", "window").replace("          });", "});").replace("          </script>", "</script>")
+          s = s[:start] + new + s[end:]
+          p.write_text(s, encoding="utf-8")
+      - name: Commit patch
+        run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Enable Composition Lab PWA mode"
+          git push origin composition-lab-v2
