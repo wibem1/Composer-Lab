@@ -20,9 +20,10 @@ jobs:
       - run: python tools/compact_comparison_analysis_v14.py
       - run: python tools/fix_comparison_progress_v14.py
       - run: python tools/fix_comparison_progress_v16.py
+      - run: python tools/fix_comparison_progress_v17.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Fix comparison progress at playback engine"
+          git diff --cached --quiet || git commit -m "Fix comparison progress with explicit playback routing"
           git push origin HEAD:composition-lab-v2
