@@ -188,36 +188,6 @@
       </div>
     </details>
 
-
-    <details class="foldbox" id="compareSection" open>
-      <summary>Varianten vergleichen</summary>
-      <div class="foldcontent">
-        <p class="labhint">Wähle zwei Fassungen aus dem Verlauf. Composition Lab kürt keinen Sieger – der Vergleich gehört dir.</p>
-        <div class="comparegrid">
-          <div>
-            <label for="variantA">Variante A</label>
-            <select id="variantA"></select>
-            <div id="variantACard" class="variantcard">Noch keine Variante gewählt.</div>
-            <div class="historyactions">
-              <button type="button" class="secondary smallbtn" id="loadVariantA">In Editor laden</button>
-              <button type="button" class="secondary smallbtn" id="midiVariantA">MIDI</button>
-            </div>
-          </div>
-          <div>
-            <label for="variantB">Variante B</label>
-            <select id="variantB"></select>
-            <div id="variantBCard" class="variantcard">Noch keine Variante gewählt.</div>
-            <div class="historyactions">
-              <button type="button" class="secondary smallbtn" id="loadVariantB">In Editor laden</button>
-              <button type="button" class="secondary smallbtn" id="midiVariantB">MIDI</button>
-            </div>
-          </div>
-        </div>
-        <label for="compareNotes">Eigene Beobachtungen</label>
-        <textarea id="compareNotes" class="compare-notes" placeholder="Was funktioniert in A? Was in B? Welche Idee möchtest du weiterentwickeln?"></textarea>
-      </div>
-    </details>
-
     <details class="labbox" id="experimentSection" style="grid-column:1 / -1; margin-top:8px;">
         <summary>Experimentierlabor · optional</summary>
         <div class="foldcontent">
@@ -267,6 +237,34 @@
             <strong>Kompositionsidee der Vorlage</strong>
             <div id="templateIdeaText" style="margin-top:6px;white-space:pre-wrap;">Noch keine Kompositionsidee vorhanden.</div>
           </div>
+          <details class="foldbox" id="synthesisSection">
+            <summary>Vergleich & Synthese</summary>
+            <div class="foldcontent">
+              <p class="labhint">Zwei beliebige Stücke oder Vorlagen gegenüberstellen, anhören, von der KI analysieren lassen und daraus einen neuen Kompositionsauftrag entwickeln.</p>
+              <div class="comparegrid">
+                <div>
+                  <label for="sourceASelect">Quelle A</label>
+                  <select id="sourceASelect"><option value="">Quelle wählen …</option></select>
+                  <div class="uploadrow"><input id="sourceAFile" type="file" accept=".mid,.midi,.json,application/json,audio/midi"></div>
+                  <div id="sourceACard" class="variantcard">Noch keine Quelle geladen.</div>
+                  <div class="historyactions"><button type="button" class="secondary smallbtn" id="playSourceA">▶ A anhören</button><button type="button" class="secondary smallbtn" id="stopSourceA">⏹ Stop</button></div>
+                </div>
+                <div>
+                  <label for="sourceBSelect">Quelle B</label>
+                  <select id="sourceBSelect"><option value="">Quelle wählen …</option></select>
+                  <div class="uploadrow"><input id="sourceBFile" type="file" accept=".mid,.midi,.json,application/json,audio/midi"></div>
+                  <div id="sourceBCard" class="variantcard">Noch keine Quelle geladen.</div>
+                  <div class="historyactions"><button type="button" class="secondary smallbtn" id="playSourceB">▶ B anhören</button><button type="button" class="secondary smallbtn" id="stopSourceB">⏹ Stop</button></div>
+                </div>
+              </div>
+              <div class="toolbar" style="margin-top:12px"><button type="button" class="secondary" id="aiCompareBtn">Mit KI vergleichen</button></div>
+              <div id="aiCompareResult" class="resultcard">Noch kein KI-Vergleich.</div>
+              <label for="synthesisPrompt">Syntheseauftrag</label>
+              <textarea id="synthesisPrompt" placeholder="z. B. Übernimm das Hauptmotiv aus A und das Begleitmuster aus B. Entwickle daraus ein eigenständiges 32-taktiges Stück."></textarea>
+              <div class="toolbar"><button type="button" class="secondary" id="suggestSynthesisBtn">KI-Vorschlag erstellen</button><button type="button" class="primary" style="width:auto;margin-top:0" id="useSynthesisBtn">Als Kompositionsauftrag übernehmen</button></div>
+            </div>
+          </details>
+
           <details class="foldbox" id="experimentHistorySection" open>
             <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
             <div class="foldcontent">
@@ -1512,7 +1510,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=9").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=10").catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
@@ -1857,6 +1855,45 @@ window.addEventListener("load", () => {
     if(Object.prototype.hasOwnProperty.call(state, el.id)) el.open = !!state[el.id];
     el.addEventListener("toggle", save);
   });
+})();
+</script>
+
+
+<script id="comparison-synthesis-v8">
+(()=>{
+  const $c=id=>document.getElementById(id);
+  const src={A:null,B:null};
+  const names={A:"",B:""};
+  function normalHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_ID)||"[]")}catch(_){return[]}}
+  function expHistory(){try{return JSON.parse(localStorage.getItem("composition_lab_experiment_history_v1")||"[]")}catch(_){return[]}}
+  function fill(){
+    ["A","B"].forEach(w=>{const sel=$c("source"+w+"Select");if(!sel)return;const old=sel.value;sel.innerHTML='<option value="">Quelle wählen …</option>';
+      normalHistory().forEach((it,i)=>{const o=document.createElement("option");o.value="h:"+i;o.textContent="Komposition · "+(it.title||it.score?.ti||"Ohne Titel");sel.appendChild(o)});
+      expHistory().forEach((it,i)=>{const o=document.createElement("option");o.value="e:"+i;o.textContent="Vorlage · "+(it.title||it.score?.ti||"Vorlage");sel.appendChild(o)});
+      if([...sel.options].some(o=>o.value===old))sel.value=old;
+    });
+  }
+  function card(w){const b=$c("source"+w+"Card"),x=src[w];if(!b)return;if(!x){b.textContent="Noch keine Quelle geladen.";return;}const n=(x.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);b.innerHTML=`<strong>${esc(names[w]||x.ti||("Quelle "+w))}</strong><div class="historymeta">${esc(x.bpm||"")} BPM · ${esc(x.k||"")} · ${x.tr?.length||0} Spur(en) · ${n} Noten</div>${x.sm?`<div style="margin-top:6px;font-size:12px;color:var(--muted);">${esc(String(x.sm)).slice(0,300)}</div>`:""}`}
+  function choose(w,v){if(!v)return;const [kind,ix]=v.split(":");const it=(kind==="h"?normalHistory():expHistory())[Number(ix)];if(!it?.score)return;src[w]=JSON.parse(JSON.stringify(it.score));names[w]=it.title||it.score.ti||("Quelle "+w);card(w)}
+  async function file(w,f){if(!f)return;try{src[w]=f.name.toLowerCase().endsWith(".json")?JSON.parse(await f.text()):parseUploadedMidi(await f.arrayBuffer());names[w]=f.name;card(w)}catch(e){$c("source"+w+"Card").innerHTML=`<span class="err">${esc(e.message)}</span>`}}
+  async function compare(makePrompt=false){
+    if(!src.A||!src.B)throw new Error("Bitte zuerst Quelle A und Quelle B laden.");
+    const provider=$c("provider").value,model=$c("model").value,key=$c("apiKey").value.trim();if(!key)throw new Error("API-Key fehlt.");
+    const task=makePrompt?"Erstelle aus der Analyse einen konkreten, editierbaren Kompositionsauftrag. Benenne ausdrücklich, welche musikalischen Merkmale aus Quelle A und welche aus Quelle B übernommen, kombiniert oder weiterentwickelt werden sollen. Das Ergebnis soll ein eigenständiges neues Stück C ermöglichen.":"Vergleiche beide musikalischen Quellen präzise. Untersuche Motivik, Rhythmik, Harmonik, Begleitmuster, Form, Satztechnik, Instrumentation, Artikulation, Dynamik und Charakter. Benenne besonders brauchbare Merkmale beider Quellen und sinnvolle Möglichkeiten ihrer Kombination. Keine bloße Siegerwertung.";
+    const text=`${task}
+
+QUELLE A – ${names.A}:
+${JSON.stringify(src.A)}
+
+QUELLE B – ${names.B}:
+${JSON.stringify(src.B)}`;
+    const r=await callLLM(provider,model,key,SYSTEM_PREFIX,text,false);return r.text;
+  }
+  ["A","B"].forEach(w=>{const sel=$c("source"+w+"Select"),fi=$c("source"+w+"File");if(sel)sel.onchange=()=>choose(w,sel.value);if(fi)fi.onchange=e=>file(w,e.target.files?.[0]);const pb=$c("playSource"+w);if(pb)pb.onclick=()=>{if(src[w])playGMScore(src[w],0).catch(()=>{})};const sb=$c("stopSource"+w);if(sb)sb.onclick=()=>stopGM();});
+  if($c("aiCompareBtn"))$c("aiCompareBtn").onclick=async()=>{const b=$c("aiCompareResult");try{b.textContent="KI analysiert A und B …";b.textContent=await compare(false)}catch(e){b.innerHTML=`<span class="err">${esc(e.message)}</span>`}};
+  if($c("suggestSynthesisBtn"))$c("suggestSynthesisBtn").onclick=async()=>{try{$c("synthesisPrompt").value="KI erstellt Syntheseauftrag …";$c("synthesisPrompt").value=await compare(true)}catch(e){$c("synthesisPrompt").value="";$c("aiCompareResult").innerHTML=`<span class="err">${esc(e.message)}</span>`}};
+  if($c("useSynthesisBtn"))$c("useSynthesisBtn").onclick=()=>{if(!src.A||!src.B){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst A und B laden.</span>';return}const t=$c("synthesisPrompt").value.trim();if(!t){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst einen Syntheseauftrag formulieren.</span>';return}$c("prompt").value=t;window.comparisonSynthesisSources={a:JSON.parse(JSON.stringify(src.A)),b:JSON.parse(JSON.stringify(src.B)),nameA:names.A,nameB:names.B};saveCurrentState();$c("status").innerHTML='<span class="ok">Syntheseauftrag übernommen. Quelle A und B werden beim nächsten Komponieren gemeinsam an die KI übergeben.</span>';window.scrollTo({top:0,behavior:"smooth"})};
+  fill();window.compositionLabRefreshComparisonSources=fill;
 })();
 </script>
 
