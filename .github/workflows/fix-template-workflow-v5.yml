@@ -24,9 +24,10 @@ jobs:
       - run: python tools/backup_restore_v18.py
       - run: python tools/fix_import_analysis_v19.py
       - run: python tools/fix_import_analysis_v20.py
+      - run: python tools/free_comparison_chat_v20.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Make imported MIDI analysis robust"
+          git diff --cached --quiet || git commit -m "Simplify comparison area to free AI chat"
           git push origin HEAD:composition-lab-v2
