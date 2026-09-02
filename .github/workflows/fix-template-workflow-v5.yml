@@ -12,7 +12,6 @@ jobs:
           ref: composition-lab-v2
       - run: python tools/fix_template_workflow_v5.py
       - run: python tools/comparison_synthesis_lab_v8.py
-      - run: python tools/imported_midi_player_analysis_v9.py
       - run: python tools/safe_import_playback_v10.py
       - run: |
           git config user.name "Composition Lab Bot"
