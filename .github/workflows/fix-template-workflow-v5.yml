@@ -14,7 +14,6 @@ jobs:
       - run: python tools/comparison_synthesis_lab_v8.py
       - run: python tools/safe_import_playback_v10.py
       - run: python tools/import_playback_v11.py
-      - run: python tools/fix_memory_init_v11.py
       - run: python tools/localstorage_recovery_v12.py
       - run: python tools/compact_interactive_analysis_v12.py
       - run: |
