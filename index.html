@@ -140,9 +140,16 @@
           <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
           <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
           <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
-          <button type="button" class="secondary" id="randomToTemplateBtn" disabled>↗ Zufall als Vorlage</button>
+          <button type="button" class="secondary" id="randomToTemplateBtn">↗ Zufall als Vorlage</button>
         </div>
         <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
+        <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
+          <strong id="randomTemplateName" style="flex:1 1 100%;">Zufallsvorlage</strong>
+          <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Vorlage anhören</button>
+          <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 Vorlage speichern</button>
+          <button type="button" class="secondary smallbtn" id="templateUseBtn">🤖 Als Vorlage verwenden</button>
+          <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neu würfeln</button>
+        </div>
       </div>
     </details>
 
@@ -166,6 +173,7 @@
       <button class="secondary" id="playBtn" type="button">▶ Abspielen</button>
       <button class="secondary" id="pauseBtn" type="button">⏸ Pause</button>
       <button class="secondary" id="stopBtn" type="button">⏹ Stop</button>
+      <button class="secondary" id="loopBtn" type="button">🔁 Loop: Aus</button>
       <label for="playerVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
         <input id="playerVolume" type="range" min="0" max="100" value="75">
       </label>
@@ -949,6 +957,7 @@ let playerMasterGain = null;
 let playerInstrumentCache = new Map();
 let playerPaused = false;
 let playerPlaying = false;
+let playerLoopEnabled = false;
 let playerEndTimer = null;
 
 function gmProgramName(pg){
@@ -1061,8 +1070,16 @@ async function playGMScore(score){
   const totalMs = Math.max(250, (scoreMaxBeat(score) * secPerBeat + 0.6) * 1000);
   playerEndTimer = setTimeout(() => {
     if(playerPlaying && !playerPaused){
-      playerPlaying = false;
-      $("playerStatus").textContent = "Wiedergabe beendet.";
+      if(playerLoopEnabled){
+        const loopScore = score;
+        stopGMPlayback(false);
+        playGMScore(loopScore).catch(err => {
+          $("playerStatus").textContent = "Player-Fehler: " + err.message;
+        });
+      } else {
+        stopGMPlayback(false);
+        $("playerStatus").textContent = "Wiedergabe beendet.";
+      }
     }
   }, totalMs);
 }
@@ -1090,6 +1107,11 @@ $("playBtn").addEventListener("click", async () => {
 });
 $("pauseBtn").addEventListener("click", () => toggleGMPause().catch(err => $("playerStatus").textContent = "Player-Fehler: " + err.message));
 $("stopBtn").addEventListener("click", () => stopGMPlayback(true));
+$("loopBtn").addEventListener("click", () => {
+  playerLoopEnabled = !playerLoopEnabled;
+  $("loopBtn").textContent = playerLoopEnabled ? "🔁 Loop: Ein" : "🔁 Loop: Aus";
+  $("playerStatus").textContent = playerLoopEnabled ? "Loop eingeschaltet." : "Loop ausgeschaltet.";
+});
 $("playerVolume").addEventListener("input", e => {
   if(playerMasterGain) playerMasterGain.gain.value = Math.max(0, Math.min(1, Number(e.target.value)/100));
 });
@@ -1521,6 +1543,66 @@ window.addEventListener("load", () => {
 
   const info=$("experimentInfo");
   if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ würfelt musikalisch plausible Eckdaten und trägt sie sichtbar in die Felder ein. „Zufall mit Eckdaten“ behält deine eingetragenen Werte bei.';
+})();
+</script>
+
+<script id="v23-template-controls">
+(() => {
+  let randomTemplateScore = null;
+  let randomTemplateFileName = "";
+
+  const titles = [
+    "Leiser Bogen","Offener Kreis","Verborgener Puls","Heller Umweg",
+    "Dunkler Faden","Schwebende Frage","Späte Wendung","Nebelspur",
+    "Kleine Irritation","Ruhiger Gegenstrom","Flüchtige Antwort","Unbekannter Weg"
+  ];
+
+  function safeFileName(text){
+    return String(text||"Vorlage")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-zA-Z0-9_-]+/g,"_").replace(/^_+|_+$/g,"");
+  }
+
+  function createTemplate(){
+    const score = randomScore(true);
+    const title = pick(titles);
+    score.ti = title;
+    score.sm = `Zufallsvorlage „${title}“ · ${$("ensemble").value} · ${$("meter").value} · ${$("tempo").value} BPM · ${$("musicalKey").value}`;
+    randomTemplateScore = score;
+    const measures = $("measures").value || "";
+    const meter = String($("meter").value||"").replace("/","-");
+    const bpm = $("tempo").value || score.bpm;
+    randomTemplateFileName = `${safeFileName(title)}_${measures}T_${meter}_${bpm}BPM.mid`;
+    $("randomTemplateName").textContent = `${title} · ${$("ensemble").value} · ${measures} Takte · ${$("meter").value} · ${bpm} BPM`;
+    $("randomTemplateBox").style.display = "flex";
+    $("experimentInfo").textContent = "Zufallsvorlage erzeugt. Du kannst sie anhören, als MIDI speichern, neu würfeln oder erst dann als KI-Vorlage aktivieren.";
+    $("status").innerHTML = '<span class="ok">Zufallsvorlage „' + esc(title) + '“ erzeugt.</span>';
+  }
+
+  function useTemplate(){
+    if(!randomTemplateScore) return;
+    uploadedScore = JSON.parse(JSON.stringify(randomTemplateScore));
+    uploadedName = randomTemplateFileName || `${randomTemplateScore.ti}.mid`;
+    const count=(uploadedScore.tr||[]).reduce((sum,t)=>sum+(t.nt?.length||0),0);
+    $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten)`;
+    $("status").innerHTML='<span class="ok">Zufallsvorlage aktiviert. Die nächste KI-Komposition verwendet genau dieses Material.</span>';
+  }
+
+  $("randomToTemplateBtn").onclick = createTemplate;
+  $("templateRerollBtn").onclick = createTemplate;
+  $("templatePlayBtn").onclick = async () => {
+    if(!randomTemplateScore) return;
+    try { await playGMScore(randomTemplateScore); }
+    catch(err){ $("playerStatus").textContent = "Player-Fehler: " + err.message; }
+  };
+  $("templateSaveBtn").onclick = () => {
+    if(!randomTemplateScore) return;
+    downloadBlob(buildMidi(randomTemplateScore), randomTemplateFileName || "Zufallsvorlage.mid", "audio/midi");
+  };
+  $("templateUseBtn").onclick = useTemplate;
+
+  const info=$("experimentInfo");
+  if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ würfelt plausible Eckdaten. „Zufall mit Eckdaten“ behält deine Werte. „Zufall als Vorlage“ erzeugt hör- und speicherbares MIDI-Ausgangsmaterial.';
 })();
 </script>
 
