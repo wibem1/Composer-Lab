@@ -17,9 +17,10 @@ jobs:
       - run: python tools/localstorage_recovery_v12.py
       - run: python tools/compact_interactive_analysis_v12.py
       - run: python tools/comparison_players_green_status_v13.py
+      - run: python tools/compact_comparison_analysis_v14.py
       - run: |
           git config user.name "Composition Lab Bot"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || git commit -m "Add full comparison players and green status messages"
+          git diff --cached --quiet || git commit -m "Shorten comparison analysis"
           git push origin HEAD:composition-lab-v2
