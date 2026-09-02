@@ -36,13 +36,11 @@ direct_new='    mainPlayerScore = uploadedScore;\n    lastScore = uploadedScore;
 if direct_old in s:
     s=s.replace(direct_old,direct_new,1)
 
-# History template handoff: same semantics.
 hist_old='applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;if($("mainPlayerTitle"))'
 hist_new='applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;lastScore=uploadedScore;lastMidiBytes=buildMidi(uploadedScore);if($("mainPlayerTitle"))'
 if hist_old in s:
     s=s.replace(hist_old,hist_new,1)
 
-# Main player and seek always prefer the active template/composition source.
 s=s.replace('playGMScore(mainPlayerScore || lastScore || uploadedScore)','playGMScore(mainPlayerScore || uploadedScore || lastScore)')
 s=s.replace('bindSeek("playerSeek",()=>mainPlayerScore || lastScore || uploadedScore);','bindSeek("playerSeek",()=>mainPlayerScore || uploadedScore || lastScore);')
 
@@ -67,7 +65,6 @@ if 'id="labStyle"' not in s:
           <div class="labbuttons">'''
     if marker in s: s=s.replace(marker,repl,1)
 
-# Persist new lab fields in the normal app state.
 old='''      prompt: $("prompt").value,
       templateLength: $("templateLength").value
 '''
@@ -104,9 +101,11 @@ new='''      const bpm = Math.max(20, Math.min(300, parseInt($("labTempo")?.valu
 '''
 if old in s: s=s.replace(old,new,1)
 
-old='''Eckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Taktart: ${meter}\n- Tempo: ${bpm} BPM\n- Tonart: ${key}\n- Zufälliger kompositorischer Impuls: ${seed}'''
-new='''Eckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Tempo: ${bpm} BPM (verbindlich)\n- Charakter / Stil: ${style}\n- Taktart und Tonart: von dir frei passend zur musikalischen Idee zu wählen\n- Zufälliger kompositorischer Impuls: ${seed}'''
-if old in s: s=s.replace(old,new,1)
+# Exact escaped-JS prompt replacement. Tonart/Taktart must be chosen by the AI.
+s=s.replace(
+    '- Länge: ${measures} Takte\\n- Taktart: ${meter}\\n- Tempo: ${bpm} BPM\\n- Tonart: ${key}\\n- Zufälliger kompositorischer Impuls: ${seed}',
+    '- Länge: ${measures} Takte\\n- Tempo: ${bpm} BPM (verbindlich)\\n- Charakter / Stil: ${style}\\n- Taktart und Tonart: von dir frei passend zur musikalischen Idee zu wählen\\n- Zufälliger kompositorischer Impuls: ${seed}'
+)
 
 old='''      score.bpm = Number(score.bpm) || bpm;
       score.k = score.k || key;
@@ -132,7 +131,6 @@ new='''          ensemble, style, idea: score.sm || seed, measures, meter: `${sc
 '''
 if old in s: s=s.replace(old,new,1)
 
-# Carry the style into direct handoff metadata too.
 old='''        ensemble: $("labEnsemble")?.value.trim() || "",
         idea: uploadedScore.sm || ""
 '''
@@ -142,7 +140,6 @@ new='''        ensemble: $("labEnsemble")?.value.trim() || "",
 '''
 if old in s: s=s.replace(old,new,1)
 
-# Lab preference helper also remembers tempo/style.
 old='''  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;}catch(_){}
   function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
   if($("labEnsemble"))$("labEnsemble").addEventListener("input",saveLabPrefs);
@@ -153,12 +150,10 @@ new='''  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$(
 '''
 if old in s: s=s.replace(old,new,1)
 
-# Show style in the independent template history.
 old='''const idea=m.idea||it.score?.sm||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}</div>'''
 new='''const idea=m.idea||it.score?.sm||"";const style=m.style||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}${style?" · "+esc(style):""}</div>'''
 if old in s: s=s.replace(old,new,1)
 
-# Give the installed app a fresh service-worker URL so it checks the update.
 s=s.replace('navigator.serviceWorker.register("./service-worker.js?v=8")','navigator.serviceWorker.register("./service-worker.js?v=9")')
 s=s.replace('navigator.serviceWorker.register("./service-worker.js")','navigator.serviceWorker.register("./service-worker.js?v=9")')
 
