@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=47;
+const INTERFACE_BUILD=48;
 const CHAT_KEY='composition_lab_midi_chat_v1';
 function installBuildDisplayGuard(){
   if(document.getElementById('compositionLabBuildDisplayGuard'))return;
@@ -15,9 +15,9 @@ function showAuthoritativeBuild(){
   if(tech){
     let d=document.getElementById('sharedEngineBadge');
     if(!d){d=document.createElement('div');d.id='sharedEngineBadge';d.className='uploadinfo';d.style.marginTop='12px';tech.appendChild(d)}
-    d.innerHTML=`<strong>Engine Build ${E?.BUILD||9}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`;
+    d.innerHTML=`<strong>Engine Build ${E?.BUILD||13}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`;
   }
-  window.__compositionLabBuilds={engine:E?.BUILD||9,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+  window.__compositionLabBuilds={engine:E?.BUILD||13,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
 }
 installBuildDisplayGuard();
 function install(){
@@ -29,6 +29,12 @@ function install(){
   function currentSourceName(){try{return (typeof uploadedName!=='undefined'&&uploadedName)||uploadedScore?.ti||'MIDI-Datei'}catch(_){return'MIDI-Datei'}}
   function lastUserChatMessage(){try{const x=JSON.parse(localStorage.getItem(CHAT_KEY)||'null');if(!x||!Array.isArray(x.messages))return'';if(x.sourceName&&x.sourceName!==currentSourceName())return'';for(let i=x.messages.length-1;i>=0;i--){if(x.messages[i]?.role==='user'&&String(x.messages[i].text||'').trim())return String(x.messages[i].text).trim()}return''}catch(_){return''}}
   function sourceInstruction(){return $('sourceChatInput')?.value?.trim()||lastUserChatMessage()||''}
+  function esc(s){return String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}
+  function showConcept(text,provider,conceptOnly=false){
+    if(typeof lastConcept!=='undefined')lastConcept=text||'';
+    if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} ${conceptOnly?'Musikalischer Entwurf':'Konzept'} · Engine Build ${E.BUILD}:</strong><br>${esc(text)}`;
+    if($('status')&&!conceptOnly)$('status').innerHTML=`<span class="ok">Musikalischer Impuls fertig · Engine Build ${E.BUILD} komponiert jetzt …</span>`;
+  }
   function toArrayScore(score){const s=JSON.parse(JSON.stringify(score||{}));s.tr=Array.isArray(s.tr)?s.tr.map((t,i)=>({nm:t.nm||`Spur ${i+1}`,ch:Number(t.ch??i)%16,pg:Number(t.pg)||0,nt:(Array.isArray(t.nt)?t.nt:[]).map(n=>Array.isArray(n)?n:[Number(n.t)||0,Math.max(.03,Number(n.d)||.25),Number(n.p),Math.max(1,Math.min(127,Number(n.v)||88)),Number(n.st)||0,Number(n.g)||.95]).filter(n=>Number.isFinite(Number(n[2]))),ct:Array.isArray(t.ct)?t.ct:[]})):[];return s}
   function attachDiagnostic(r,score){window.__compositionLabLastSharedDiagnostic=r.diagnostic;const d=window.__compositionLabDiagnosticsV2?.active;if(d){d.engineVersion=r.engineVersion;d.engineBuild=E.BUILD;d.interfaceBuild=INTERFACE_BUILD;d.interface='Android/WebApp';d.sharedEngine=r.diagnostic;d.calls=r.conceptOnly?[{index:1,kind:'concept-only',systemPrompt:r.diagnostic.systemPrompt,userPrompt:r.diagnostic.conceptPrompt,response:r.diagnostic.conceptResponse}]:[{index:1,kind:'concept',systemPrompt:r.diagnostic.conceptSystemPrompt||r.diagnostic.systemPrompt,userPrompt:r.diagnostic.conceptPrompt,response:r.diagnostic.conceptResponse},{index:2,kind:'composition',systemPrompt:r.diagnostic.systemPrompt,userPrompt:r.diagnostic.compositionPrompt,response:r.diagnostic.scoreResponse}];d.result=score||null;d.updatedAt=new Date().toISOString();}}
   btn.onclick=async()=>{
@@ -40,9 +46,8 @@ function install(){
     if($('status'))$('status').innerHTML=`<span class="ok">Engine Build ${E.BUILD} entwickelt musikalischen Impuls …</span>`;
     try{
       const source=typeof uploadedScore!=='undefined'?uploadedScore:null;
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:currentSourceName(),sourceInstruction:instruction});
-      if(typeof lastConcept!=='undefined')lastConcept=r.concept||'';
-      if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} ${r.conceptOnly?'Musikalischer Entwurf':'Konzept'} · Engine Build ${E.BUILD}:</strong><br>${String(r.concept||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`;
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:currentSourceName(),sourceInstruction:instruction,onConcept:({concept,conceptOnly})=>{showConcept(concept,provider,conceptOnly)}});
+      showConcept(r.concept||'',provider,r.conceptOnly);
       if(r.conceptOnly){attachDiagnostic(r,null);if($('status'))$('status').innerHTML=`<span class="ok">Musikalischer Entwurf erstellt · keine MIDI-Komposition erzeugt · Engine Build ${E.BUILD}</span>`;return;}
       const score=toArrayScore(r.score);
       if(typeof lastScore!=='undefined')lastScore=score;if(typeof mainPlayerScore!=='undefined')mainPlayerScore=score;if(typeof lastProvider!=='undefined')lastProvider=provider;if(typeof lastModel!=='undefined')lastModel=model;
