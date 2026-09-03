@@ -85,7 +85,14 @@ function installChat(){
   if(clear&&!clear.dataset.boundV47){clear.dataset.boundV47='1';clear.onclick=()=>{saveChat({sourceName:sourceName(),messages:[]});renderChat();input.value=''}}
   return true;
 }
-function installAll(){configureApiKeyField();arrangeSaveButtons();const a=arrangeLabs(),b=installChat();bindFoldPersistence();restoreStates();showTemplatePlayer();rerenderSharedHistory();window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),engine:window.CompositionLabEngine?.BUILD||9,interface:INTERFACE_BUILD,platform:'Android/WebApp'};return !!(a&&b)}
+function installAll(){
+  configureApiKeyField();arrangeSaveButtons();
+  const a=arrangeLabs(),b=installChat();
+  bindFoldPersistence();restoreStates();showTemplatePlayer();rerenderSharedHistory();
+  window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),engine:window.CompositionLabEngine?.BUILD||9,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+  window.dispatchEvent(new CustomEvent('compositionlab-interface-ready',{detail:{interface:'Android/WebApp',build:INTERFACE_BUILD}}));
+  return !!(a&&b);
+}
 let n=0;const t=setInterval(()=>{try{if(installAll()){clearInterval(t);setTimeout(installAll,500)}}catch(_){}if(++n>250)clearInterval(t)},80);
 $('uploadInput')?.addEventListener('change',()=>setTimeout(renderChat,250));
 $('clearUploadBtn')?.addEventListener('click',()=>setTimeout(renderChat,100));
