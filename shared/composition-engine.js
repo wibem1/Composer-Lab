@@ -1,12 +1,13 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.2';
-const BUILD=6;
+const VERSION='shared-engine-1.3';
+const BUILD=7;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const DISCUSSION_SYSTEM=`Du bist ein musikalischer Analyse- und Kompositionspartner. Der Nutzer hat eine MIDI-Datei geladen und führt darüber ein fortlaufendes Gespräch mit dir.
 Beziehe dich auf die konkrete MIDI-Datei und auf den gesamten bisherigen Gesprächsverlauf. Widersprich früheren eigenen Aussagen nicht stillschweigend: Wenn du deine Einschätzung änderst, benenne ausdrücklich, was du korrigierst und warum.
 Trenne beobachtbare Befunde von ästhetischer Wertung. Behaupte keine musikalischen Eigenschaften, die sich aus MIDI-Daten oder Gesprächskontext nicht begründen lassen. Titel, Gattungsbezeichnung und Stilwunsch sind kein Qualitätsbeweis.
+Antworte knapp und direkt. Normalerweise reichen 3 bis 6 Sätze bzw. höchstens etwa 120 Wörter. Vermeide lange Einleitungen, unnötige Überschriften, Wiederholungen und ausufernde Aufzählungen. Werde nur ausführlicher, wenn der Nutzer ausdrücklich eine ausführliche Analyse verlangt.
 Hier wird noch keine Partitur verändert; es geht um Analyse, Kritik, Planung, Erklärung und musikalische Diskussion.`;
 const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
 - "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
