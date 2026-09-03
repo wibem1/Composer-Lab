@@ -1,12 +1,16 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=39;
+const INTERFACE_BUILD=40;
+const CHAT_KEY='composition_lab_midi_chat_v1';
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
   if(!E||!btn)return false;
   if(btn.dataset.sharedEngine==='1')return true;
   btn.dataset.sharedEngine='1';
   const $=id=>document.getElementById(id);
+  function currentSourceName(){try{return (typeof uploadedName!=='undefined'&&uploadedName)||uploadedScore?.ti||'MIDI-Datei'}catch(_){return'MIDI-Datei'}}
+  function lastUserChatMessage(){try{const x=JSON.parse(localStorage.getItem(CHAT_KEY)||'null');if(!x||!Array.isArray(x.messages))return'';if(x.sourceName&&x.sourceName!==currentSourceName())return'';for(let i=x.messages.length-1;i>=0;i--){if(x.messages[i]?.role==='user'&&String(x.messages[i]?.text||'').trim())return String(x.messages[i].text).trim()}return''}catch(_){return''}}
+  function sourceInstruction(){return $('sourceChatInput')?.value?.trim()||lastUserChatMessage()||''}
   function toArrayScore(score){
     const s=JSON.parse(JSON.stringify(score||{}));
     s.tr=Array.isArray(s.tr)?s.tr.map((t,i)=>({nm:t.nm||`Spur ${i+1}`,ch:Number(t.ch??i)%16,pg:Number(t.pg)||0,nt:(Array.isArray(t.nt)?t.nt:[]).map(n=>Array.isArray(n)?n:[Number(n.t)||0,Math.max(.03,Number(n.d)||.25),Number(n.p),Math.max(1,Math.min(127,Number(n.v)||88)),Number(n.st)||0,Number(n.g)||.95]).filter(n=>Number.isFinite(Number(n[2]))),ct:Array.isArray(t.ct)?t.ct:[]})):[];
@@ -20,12 +24,12 @@ function install(){
   btn.onclick=async()=>{
     try{saveCurrentState?.()}catch(_){}
     const provider=$('provider')?.value||'openai',model=$('model')?.value?.trim()||'',apiKey=$('apiKey')?.value?.trim()||'',reasoning=$('reasoningEffort')?.value||'medium';
-    const sourceInstruction=$('sourceInstruction')?.value?.trim()||'';
-    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||'',sourceInstruction};
+    const instruction=sourceInstruction();
+    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||'',sourceInstruction:instruction};
     btn.disabled=true;if($('status'))$('status').innerHTML=`<span class="ok">Engine Build ${E.BUILD} entwickelt musikalischen Impuls …</span>`;
     try{
       const source=typeof uploadedScore!=='undefined'?uploadedScore:null;
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:typeof uploadedName!=='undefined'?uploadedName:'',sourceInstruction});
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:currentSourceName(),sourceInstruction:instruction});
       const score=toArrayScore(r.score);
       if(typeof lastConcept!=='undefined')lastConcept=r.concept||'';
       if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} Konzept · Engine Build ${E.BUILD}:</strong><br>${String(r.concept||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`;
@@ -51,5 +55,5 @@ let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
 const fresh=Date.now();
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v39.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v40.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
 })();
