@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.7';
-const BUILD=11;
+const VERSION='shared-engine-1.8';
+const BUILD=12;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const CONCEPT_SYSTEM=`Du bist Kompositionspartner. Formuliere ausschließlich einen kurzen musikalischen Entwurf in normalem Text. Antworte prägnant in 2 bis 4 Sätzen. Beschreibe nur den musikalischen Kern und eine mögliche Entwicklungsrichtung. Keine JSON-Daten, keine Notenlisten, keine Codeblöcke, keine vollständige Partitur und keine langen Gliederungen.`;
@@ -26,6 +26,30 @@ const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
   ]
 }
 nt-Array: [StartBeat, Dauer, Pitch, Velocity, Staff, Gate] (Gate optional, Standard 0.95).
+ct-Array: [Beat, CC, Wert].
+Gib ausschließlich valides JSON aus.`;
+const LEGACY_TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
+- "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
+- "g" = Gate/Klingdauer als Faktor (z.B. 0.95 = normal, 0.5 = staccato, 1.05 = legato).
+- "st" = System (0=Standard, 1=Rechte Hand / oberes System, 2=Linke Hand / unteres System).
+- Format: JSON mit folgender Struktur:
+{
+  "ti": "Titel",
+  "bpm": 96,
+  "ts": {"n": 4, "d": 4},
+  "k": "e minor",
+  "sm": "Kurze Zusammenfassung",
+  "tr": [
+    {
+      "nm": "Piano",
+      "ch": 0,
+      "pg": 0,
+      "nt": [[0.0, 1.0, 60, 80, 1]],
+      "ct": [[0.0, 64, 0]]
+    }
+  ]
+}
+nt-Array: [StartBeat, Dauer, Pitch, Velocity, Staff, Gate] (Gate ist optional, Standard 0.95).
 ct-Array: [Beat, CC, Wert].
 Gib ausschließlich valides JSON aus.`;
 function extractJSON(str){str=String(str??'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const s=str.indexOf('{'),e=str.lastIndexOf('}');if(s<0||e<s)throw new Error('Kein valides JSON in Modellantwort gefunden.');return JSON.parse(str.slice(s,e+1))}
@@ -86,12 +110,13 @@ async function compose(req){
   const a=usesSource?currentAssignment:legacyAssignment(req);
   const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;
   const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false,maxOutputTokens:32000});
-  const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
+  const scorePrompt=usesSource?TECHNICAL_PROMPT:LEGACY_TECHNICAL_PROMPT;
+  const compUser=`${scorePrompt}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
   const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});
   const score=extractJSON(scoreRes.text);
-  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:SYSTEM_PREFIX,assignment:a,assignmentMode:usesSource?'source-aware':'legacy-universal-studio',sourceInstruction,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
+  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:SYSTEM_PREFIX,assignment:a,assignmentMode:usesSource?'source-aware':'legacy-universal-studio',technicalPromptMode:usesSource?'current':'legacy-universal-studio',sourceInstruction,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
 }
-window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,CONCEPT_SYSTEM,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment,legacyAssignment,wantsConceptOnly};
+window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,CONCEPT_SYSTEM,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,LEGACY_TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment,legacyAssignment,wantsConceptOnly};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
 if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const fresh=Date.now();const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?fresh='+fresh;s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
 })();
