@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const DIAG_VERSION=2, ASSET_VERSION='20260903-16';
+const DIAG_VERSION=2, ASSET_VERSION='20260903-17';
 if(!document.getElementById('composeBtn')){
   let tries=0;
   const timer=setInterval(()=>{
@@ -39,8 +39,8 @@ function getModel(){try{return val('pageModel','model')||(typeof state!=='undefi
 function settings(){return{provider:getProvider(),model:getModel(),reasoning:val('reasoningStrength','reasoningEffort'),measures:val('length','measures'),meter:val('meter'),tempo:val('tempo'),key:val('keySig','musicalKey'),ensemble:val('ensemble'),compositionIdea:val('compIdea'),compositionTask:val('compTask'),freePrompt:val('prompt'),sourceName:val('sourceName'),templateLength:val('templateLength'),ui:{href:location.href,userAgent:navigator.userAgent,platform:navigator.platform||'',language:navigator.language||'',online:navigator.onLine,androidBridge:!!window.AndroidBridge}}}
 function currentScore(){try{if(typeof lastScore!=='undefined'&&lastScore)return clean(lastScore)}catch(e){}try{if(typeof state!=='undefined'&&state.current)return clean(state.current)}catch(e){}try{if(typeof mainPlayerScore!=='undefined'&&mainPlayerScore)return clean(mainPlayerScore)}catch(e){}return null}
 function buildLabel(){return $('ipadBuild')?.textContent||document.querySelector('.ipad-build')?.textContent||null}
-function begin(){const d={format:'composition-lab-diagnostic',diagnosticVersion:DIAG_VERSION,diagnosticsAsset:ASSET_VERSION,uiMode:mode,build:buildLabel(),startedAt:new Date().toISOString(),settings:settings(),calls:[],result:null,error:null};store.active=d;store.last=d;updateUi();setTimeout(snapshot,300);setTimeout(snapshot,1200)}
-function snapshot(){if(!store.active)return;const s=currentScore();if(s)store.active.result=s;store.active.updatedAt=new Date().toISOString();updateUi()}
+function begin(){const b=window.__compositionLabBuilds||{};const d={format:'composition-lab-diagnostic',diagnosticVersion:DIAG_VERSION,diagnosticsAsset:ASSET_VERSION,uiMode:mode,build:buildLabel(),engineBuild:b.engine||window.CompositionLabEngine?.BUILD||null,interfaceBuild:b.interface||null,interface:b.platform||null,startedAt:new Date().toISOString(),settings:settings(),calls:[],result:null,error:null};store.active=d;store.last=d;updateUi();setTimeout(snapshot,300);setTimeout(snapshot,1200)}
+function snapshot(){if(!store.active)return;const s=currentScore();if(s)store.active.result=s;const b=window.__compositionLabBuilds||{};store.active.engineBuild=b.engine||window.CompositionLabEngine?.BUILD||store.active.engineBuild||null;store.active.interfaceBuild=b.interface||store.active.interfaceBuild||null;store.active.interface=b.platform||store.active.interface||null;store.active.updatedAt=new Date().toISOString();updateUi()}
 function callMeta(args){if(args.length>=5)return{provider:args[0],model:args[1],systemPrompt:args[3],userPrompt:args[4],wantJson:!!args[5]};return{provider:getProvider(),model:getModel(),systemPrompt:args[0],userPrompt:args[1],wantJson:null}}
 try{const baseCallLLM=callLLM;callLLM=async function(...args){const active=store.active;const rec=active?{index:active.calls.length+1,startedAt:new Date().toISOString(),...callMeta(args),response:null,error:null}:null;if(rec)active.calls.push(rec);try{const out=await baseCallLLM.apply(this,args);if(rec){rec.response=typeof out==='string'?out:clean(out);rec.completedAt=new Date().toISOString()}setTimeout(snapshot,0);setTimeout(snapshot,250);setTimeout(snapshot,800);return out}catch(e){if(rec){rec.error=String(e?.message||e);rec.completedAt=new Date().toISOString();active.error=rec.error}updateUi();throw e}}}catch(e){console.warn('Composition Lab diagnostics: callLLM konnte nicht protokolliert werden',e)}
 function filename(){const t=new Date().toISOString().replace(/[:.]/g,'-');return`Composition-Lab-Diagnose-${mode}-${t}.json`}
@@ -55,5 +55,5 @@ installUi();const compose=$('composeBtn');if(compose&&!compose.dataset.diagnosti
 'use strict';
 if(window.__compositionLabSharedEngineBootstrap)return;window.__compositionLabSharedEngineBootstrap=true;
 const mode=document.getElementById('technicalSection')?'root':'rich';
-const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?v=20260903-2';engine.onload=()=>{const adapter=document.createElement('script');adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?v=20260903-2':'/Composer-Lab/shared/rich-engine-adapter.js?v=20260903-2';(document.head||document.body).appendChild(adapter)};(document.head||document.body).appendChild(engine);
+const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?v=20260903-3';engine.onload=()=>{const adapter=document.createElement('script');adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?v=20260903-3':'/Composer-Lab/shared/rich-engine-adapter.js?v=20260903-3';(document.head||document.body).appendChild(adapter)};(document.head||document.body).appendChild(engine);
 })();
