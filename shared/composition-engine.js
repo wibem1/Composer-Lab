@@ -1,9 +1,13 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.1';
-const BUILD=5;
+const VERSION='shared-engine-1.2';
+const BUILD=6;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
+const DISCUSSION_SYSTEM=`Du bist ein musikalischer Analyse- und Kompositionspartner. Der Nutzer hat eine MIDI-Datei geladen und führt darüber ein fortlaufendes Gespräch mit dir.
+Beziehe dich auf die konkrete MIDI-Datei und auf den gesamten bisherigen Gesprächsverlauf. Widersprich früheren eigenen Aussagen nicht stillschweigend: Wenn du deine Einschätzung änderst, benenne ausdrücklich, was du korrigierst und warum.
+Trenne beobachtbare Befunde von ästhetischer Wertung. Behaupte keine musikalischen Eigenschaften, die sich aus MIDI-Daten oder Gesprächskontext nicht begründen lassen. Titel, Gattungsbezeichnung und Stilwunsch sind kein Qualitätsbeweis.
+Hier wird noch keine Partitur verändert; es geht um Analyse, Kritik, Planung, Erklärung und musikalische Diskussion.`;
 const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
 - "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
 - "g" = Gate/Klingdauer als Faktor (z.B. 0.95 = normal, 0.5 = staccato, 1.05 = legato).
@@ -42,8 +46,20 @@ function assignment(req){
   }
   return text;
 }
+function discussionPrompt(req){
+  const history=Array.isArray(req.history)?req.history:[];
+  const transcript=history.map((m,i)=>`${i+1}. ${m.role==='assistant'?'KI':'NUTZER'}:\n${String(m.text||'')}`).join('\n\n');
+  return `DATEI: ${req.sourceName||req.source?.ti||'MIDI-Datei'}\n\nMIDI-DATEN:\n${JSON.stringify(req.source||{})}\n\nBISHERIGER GESPRÄCHSVERLAUF:\n${transcript||'(noch kein vorheriger Dialog)'}\n\nNEUER BEITRAG DES NUTZERS:\n${String(req.question||'').trim()}\n\nAntworte als Fortsetzung genau dieses Gesprächs.`;
+}
+async function discuss(req){
+  if(!req.source)throw new Error('Bitte zuerst eine MIDI-Datei laden.');
+  if(!String(req.question||'').trim())throw new Error('Bitte zuerst eine Frage oder einen Auftrag eingeben.');
+  const userPrompt=discussionPrompt(req);
+  const r=await callLLM({provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium',systemPrompt:DISCUSSION_SYSTEM,userPrompt,wantJson:false});
+  return{engineVersion:VERSION,engineBuild:BUILD,text:r.text,usage:r.usage,diagnostic:{kind:'midi-discussion',engineBuild:BUILD,systemPrompt:DISCUSSION_SYSTEM,userPrompt,history:Array.isArray(req.history)?req.history:[],question:req.question,response:r.text,sourceName:req.sourceName||'',source:req.source}};
+}
 async function compose(req){const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false});const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});const score=extractJSON(scoreRes.text);return{engineVersion:VERSION,engineBuild:BUILD,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}}}
-window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,TECHNICAL_PROMPT,callLLM,compose,extractJSON,assignment};
+window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
 if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const fresh=Date.now();const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?fresh='+fresh;s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
 })();
