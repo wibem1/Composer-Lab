@@ -246,6 +246,10 @@
           <button type="button" class="secondary smallbtn" id="saveKeyBtn">💾 Jetzt speichern</button>
           <button type="button" class="secondary smallbtn" id="clearApiKeyBtn">🗑 Key löschen</button>
         </div>
+        <div class="toolbar" style="margin-top:12px; margin-bottom:4px;">
+          <button type="button" class="secondary smallbtn" id="diagnosticBtn" disabled>Diagnosedatei herunterladen</button>
+        </div>
+        <div class="uploadinfo" id="diagnosticInfo">Nach einem Kompositionsversuch enthält die Diagnosedatei die tatsächlich verwendeten Prompts, Antworten, Einstellungen und Plattformdaten. Der API-Key wird nicht gespeichert.</div>
       </div>
     </details>
 </main>
@@ -313,6 +317,7 @@ let lastModel = null;
 let uploadedScore = null;
 let uploadedName = "";
 let lastConcept = "";
+let lastDiagnostic = null;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -426,6 +431,7 @@ $("provider").addEventListener("change", (e) => {
   $(id).addEventListener("change", saveCurrentState);
 });
 $("rememberApiKey").addEventListener("change", saveCurrentState);
+$("diagnosticBtn").addEventListener("click", downloadDiagnostic);
 
 $("saveKeyBtn").addEventListener("click", () => {
   saveCurrentState();
@@ -909,6 +915,14 @@ function encodeMTrk(events){
   return [...strB("MTrk"), ...u32(data.length), ...data];
 }
 
+function downloadDiagnostic(){
+  if(!lastDiagnostic) return;
+  const stamp=new Date(lastDiagnostic.startedAt||Date.now()).toISOString().replace(/[:.]/g,"-");
+  const title=lastDiagnostic.result?.score?.ti||lastScore?.ti||"Komposition";
+  const safe=String(title).replace(/[^a-z0-9äöüß_-]+/gi,"_").replace(/^_+|_+$/g,"").slice(0,60)||"Komposition";
+  downloadBlob(JSON.stringify(lastDiagnostic,null,2),`Composition-Lab-Diagnose_${safe}_${stamp}.json`,"application/json");
+}
+
 function downloadBlob(data, name, type){
   if (window.AndroidBridge && window.AndroidBridge.saveBlob) {
     const reader = new FileReader();
@@ -933,25 +947,41 @@ async function compose(){
   $("composeBtn").disabled = true;
   $("status").innerHTML = '<span class="ok">KI entwickelt musikalischen Impuls …</span>';
 
+  lastDiagnostic={
+    format:"composition-lab-diagnostic",diagnosticVersion:1,startedAt:new Date().toISOString(),
+    environment:{href:location.href,origin:location.origin,userAgent:navigator.userAgent,platform:navigator.platform||"",language:navigator.language||"",online:navigator.onLine,androidBridge:!!window.AndroidBridge,storageId:STORAGE_ID,historyId:HISTORY_ID},
+    settings:{provider,model,reasoningEffort:$("reasoningEffort").value,measures:$("measures").value,meter:$("meter").value,tempo:$("tempo").value,musicalKey:$("musicalKey").value,ensemble:$("ensemble").value,freePrompt:$("prompt").value,templateLength:$("templateLength").value,uploadedName:uploadedName||null,uploadedScore:uploadedScore?JSON.parse(JSON.stringify(uploadedScore)):null},
+    prompts:{system:SYSTEM_PREFIX,technical:TECHNICAL_PROMPT},calls:{},result:null,error:null
+  };
+  $("diagnosticBtn").disabled=false;
+  $("diagnosticInfo").textContent="Diagnose für den aktuellen Kompositionsversuch wird aufgezeichnet. API-Key ist ausgeschlossen.";
+
   try {
     let promptText = `VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\nBesetzung: ${$("ensemble").value}\nTakte des fertigen Stücks: ${$("measures").value}\nTaktart: ${$("meter").value}\nTempo: ${$("tempo").value} BPM\nTonart: ${$("musicalKey").value}\n\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\n${$("prompt").value}`;
     if(uploadedScore){
       promptText += `\n\nVORHANDENES MATERIAL (${uploadedName}):\n` + JSON.stringify(uploadedScore);
     }
 
-    const conceptRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, `Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${promptText}`, false);
+    lastDiagnostic.prompts.effectiveAssignment=promptText;
+    const conceptPrompt=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${promptText}`;
+    lastDiagnostic.calls.concept={request:{system:SYSTEM_PREFIX,user:conceptPrompt,wantJson:false}};
+    const conceptRes=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,conceptPrompt,false);
+    lastDiagnostic.calls.concept.response={text:conceptRes.text||"",usage:conceptRes.usage||null};
     lastConcept = conceptRes.text || "";
     $("conceptView").innerHTML = `<strong>${esc(provider.toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`;
 
     $("status").innerHTML = '<span class="ok">KI komponiert …</span>';
     const compPrompt = `${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${promptText}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
-    const scoreRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, compPrompt, true);
+    lastDiagnostic.calls.composition={request:{system:SYSTEM_PREFIX,user:compPrompt,wantJson:true}};
+    const scoreRes=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,compPrompt,true);
+    lastDiagnostic.calls.composition.response={text:scoreRes.text||"",usage:scoreRes.usage||null};
     const score = extractJSON(scoreRes.text);
 
     lastScore = score;
     lastProvider = provider;
     lastModel = model;
     lastMidiBytes = buildMidi(score);
+    lastDiagnostic.result={score:JSON.parse(JSON.stringify(score)),completedAt:new Date().toISOString()};
 
     $("downloadBtn").disabled = false;
     $("jsonBtn").disabled = false;
@@ -966,6 +996,7 @@ async function compose(){
     addHistory(score, provider, model, lastConcept);
     $("status").innerHTML = '<span class="ok">Komposition erfolgreich abgeschlossen!</span>';
   } catch(err) {
+    if(lastDiagnostic) lastDiagnostic.error={message:String(err?.message||err),name:String(err?.name||"Error"),at:new Date().toISOString()};
     $("status").innerHTML = `<span class="err">Fehler: ${esc(err.message)}</span>`;
   } finally {
     $("composeBtn").disabled = false;
