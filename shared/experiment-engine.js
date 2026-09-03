@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='shared-experiment-1.0';
+const VERSION='shared-experiment-1.1';
 const STORAGE_KEY='composition_lab_shared_template_history_v1';
 const E=()=>window.CompositionLabEngine;
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -50,7 +50,7 @@ async function generateTemplate(req){
   const e=E();if(!e)throw new Error('Gemeinsame Kompositionsengine ist noch nicht geladen.');
   const s=req.settings||{},idea=String(req.idea||'').trim()||randomIdea(s,true);
   const system=e.SYSTEM_PREFIX;
-  const task=`Erzeuge eine kurze musikalische Ausgangsvorlage, keine fertige große Komposition.\nVerbindlich: ${s.measures||4} Takte, ${s.bpm||96} BPM, Besetzung: ${s.ensemble||'frei'}.\nCharakter/Stil: ${s.style||'frei'}.\nKompositionsidee: ${idea}\nTonart und Taktart dürfen passend gewählt werden, sofern nicht vorgegeben.\n\n${e.TECHNICAL_PROMPT}`;
+  const task=`Erzeuge eine kurze musikalische Ausgangsvorlage, keine fertige große Komposition.\n\nTECHNISCHE ECKDATEN:\n- Länge: ${s.measures||4} Takte\n- Tempo: ${s.bpm||96} BPM\n\nMASSGEBLICHE MUSIKALISCHE VORGABE:\n${idea}\n\nERGÄNZENDE LABORANGABEN (nur verwenden, soweit sie der Kompositionsidee nicht widersprechen):\n- Besetzung: ${s.ensemble||'frei'}\n- Charakter/Stil: ${s.style||'frei'}\n- Taktart: ${s.meter||'frei'}\n- Tonart: ${s.key||'frei'}\n\nWICHTIG: Die Kompositionsidee hat bei musikalischen Widersprüchen Vorrang, insbesondere bei Besetzung, Instrumenten, Charakter und Entwicklungsrichtung. Wenn die Idee z. B. Cello solo verlangt, darf keine Klavierspur erzeugt werden. Benenne die Spuren passend zur tatsächlich verlangten Besetzung.\n\n${e.TECHNICAL_PROMPT}`;
   const r=await e.callLLM({provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium',systemPrompt:system,userPrompt:task,wantJson:true});
   const score=e.extractJSON(r.text);score.bpm=Number(s.bpm)||score.bpm||96;score.sm=idea;score._meta={...(score._meta||{}),measures:Number(s.measures)||4,ensemble:s.ensemble||'frei',style:s.style||'',experimentKind:'ki-template',experimentEngine:VERSION};
   const pkg=packageTemplate({score,settings:s,idea,provider:req.provider,model:req.model,kind:'ki'});addHistory(pkg);
