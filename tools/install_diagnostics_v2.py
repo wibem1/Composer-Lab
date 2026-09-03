@@ -27,6 +27,12 @@ root = re.sub(r'<script[^>]+src=["\']diagnostics-v2\.js[^>]*></script>\s*', '', 
 root = re.sub(r'<script[^>]+src=["\']workspace-repair-v21\.js[^>]*></script>\s*', '', root, flags=re.I)
 root = re.sub(r'<script id=["\']compositionLabFreshBootstrap["\']>.*?</script>\s*', '', root, flags=re.I|re.S)
 root = insert_before_body(root, ROOT_BOOTSTRAP)
+# Service Worker darf weder die Hauptseite noch seine eigene Aktualisierung aus altem Cache beziehen.
+root = re.sub(
+    r'navigator\.serviceWorker\.register\(["\']\.\/service-worker\.js(?:\?v=\d+)?["\'](?:\s*,\s*\{[^}]*\})?\)',
+    'navigator.serviceWorker.register("./service-worker.js?v=29", {updateViaCache:"none"})',
+    root
+)
 ROOT.write_text(root, encoding='utf-8')
 
 ipad = IPAD.read_text(encoding='utf-8')
