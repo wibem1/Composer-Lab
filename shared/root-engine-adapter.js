@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=36;
+const INTERFACE_BUILD=37;
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
   if(!E||!btn)return false;
@@ -51,5 +51,5 @@ let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
 const fresh=Date.now();
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v36.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v37.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
 })();
