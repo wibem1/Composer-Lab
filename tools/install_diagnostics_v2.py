@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path('index.html')
 IPAD = Path('ipad/index.html')
-ROOT_TAG = '<script src="diagnostics-v2.js?v=20260903-17"></script>'
+ROOT_TAG = '<script src="diagnostics-v2.js?v=20260903-18"></script>'
 IPAD_TAG = '<script src="../diagnostics-v2.js?v=20260903-17"></script>'
 WORKSPACE_TAG = '<script src="workspace-repair-v21.js?v=20260903-22"></script>'
 
@@ -17,8 +17,8 @@ def insert_before_body(text: str, tag: str, needle: str) -> str:
 
 
 root = ROOT.read_text(encoding='utf-8')
-for old in ('diagnostics-v2.js?v=20260903-14','diagnostics-v2.js?v=20260903-15','diagnostics-v2.js?v=20260903-16'):
-    root = root.replace(old,'diagnostics-v2.js?v=20260903-17')
+for old in ('diagnostics-v2.js?v=20260903-14','diagnostics-v2.js?v=20260903-15','diagnostics-v2.js?v=20260903-16','diagnostics-v2.js?v=20260903-17'):
+    root = root.replace(old,'diagnostics-v2.js?v=20260903-18')
 root = root.replace('workspace-repair-v21.js?v=20260903-21','workspace-repair-v21.js?v=20260903-22')
 root = insert_before_body(root, ROOT_TAG, 'diagnostics-v2.js')
 root = insert_before_body(root, WORKSPACE_TAG, 'workspace-repair-v21.js')
