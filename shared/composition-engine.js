@@ -1,6 +1,7 @@
 (()=>{
 'use strict';
 const VERSION='shared-engine-1.0';
+const BUILD=2;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
@@ -68,8 +69,8 @@ async function compose(req){
   const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
   const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});
   const score=extractJSON(scoreRes.text);
-  return {engineVersion:VERSION,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{systemPrompt:SYSTEM_PREFIX,assignment:a,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
+  return {engineVersion:VERSION,engineBuild:BUILD,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,assignment:a,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
 }
-window.CompositionLabEngine={VERSION,SYSTEM_PREFIX,TECHNICAL_PROMPT,callLLM,compose,extractJSON,assignment};
-window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION}}));
+window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,TECHNICAL_PROMPT,callLLM,compose,extractJSON,assignment};
+window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
 })();
