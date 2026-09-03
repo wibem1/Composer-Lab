@@ -24,13 +24,15 @@ function install(){
     const apiKey=(state.keys&&state.keys[provider])||'';
     const idea=$('compIdea')?.value||'';
     const task=$('compTask')?.value||idea;
-    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('length')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||92,key:$('keySig')?.value||'frei',idea,task};
+    const source=state.source||null;
+    const sourceInstruction=source?task:'';
+    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('length')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||92,key:$('keySig')?.value||'frei',idea,task,sourceInstruction};
     btn.disabled=true;try{setStatus?.('main',`Engine Build ${E.BUILD} entwickelt musikalischen Impuls …`)}catch(_){}
     try{
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source:state.source||null,sourceName:state.source?.ti||$('sourceName')?.value||''});
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:state.source?.ti||$('sourceName')?.value||'',sourceInstruction});
       const score=toObjectScore(r.score);
       score.bpm=settings.bpm;
-      score._meta={...(score._meta||{}),ensemble:settings.ensemble,measures:settings.measures,idea,task,generatedConcept:r.concept,engineVersion:E.VERSION,engineBuild:E.BUILD};
+      score._meta={...(score._meta||{}),ensemble:settings.ensemble,measures:settings.measures,idea,task,sourceInstruction,generatedConcept:r.concept,engineVersion:E.VERSION,engineBuild:E.BUILD};
       state.provider=provider;state.model=model;state.current=score;
       state.history=Array.isArray(state.history)?state.history:[];state.history.push(typeof safeClone==='function'?safeClone(score):JSON.parse(JSON.stringify(score)));if(state.history.length>20)state.history.shift();
       try{saveState?.()}catch(_){}try{syncUI?.()}catch(_){}
@@ -49,5 +51,6 @@ let n=0,t=setInterval(()=>{if(install()||++n>300)clearInterval(t)},100);
 
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?v=20260903-4';x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?v=20260903-4';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const fresh=Date.now();
+const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
 })();
