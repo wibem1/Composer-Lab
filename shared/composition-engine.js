@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const VERSION='shared-engine-1.0';
-const BUILD=3;
+const BUILD=4;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
@@ -35,5 +35,5 @@ function assignment(req){const s=req.settings||{};let text=`VERBINDLICHE ECKDATE
 async function compose(req){const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false});const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});const score=extractJSON(scoreRes.text);return{engineVersion:VERSION,engineBuild:BUILD,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,assignment:a,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}}}
 window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,TECHNICAL_PROMPT,callLLM,compose,extractJSON,assignment};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
-if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?v=20260903-3';s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?v=20260903-3';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
+if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?v=20260903-4';s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?v=20260903-4';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
 })();
