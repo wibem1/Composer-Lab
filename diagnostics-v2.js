@@ -98,12 +98,8 @@ function save(){
   if(!store.last)return;
   snapshot();
   const text=JSON.stringify(store.last,null,2),name=filename(),type='application/json';
-  try{
-    if(typeof downloadBlob==='function'){downloadBlob(text,name,type);return}
-  }catch(e){}
-  if(window.AndroidBridge?.saveBlob){
-    const r=new FileReader();r.onloadend=()=>window.AndroidBridge.saveBlob(r.result,name,type);r.readAsDataURL(new Blob([text],{type}));return;
-  }
+  try{if(typeof downloadBlob==='function'){downloadBlob(text,name,type);return}}catch(e){}
+  if(window.AndroidBridge?.saveBlob){const r=new FileReader();r.onloadend=()=>window.AndroidBridge.saveBlob(r.result,name,type);r.readAsDataURL(new Blob([text],{type}));return}
   const a=document.createElement('a'),u=URL.createObjectURL(new Blob([text],{type}));a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);
 }
 let button=null,info=null;
@@ -126,4 +122,20 @@ function installUi(){
 function updateUi(){if(!button)installUi();if(button)button.disabled=!store.last;if(info&&store.last)info.textContent=`Diagnose bereit · ${store.last.calls.length} KI-Aufruf${store.last.calls.length===1?'':'e'} aufgezeichnet · API-Key ausgeschlossen.`}
 installUi();
 const compose=$('composeBtn');if(compose&&!compose.dataset.diagnosticV2){compose.dataset.diagnosticV2='1';compose.addEventListener('click',begin,true)}
+})();
+
+// Shared-engine bootstrap: same composer, different UI adapters.
+(()=>{
+'use strict';
+if(window.__compositionLabSharedEngineBootstrap)return;
+window.__compositionLabSharedEngineBootstrap=true;
+const mode=document.getElementById('technicalSection')?'root':'rich';
+const engine=document.createElement('script');
+engine.src='/Composer-Lab/shared/composition-engine.js?v=20260903-1';
+engine.onload=()=>{
+  const adapter=document.createElement('script');
+  adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?v=20260903-1':'/Composer-Lab/shared/rich-engine-adapter.js?v=20260903-1';
+  (document.head||document.body).appendChild(adapter);
+};
+(document.head||document.body).appendChild(engine);
 })();
