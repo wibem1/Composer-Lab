@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.4';
-const BUILD=8;
+const VERSION='shared-engine-1.5';
+const BUILD=9;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const CONCEPT_SYSTEM=`Du bist Kompositionspartner. Formuliere ausschließlich einen kurzen musikalischen Entwurf in normalem Text. Antworte prägnant in 2 bis 4 Sätzen. Beschreibe nur den musikalischen Kern und eine mögliche Entwicklungsrichtung. Keine JSON-Daten, keine Notenlisten, keine Codeblöcke, keine vollständige Partitur und keine langen Gliederungen.`;
@@ -40,10 +40,10 @@ async function callLLM({provider,model,apiKey,reasoning='medium',systemPrompt,us
 function assignment(req){
   const s=req.settings||{};
   let text=`VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\nBesetzung: ${s.ensemble||'frei'}\nTakte des fertigen Stücks: ${s.measures||32}\nTaktart: ${s.meter||'4/4'}\nTempo: ${s.bpm||96} BPM\nTonart: ${s.key||'frei'}\n\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\n${s.task||s.idea||'Komponiere ein eigenständiges Stück.'}`;
-  if(req.source){
-    const sourceInstruction=String(req.sourceInstruction||s.sourceInstruction||'').trim();
+  const sourceInstruction=String(req.sourceInstruction||s.sourceInstruction||'').trim();
+  if(req.source && sourceInstruction){
     text+=`\n\nVORHANDENES MIDI-MATERIAL (${req.sourceName||req.source.ti||'Vorlage'}):\n${JSON.stringify(req.source)}`;
-    text+=`\n\nAUFTRAG FÜR DAS VORHANDENE MIDI-MATERIAL:\n${sourceInstruction||'Nutze das vorhandene Material als musikalische Ausgangsbasis und entscheide passend zum allgemeinen Auftrag, was erhalten, variiert oder weiterentwickelt werden soll.'}`;
+    text+=`\n\nAUFTRAG FÜR DAS VORHANDENE MIDI-MATERIAL:\n${sourceInstruction}`;
     text+=`\n\nWICHTIG ZUM QUELLMATERIAL:\n- Behandle den Auftrag für das vorhandene MIDI-Material als konkrete Bearbeitungsanweisung.\n- Wenn der Nutzer bestimmte Takte unverändert übernehmen will, müssen deren Noten, Rhythmus und Stimmen bis zu dieser Grenze erhalten bleiben.\n- Wenn nur einzelne Motive, Stimmen, Basslinien oder Harmonien übernommen werden sollen, verwende nur diese genannten Bestandteile.\n- Komponiere Änderungen oder Fortsetzungen erst dort, wo der Nutzer sie verlangt.\n- Die fertige JSON-Partitur muss das vollständige Ergebnis enthalten, also auch ausdrücklich beizubehaltende Teile der Quelle.`;
   }
   return text;
