@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=45;
+const INTERFACE_BUILD=46;
 const FOLD_KEY='composition_lab_root_fold_states_v2';
 const CHAT_KEY='composition_lab_midi_chat_v1';
 const $=id=>document.getElementById(id);
