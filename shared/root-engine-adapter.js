@@ -65,25 +65,10 @@ window.addEventListener('compositionlab-storage-restored',()=>setTimeout(showAut
 })();
 
 (()=>{
-if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
+'use strict';
+if(window.__compositionLabExperimentLoader)return;
+window.__compositionLabExperimentLoader=true;
 const fresh=Date.now();
-const x=document.createElement('script');
-x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;
-x.onload=()=>{
-  const a=document.createElement('script');
-  a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;
-  a.onload=()=>{
-    const m=document.createElement('script');
-    m.src='/Composer-Lab/shared/gemini-model-config.js?fresh='+fresh;
-    m.onload=()=>{
-      const ui=document.createElement('script');
-      ui.src='/Composer-Lab/shared/root-interface-v46.js?fresh='+fresh;
-      ui.onload=()=>setTimeout(()=>window.__compositionLabBuilds&&document.getElementById('sharedEngineBadge')&&(document.getElementById('sharedEngineBadge').innerHTML=`<strong>Engine Build ${window.CompositionLabEngine?.BUILD||9}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`),1900);
-      (document.head||document.body).appendChild(ui);
-    };
-    (document.head||document.body).appendChild(m);
-  };
-  (document.head||document.body).appendChild(a);
-};
-(document.head||document.body).appendChild(x);
+const load=(src,onload)=>{const s=document.createElement('script');s.async=false;s.src=src+'?fresh='+fresh;if(onload)s.onload=onload;(document.head||document.body).appendChild(s)};
+load('/Composer-Lab/shared/experiment-engine.js',()=>load('/Composer-Lab/shared/experiment-adapter.js',()=>load('/Composer-Lab/shared/gemini-model-config.js',()=>load('/Composer-Lab/shared/root-interface-v47.js'))));
 })();
