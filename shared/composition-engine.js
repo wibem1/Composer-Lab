@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.8';
-const BUILD=12;
+const VERSION='shared-engine-1.9';
+const BUILD=13;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const CONCEPT_SYSTEM=`Du bist Kompositionspartner. Formuliere ausschließlich einen kurzen musikalischen Entwurf in normalem Text. Antworte prägnant in 2 bis 4 Sätzen. Beschreibe nur den musikalischen Kern und eine mögliche Entwicklungsrichtung. Keine JSON-Daten, keine Notenlisten, keine Codeblöcke, keine vollständige Partitur und keine langen Gliederungen.`;
@@ -103,13 +103,15 @@ async function compose(req){
   if(conceptOnly){
     const conceptUser=`Der Nutzer möchte ausdrücklich nur einen musikalischen Entwurf, noch keine Komposition.\n\n${currentAssignment}\n\nAntworte ausschließlich mit 2 bis 4 Sätzen normalem Text. Keine JSON-Daten, keine Notenliste und keine Partitur.`;
     const conceptRes=await callLLM({...common,systemPrompt:CONCEPT_SYSTEM,userPrompt:conceptUser,wantJson:false,maxOutputTokens:1200});
+    if(typeof req.onConcept==='function')await req.onConcept({concept:conceptRes.text,conceptOnly:true,usage:conceptRes.usage});
     return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:true,concept:conceptRes.text,score:null,usage:{concept:conceptRes.usage,score:null},diagnostic:{kind:'concept-only',engineBuild:BUILD,systemPrompt:CONCEPT_SYSTEM,assignment:currentAssignment,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:null,conceptResponse:conceptRes.text,scoreResponse:null}};
   }
   const sourceInstruction=String(req.sourceInstruction||req.settings?.sourceInstruction||'').trim();
   const usesSource=!!(req.source&&sourceInstruction);
   const a=usesSource?currentAssignment:legacyAssignment(req);
-  const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;
+  const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}\n\nBleibe in diesem Schritt ausschließlich bei der musikalischen Planung. Erzeuge noch keine Partitur, keine JSON-Daten, keinen Programmcode und kein Skript zur MIDI-Erzeugung.`;
   const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false,maxOutputTokens:32000});
+  if(typeof req.onConcept==='function')await req.onConcept({concept:conceptRes.text,conceptOnly:false,usage:conceptRes.usage});
   const scorePrompt=usesSource?TECHNICAL_PROMPT:LEGACY_TECHNICAL_PROMPT;
   const compUser=`${scorePrompt}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
   const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});
