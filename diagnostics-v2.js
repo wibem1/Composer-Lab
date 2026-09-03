@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const DIAG_VERSION=2, ASSET_VERSION='20260903-21';
+const DIAG_VERSION=2, ASSET_VERSION='20260903-22';
 if(!document.getElementById('composeBtn')){
   let tries=0;
   const timer=setInterval(()=>{
@@ -53,5 +53,5 @@ installUi();const compose=$('composeBtn');if(compose&&!compose.dataset.diagnosti
 'use strict';
 if(window.__compositionLabSharedEngineBootstrap)return;window.__compositionLabSharedEngineBootstrap=true;
 const mode=document.getElementById('technicalSection')?'root':'rich';
-const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?v=20260903-4';engine.onload=()=>{const adapter=document.createElement('script');adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?v=20260903-4':'/Composer-Lab/shared/rich-engine-adapter.js?v=20260903-4';(document.head||document.body).appendChild(adapter)};(document.head||document.body).appendChild(engine);
+const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?v=20260903-4';engine.onload=()=>{const adapter=document.createElement('script');adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?v=20260903-28':'/Composer-Lab/shared/rich-engine-adapter.js?v=20260903-4';(document.head||document.body).appendChild(adapter)};(document.head||document.body).appendChild(engine);
 })();
