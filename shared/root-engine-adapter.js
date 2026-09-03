@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=31;
+const INTERFACE_BUILD=32;
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
   if(!E||!btn)return false;
@@ -20,10 +20,12 @@ function install(){
   btn.onclick=async()=>{
     try{saveCurrentState?.()}catch(_){}
     const provider=$('provider')?.value||'openai',model=$('model')?.value?.trim()||'',apiKey=$('apiKey')?.value?.trim()||'',reasoning=$('reasoningEffort')?.value||'medium';
-    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||''};
+    const sourceInstruction=$('sourceInstruction')?.value?.trim()||'';
+    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||'',sourceInstruction};
     btn.disabled=true;if($('status'))$('status').innerHTML=`<span class="ok">Engine Build ${E.BUILD} entwickelt musikalischen Impuls …</span>`;
     try{
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source:typeof uploadedScore!=='undefined'?uploadedScore:null,sourceName:typeof uploadedName!=='undefined'?uploadedName:''});
+      const source=typeof uploadedScore!=='undefined'?uploadedScore:null;
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:typeof uploadedName!=='undefined'?uploadedName:'',sourceInstruction});
       const score=toArrayScore(r.score);
       if(typeof lastConcept!=='undefined')lastConcept=r.concept||'';
       if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} Konzept · Engine Build ${E.BUILD}:</strong><br>${String(r.concept||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`;
@@ -49,5 +51,5 @@ let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
 const fresh=Date.now();
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v31.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v32.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
 })();
