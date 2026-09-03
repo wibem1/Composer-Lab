@@ -1,16 +1,13 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Composition Lab – Mac Test V17</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8ebef}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="app" src="../mac-test-v16/?v17=20260903-3"></iframe><script>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Composition Lab – Mac Test V17</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8ebef}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="app" src="../mac-test-v16/?v17=20260903-4"></iframe><script>
 const outer=document.getElementById('app');
 outer.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{tries++;try{let d=outer.contentDocument;for(let i=0;i<4;i++){const f=d?.getElementById('app');if(f?.contentDocument)d=f.contentDocument;else break}if(!d?.getElementById('composeBtn')){if(tries>400)clearInterval(timer);return}clearInterval(timer);const s=d.createElement('script');s.textContent=`(()=>{
 const VERSION='17';
-// Der eigentliche App-Kern bleibt für Komposition und KI-Dialog zuständig.
-// Damit wird verhindert, dass der äußere iPad-Wrapper erneut eigene musikalische Qualitätsregeln einschleust.
 const composeBtn=document.getElementById('composeBtn');if(composeBtn)composeBtn.dataset.qualityV5='1';
 const compositionChatSend=document.getElementById('compositionChatSend');if(compositionChatSend)compositionChatSend.dataset.midiEditV5='1';
-// iPad/Safari: AudioContext bei einer echten Benutzerinteraktion freigeben.
-// Wichtig: Der äußere Sample-Player darf danach NICHT wieder durch den internen Synth-Player ersetzt werden.
 function unlockAudio(){try{const c=window.getCtx?.();if(c&&c.state==='suspended')c.resume().catch(()=>{})}catch(e){}}
 document.addEventListener('pointerdown',unlockAudio,true);document.addEventListener('touchend',unlockAudio,true);document.addEventListener('click',unlockAudio,true);
-const about=document.getElementById('aboutBtn');if(about){about.textContent='Über Composition Lab – Version '+VERSION;about.onclick=()=>alert('Composition Lab\\nMac Test Version '+VERSION+'\\nStand: 3. September 2026')}
+const about=document.getElementById('aboutBtn');if(about){about.textContent='Über Composition Lab – Version '+VERSION;about.onclick=()=>alert('Composition Lab\\nMac Test Version '+VERSION+'\\nShared Engine Build 16\\nStand: 3. September 2026')}
+if(!document.getElementById('compositionLabDiagnosticsV2')){const q=document.createElement('script');q.id='compositionLabDiagnosticsV2';q.src='/Composer-Lab/diagnostics-v2.js?v=20260903-16';document.head.appendChild(q)}
 const cmp=document.getElementById('compare');if(!cmp)return;
 function clean(){const history=document.getElementById('v15CompareHistory');const historyCard=history?.closest('.card');const chat=document.getElementById('compareChat');const chatCard=chat?.closest('.card');if(chatCard){[...chatCard.querySelectorAll('h1,h2,h3,h4')].forEach(h=>{if(/vergleichsverlauf/i.test((h.textContent||'').trim())){let n=h.nextElementSibling;if(n&&n!==history&&(/history|verlauf/i.test(n.id||'')||n.classList.contains('list')))n.remove();h.remove()}});[...chatCard.querySelectorAll('*')].forEach(e=>{if(e===history||e.closest('.card')===historyCard)return;const id=e.id||'';if(/compare.*history|comparisonhistory|vergleich.*verlauf/i.test(id))e.remove()})}
 [...cmp.querySelectorAll('h1,h2,h3,h4')].filter(h=>/vergleichsverlauf/i.test((h.textContent||'').trim())).forEach(h=>{if(!historyCard||h.closest('.card')!==historyCard){const n=h.nextElementSibling;if(n&&n!==history&&n.classList.contains('list'))n.remove();h.remove()}});
