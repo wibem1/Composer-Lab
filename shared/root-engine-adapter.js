@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=41;
+const INTERFACE_BUILD=42;
 const CHAT_KEY='composition_lab_midi_chat_v1';
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
