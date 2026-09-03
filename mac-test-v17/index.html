@@ -2,6 +2,10 @@
 const outer=document.getElementById('app');
 outer.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{tries++;try{let d=outer.contentDocument;for(let i=0;i<4;i++){const f=d?.getElementById('app');if(f?.contentDocument)d=f.contentDocument;else break}if(!d?.getElementById('composeBtn')){if(tries>400)clearInterval(timer);return}clearInterval(timer);const s=d.createElement('script');s.textContent=`(()=>{
 const VERSION='17';
+// Der eigentliche App-Kern bleibt für Komposition und KI-Dialog zuständig.
+// Damit wird verhindert, dass der äußere iPad-Wrapper erneut eigene musikalische Qualitätsregeln einschleust.
+const composeBtn=document.getElementById('composeBtn');if(composeBtn)composeBtn.dataset.qualityV5='1';
+const compositionChatSend=document.getElementById('compositionChatSend');if(compositionChatSend)compositionChatSend.dataset.midiEditV5='1';
 const about=document.getElementById('aboutBtn');if(about){about.textContent='Über Composition Lab – Version '+VERSION;about.onclick=()=>alert('Composition Lab\\nMac Test Version '+VERSION+'\\nStand: 3. September 2026')}
 const cmp=document.getElementById('compare');if(!cmp)return;
 function clean(){const history=document.getElementById('v15CompareHistory');const historyCard=history?.closest('.card');const chat=document.getElementById('compareChat');const chatCard=chat?.closest('.card');if(chatCard){[...chatCard.querySelectorAll('h1,h2,h3,h4')].forEach(h=>{if(/vergleichsverlauf/i.test((h.textContent||'').trim())){let n=h.nextElementSibling;if(n&&n!==history&&(/history|verlauf/i.test(n.id||'')||n.classList.contains('list')))n.remove();h.remove()}});[...chatCard.querySelectorAll('*')].forEach(e=>{if(e===history||e.closest('.card')===historyCard)return;const id=e.id||'';if(/compare.*history|comparisonhistory|vergleich.*verlauf/i.test(id))e.remove()})}
