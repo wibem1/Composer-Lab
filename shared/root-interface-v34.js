@@ -3,6 +3,7 @@
 const INTERFACE_BUILD=34;
 const $=id=>document.getElementById(id);
 const KEY='composition_lab_source_instruction_v1';
+function activeBuild(){return Math.max(Number(window.__compositionLabTargetInterfaceBuild)||0,INTERFACE_BUILD)}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function installSourceDiscussion(){
   const oldAnalyse=$('analyzeImportedBtn');
@@ -47,9 +48,10 @@ function installSourceDiscussion(){
   return true;
 }
 function updateBuild(){
+  const shown=activeBuild();
   const tech=$('technicalSection')?.querySelector('.foldcontent');
-  if(tech){tech.querySelectorAll('.uploadinfo').forEach(e=>{if(/Interface Build Android\/WebApp \d+/.test(e.textContent||''))e.innerHTML=e.innerHTML.replace(/Interface Build Android\/WebApp \d+/g,`Interface Build Android/WebApp ${INTERFACE_BUILD}`)});let own=$('rootInterfaceBuildV34');if(!own){own=document.createElement('div');own.id='rootInterfaceBuildV34';own.className='uploadinfo';own.style.marginTop='8px';tech.appendChild(own)}own.textContent=`Interface Build Android/WebApp ${INTERFACE_BUILD}`}
-  window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+  if(tech){tech.querySelectorAll('.uploadinfo').forEach(e=>{if(/Interface Build Android\/WebApp \d+/.test(e.textContent||''))e.innerHTML=e.innerHTML.replace(/Interface Build Android\/WebApp \d+/g,`Interface Build Android/WebApp ${shown}`)});let own=$('rootInterfaceBuildV34');if(!own){own=document.createElement('div');own.id='rootInterfaceBuildV34';own.className='uploadinfo';own.style.marginTop='8px';tech.appendChild(own)}own.textContent=`Interface Build Android/WebApp ${shown}`}
+  window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),interface:shown,platform:'Android/WebApp'};
 }
 function afterBase(){installSourceDiscussion();updateBuild();return true}
 const base=document.createElement('script');base.src='/Composer-Lab/shared/root-interface-v31.js?fresh='+Date.now();base.onload=()=>{let n=0;const t=setInterval(()=>{try{if(afterBase()){clearInterval(t);setTimeout(afterBase,500);setTimeout(afterBase,1500)}}catch(_){}if(++n>200)clearInterval(t)},50)};(document.head||document.body).appendChild(base);
