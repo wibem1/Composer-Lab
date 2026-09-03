@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.5';
-const BUILD=9;
+const VERSION='shared-engine-1.6';
+const BUILD=10;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const CONCEPT_SYSTEM=`Du bist Kompositionspartner. Formuliere ausschließlich einen kurzen musikalischen Entwurf in normalem Text. Antworte prägnant in 2 bis 4 Sätzen. Beschreibe nur den musikalischen Kern und eine mögliche Entwicklungsrichtung. Keine JSON-Daten, keine Notenlisten, keine Codeblöcke, keine vollständige Partitur und keine langen Gliederungen.`;
@@ -30,10 +30,10 @@ ct-Array: [Beat, CC, Wert].
 Gib ausschließlich valides JSON aus.`;
 function extractJSON(str){str=String(str??'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const s=str.indexOf('{'),e=str.lastIndexOf('}');if(s<0||e<s)throw new Error('Kein valides JSON in Modellantwort gefunden.');return JSON.parse(str.slice(s,e+1))}
 function providerName(p){return p==='gemini'?'Google / Gemini':p==='anthropic'?'Anthropic / Claude':p==='openai'?'OpenAI':p}
-async function callLLM({provider,model,apiKey,reasoning='medium',systemPrompt,userPrompt,wantJson=false}){
+async function callLLM({provider,model,apiKey,reasoning='medium',systemPrompt,userPrompt,wantJson=false,maxOutputTokens=null}){
   if(!apiKey)throw new Error(`Bitte API-Key für ${providerName(provider)} eintragen.`);if(!model)throw new Error('Bitte ein KI-Modell auswählen.');
-  if(provider==='anthropic'){const body={model,max_tokens:32000,system:systemPrompt,messages:[{role:'user',content:userPrompt}],output_config:{effort:reasoning||'medium'}};const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`Anthropic HTTP ${r.status}`);return{text:(j.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join(''),usage:{in:j.usage?.input_tokens||0,out:j.usage?.output_tokens||0}}}
-  if(provider==='gemini'){const cfg={maxOutputTokens:wantJson?32000:1200,thinkingConfig:{thinkingLevel:String(reasoning||'medium').toUpperCase()}};if(wantJson)cfg.responseMimeType='application/json';const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt}]},contents:[{role:'user',parts:[{text:userPrompt}]}],generationConfig:cfg})});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`Gemini HTTP ${r.status}`);return{text:j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'',usage:{in:j.usageMetadata?.promptTokenCount||0,out:j.usageMetadata?.candidatesTokenCount||0}}}
+  if(provider==='anthropic'){const body={model,max_tokens:maxOutputTokens||32000,system:systemPrompt,messages:[{role:'user',content:userPrompt}],output_config:{effort:reasoning||'medium'}};const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`Anthropic HTTP ${r.status}`);return{text:(j.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join(''),usage:{in:j.usage?.input_tokens||0,out:j.usage?.output_tokens||0}}}
+  if(provider==='gemini'){const cfg={maxOutputTokens:maxOutputTokens||(wantJson?32000:1200),thinkingConfig:{thinkingLevel:String(reasoning||'medium').toUpperCase()}};if(wantJson)cfg.responseMimeType='application/json';const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt}]},contents:[{role:'user',parts:[{text:userPrompt}]}],generationConfig:cfg})});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`Gemini HTTP ${r.status}`);return{text:j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'',usage:{in:j.usageMetadata?.promptTokenCount||0,out:j.usageMetadata?.candidatesTokenCount||0}}}
   if(provider==='openai'){const body={model,messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}],reasoning_effort:reasoning||'medium'};if(wantJson)body.response_format={type:'json_object'};const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${apiKey}`},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`OpenAI HTTP ${r.status}`);return{text:j.choices?.[0]?.message?.content||'',usage:{in:j.usage?.prompt_tokens||0,out:j.usage?.completion_tokens||0}}}
   throw new Error('Unbekannter KI-Anbieter.');
 }
@@ -71,15 +71,17 @@ async function discuss(req){
 async function compose(req){
   const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};
   const conceptOnly=wantsConceptOnly(req);
-  const conceptUser=`${conceptOnly?'Der Nutzer möchte ausdrücklich nur einen musikalischen Entwurf, noch keine Komposition.':'Formuliere als Vorbereitung auf die spätere Komposition einen kurzen musikalischen Gedanken.'}\n\n${a}\n\nAntworte ausschließlich mit 2 bis 4 Sätzen normalem Text. Keine JSON-Daten, keine Notenliste und keine Partitur.`;
-  const conceptRes=await callLLM({...common,systemPrompt:CONCEPT_SYSTEM,userPrompt:conceptUser,wantJson:false});
   if(conceptOnly){
+    const conceptUser=`Der Nutzer möchte ausdrücklich nur einen musikalischen Entwurf, noch keine Komposition.\n\n${a}\n\nAntworte ausschließlich mit 2 bis 4 Sätzen normalem Text. Keine JSON-Daten, keine Notenliste und keine Partitur.`;
+    const conceptRes=await callLLM({...common,systemPrompt:CONCEPT_SYSTEM,userPrompt:conceptUser,wantJson:false,maxOutputTokens:1200});
     return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:true,concept:conceptRes.text,score:null,usage:{concept:conceptRes.usage,score:null},diagnostic:{kind:'concept-only',engineBuild:BUILD,systemPrompt:CONCEPT_SYSTEM,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:null,conceptResponse:conceptRes.text,scoreResponse:null}};
   }
-  const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KURZER MUSIKALISCHER ENTWURF:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
+  const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;
+  const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false,maxOutputTokens:32000});
+  const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
   const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});
   const score=extractJSON(scoreRes.text);
-  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:CONCEPT_SYSTEM,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
+  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:SYSTEM_PREFIX,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
 }
 window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,CONCEPT_SYSTEM,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment,wantsConceptOnly};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
