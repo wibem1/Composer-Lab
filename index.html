@@ -1570,7 +1570,7 @@ initApp();
 <script>
 window.addEventListener("load", () => {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js?v=20").catch(err =>
+    navigator.serviceWorker.register("./service-worker.js?v=29", {updateViaCache:"none"}).catch(err =>
       console.warn("Service Worker konnte nicht registriert werden:", err)
     );
   }
@@ -1988,6 +1988,8 @@ ${JSON.stringify(src.B)}`;
       return;
     }
     analyseBtn.disabled=true;
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
     if(section){ section.style.display="block"; section.open=true; }
     const section=document.getElementById("importedAnalysisSection");
