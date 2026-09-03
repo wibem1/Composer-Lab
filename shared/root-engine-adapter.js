@@ -46,5 +46,5 @@ let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);
 
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?v=20260903-1';x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?v=20260903-1';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?v=20260903-1';x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?v=20260903-2';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
 })();
