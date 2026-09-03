@@ -2,10 +2,28 @@
 'use strict';
 const INTERFACE_BUILD=47;
 const CHAT_KEY='composition_lab_midi_chat_v1';
+function installBuildDisplayGuard(){
+  if(document.getElementById('compositionLabBuildDisplayGuard'))return;
+  const st=document.createElement('style');
+  st.id='compositionLabBuildDisplayGuard';
+  st.textContent='#rootInterfaceBuildActive{display:none!important}';
+  (document.head||document.documentElement).appendChild(st);
+}
+function showAuthoritativeBuild(){
+  const E=window.CompositionLabEngine;
+  const tech=document.getElementById('technicalSection')?.querySelector('.foldcontent');
+  if(tech){
+    let d=document.getElementById('sharedEngineBadge');
+    if(!d){d=document.createElement('div');d.id='sharedEngineBadge';d.className='uploadinfo';d.style.marginTop='12px';tech.appendChild(d)}
+    d.innerHTML=`<strong>Engine Build ${E?.BUILD||9}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`;
+  }
+  window.__compositionLabBuilds={engine:E?.BUILD||9,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+}
+installBuildDisplayGuard();
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
   if(!E||!btn)return false;
-  if(btn.dataset.sharedEngine==='1')return true;
+  if(btn.dataset.sharedEngine==='1'){showAuthoritativeBuild();return true;}
   btn.dataset.sharedEngine='1';
   const $=id=>document.getElementById(id);
   function currentSourceName(){try{return (typeof uploadedName!=='undefined'&&uploadedName)||uploadedScore?.ti||'MIDI-Datei'}catch(_){return'MIDI-Datei'}}
@@ -13,17 +31,59 @@ function install(){
   function sourceInstruction(){return $('sourceChatInput')?.value?.trim()||lastUserChatMessage()||''}
   function toArrayScore(score){const s=JSON.parse(JSON.stringify(score||{}));s.tr=Array.isArray(s.tr)?s.tr.map((t,i)=>({nm:t.nm||`Spur ${i+1}`,ch:Number(t.ch??i)%16,pg:Number(t.pg)||0,nt:(Array.isArray(t.nt)?t.nt:[]).map(n=>Array.isArray(n)?n:[Number(n.t)||0,Math.max(.03,Number(n.d)||.25),Number(n.p),Math.max(1,Math.min(127,Number(n.v)||88)),Number(n.st)||0,Number(n.g)||.95]).filter(n=>Number.isFinite(Number(n[2]))),ct:Array.isArray(t.ct)?t.ct:[]})):[];return s}
   function attachDiagnostic(r,score){window.__compositionLabLastSharedDiagnostic=r.diagnostic;const d=window.__compositionLabDiagnosticsV2?.active;if(d){d.engineVersion=r.engineVersion;d.engineBuild=E.BUILD;d.interfaceBuild=INTERFACE_BUILD;d.interface='Android/WebApp';d.sharedEngine=r.diagnostic;d.calls=r.conceptOnly?[{index:1,kind:'concept-only',systemPrompt:r.diagnostic.systemPrompt,userPrompt:r.diagnostic.conceptPrompt,response:r.diagnostic.conceptResponse}]:[{index:1,kind:'concept',systemPrompt:r.diagnostic.conceptSystemPrompt||r.diagnostic.systemPrompt,userPrompt:r.diagnostic.conceptPrompt,response:r.diagnostic.conceptResponse},{index:2,kind:'composition',systemPrompt:r.diagnostic.systemPrompt,userPrompt:r.diagnostic.compositionPrompt,response:r.diagnostic.scoreResponse}];d.result=score||null;d.updatedAt=new Date().toISOString();}}
-  btn.onclick=async()=>{try{saveCurrentState?.()}catch(_){}const provider=$('provider')?.value||'openai',model=$('model')?.value?.trim()||'',apiKey=$('apiKey')?.value?.trim()||'',reasoning=$('reasoningEffort')?.value||'medium';const instruction=sourceInstruction();const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||'',sourceInstruction:instruction};btn.disabled=true;if($('status'))$('status').innerHTML=`<span class="ok">Engine Build ${E.BUILD} entwickelt musikalischen Impuls …</span>`;try{const source=typeof uploadedScore!=='undefined'?uploadedScore:null;const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:currentSourceName(),sourceInstruction:instruction});if(typeof lastConcept!=='undefined')lastConcept=r.concept||'';if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} ${r.conceptOnly?'Musikalischer Entwurf':'Konzept'} · Engine Build ${E.BUILD}:</strong><br>${String(r.concept||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`;
+  btn.onclick=async()=>{
+    try{saveCurrentState?.()}catch(_){}
+    const provider=$('provider')?.value||'openai',model=$('model')?.value?.trim()||'',apiKey=$('apiKey')?.value?.trim()||'',reasoning=$('reasoningEffort')?.value||'medium';
+    const instruction=sourceInstruction();
+    const settings={ensemble:$('ensemble')?.value||'frei',measures:Number($('measures')?.value)||32,meter:$('meter')?.value||'4/4',bpm:Number($('tempo')?.value)||96,key:$('musicalKey')?.value||'frei',task:$('prompt')?.value||'',sourceInstruction:instruction};
+    btn.disabled=true;
+    if($('status'))$('status').innerHTML=`<span class="ok">Engine Build ${E.BUILD} entwickelt musikalischen Impuls …</span>`;
+    try{
+      const source=typeof uploadedScore!=='undefined'?uploadedScore:null;
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:currentSourceName(),sourceInstruction:instruction});
+      if(typeof lastConcept!=='undefined')lastConcept=r.concept||'';
+      if($('conceptView'))$('conceptView').innerHTML=`<strong>${provider.toUpperCase()} ${r.conceptOnly?'Musikalischer Entwurf':'Konzept'} · Engine Build ${E.BUILD}:</strong><br>${String(r.concept||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`;
       if(r.conceptOnly){attachDiagnostic(r,null);if($('status'))$('status').innerHTML=`<span class="ok">Musikalischer Entwurf erstellt · keine MIDI-Komposition erzeugt · Engine Build ${E.BUILD}</span>`;return;}
-      const score=toArrayScore(r.score);if(typeof lastScore!=='undefined')lastScore=score;if(typeof mainPlayerScore!=='undefined')mainPlayerScore=score;if(typeof lastProvider!=='undefined')lastProvider=provider;if(typeof lastModel!=='undefined')lastModel=model;if(typeof buildMidi==='function'&&typeof lastMidiBytes!=='undefined')lastMidiBytes=buildMidi(score);if($('mainPlayerTitle'))$('mainPlayerTitle').textContent=`Komposition: ${score.ti||'Unbenannt'}`;if($('downloadBtn'))$('downloadBtn').disabled=false;if($('jsonBtn'))$('jsonBtn').disabled=false;if($('lastResult'))$('lastResult').innerHTML=`<strong>${String(score.ti||'Komposition')}</strong><br>${score.bpm||settings.bpm} BPM · ${String(score.k||'')} · ${(score.tr||[]).length} Spur(en)<br><small>${String(score.sm||'')}</small>`;try{validateScore?.(score)}catch(_){}try{renderChatContext?.()}catch(_){}try{addHistory?.(score,provider,model,r.concept||'')}catch(_){}attachDiagnostic(r,score);if($('status'))$('status').innerHTML=`<span class="ok">Komposition abgeschlossen · Engine Build ${E.BUILD}</span>`}catch(e){if($('status'))$('status').innerHTML=`<span class="err">Fehler: ${String(e?.message||e)}</span>`;}finally{btn.disabled=false;}};
-  const tech=$('technicalSection')?.querySelector('.foldcontent');if(tech&&!$('sharedEngineBadge')){const d=document.createElement('div');d.id='sharedEngineBadge';d.className='uploadinfo';d.style.marginTop='12px';tech.appendChild(d)}if($('sharedEngineBadge'))$('sharedEngineBadge').innerHTML=`<strong>Engine Build ${E.BUILD}</strong><br>Interface Build Android/WebApp ${INTERFACE_BUILD}`;window.__compositionLabBuilds={engine:E.BUILD,interface:INTERFACE_BUILD,platform:'Android/WebApp'};return true;
+      const score=toArrayScore(r.score);
+      if(typeof lastScore!=='undefined')lastScore=score;if(typeof mainPlayerScore!=='undefined')mainPlayerScore=score;if(typeof lastProvider!=='undefined')lastProvider=provider;if(typeof lastModel!=='undefined')lastModel=model;
+      if(typeof buildMidi==='function'&&typeof lastMidiBytes!=='undefined')lastMidiBytes=buildMidi(score);
+      if($('mainPlayerTitle'))$('mainPlayerTitle').textContent=`Komposition: ${score.ti||'Unbenannt'}`;
+      if($('downloadBtn'))$('downloadBtn').disabled=false;if($('jsonBtn'))$('jsonBtn').disabled=false;
+      if($('lastResult'))$('lastResult').innerHTML=`<strong>${String(score.ti||'Komposition')}</strong><br>${score.bpm||settings.bpm} BPM · ${String(score.k||'')} · ${(score.tr||[]).length} Spur(en)<br><small>${String(score.sm||'')}</small>`;
+      try{validateScore?.(score)}catch(_){}try{renderChatContext?.()}catch(_){}try{addHistory?.(score,provider,model,r.concept||'')}catch(_){}
+      attachDiagnostic(r,score);
+      if($('status'))$('status').innerHTML=`<span class="ok">Komposition abgeschlossen · Engine Build ${E.BUILD}</span>`;
+    }catch(e){if($('status'))$('status').innerHTML=`<span class="err">Fehler: ${String(e?.message||e)}</span>`;}
+    finally{btn.disabled=false;}
+  };
+  showAuthoritativeBuild();
+  return true;
 }
-function syncBuildLabel(){const label=`Interface Build Android/WebApp ${INTERFACE_BUILD}`;document.querySelectorAll('.uploadinfo').forEach(e=>{if(/Interface Build Android\/WebApp \d+/.test(e.textContent||''))e.innerHTML=e.innerHTML.replace(/Interface Build Android\/WebApp \d+/g,label)});window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),engine:window.CompositionLabEngine?.BUILD||8,interface:INTERFACE_BUILD,platform:'Android/WebApp'};}
-let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);[600,2200,5000,9000].forEach(ms=>setTimeout(syncBuildLabel,ms));window.addEventListener('compositionlab-experiment-ready',()=>setTimeout(syncBuildLabel,300));window.addEventListener('compositionlab-storage-restored',()=>setTimeout(syncBuildLabel,300));
+let n=0,t=setInterval(()=>{if(install()||++n>200)clearInterval(t)},100);
+window.addEventListener('compositionlab-experiment-ready',()=>setTimeout(showAuthoritativeBuild,0));
+window.addEventListener('compositionlab-storage-restored',()=>setTimeout(showAuthoritativeBuild,0));
 })();
 
 (()=>{
 if(window.__compositionLabExperimentLoader)return;window.__compositionLabExperimentLoader=true;
 const fresh=Date.now();
-const x=document.createElement('script');x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;x.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;a.onload=()=>{const m=document.createElement('script');m.src='/Composer-Lab/shared/gemini-model-config.js?fresh='+fresh;m.onload=()=>{const ui=document.createElement('script');ui.src='/Composer-Lab/shared/root-interface-v46.js?fresh='+fresh;(document.head||document.body).appendChild(ui)};(document.head||document.body).appendChild(m)};(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(x);
+const x=document.createElement('script');
+x.src='/Composer-Lab/shared/experiment-engine.js?fresh='+fresh;
+x.onload=()=>{
+  const a=document.createElement('script');
+  a.src='/Composer-Lab/shared/experiment-adapter.js?fresh='+fresh;
+  a.onload=()=>{
+    const m=document.createElement('script');
+    m.src='/Composer-Lab/shared/gemini-model-config.js?fresh='+fresh;
+    m.onload=()=>{
+      const ui=document.createElement('script');
+      ui.src='/Composer-Lab/shared/root-interface-v46.js?fresh='+fresh;
+      ui.onload=()=>setTimeout(()=>window.__compositionLabBuilds&&document.getElementById('sharedEngineBadge')&&(document.getElementById('sharedEngineBadge').innerHTML=`<strong>Engine Build ${window.CompositionLabEngine?.BUILD||9}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`),1900);
+      (document.head||document.body).appendChild(ui);
+    };
+    (document.head||document.body).appendChild(m);
+  };
+  (document.head||document.body).appendChild(a);
+};
+(document.head||document.body).appendChild(x);
 })();
