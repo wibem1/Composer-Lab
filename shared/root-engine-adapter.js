@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=48;
+const INTERFACE_BUILD=49;
 const CHAT_KEY='composition_lab_midi_chat_v1';
 function installBuildDisplayGuard(){
   if(document.getElementById('compositionLabBuildDisplayGuard'))return;
@@ -15,9 +15,9 @@ function showAuthoritativeBuild(){
   if(tech){
     let d=document.getElementById('sharedEngineBadge');
     if(!d){d=document.createElement('div');d.id='sharedEngineBadge';d.className='uploadinfo';d.style.marginTop='12px';tech.appendChild(d)}
-    d.innerHTML=`<strong>Engine Build ${E?.BUILD||13}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`;
+    d.innerHTML=`<strong>Engine Build ${E?.BUILD||14}</strong><br>Interface-Build Android/WebApp ${INTERFACE_BUILD}`;
   }
-  window.__compositionLabBuilds={engine:E?.BUILD||13,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+  window.__compositionLabBuilds={engine:E?.BUILD||14,interface:INTERFACE_BUILD,platform:'Android/WebApp'};
 }
 installBuildDisplayGuard();
 function install(){
