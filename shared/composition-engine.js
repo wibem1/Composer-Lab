@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.6';
-const BUILD=10;
+const VERSION='shared-engine-1.7';
+const BUILD=11;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const CONCEPT_SYSTEM=`Du bist Kompositionspartner. Formuliere ausschließlich einen kurzen musikalischen Entwurf in normalem Text. Antworte prägnant in 2 bis 4 Sätzen. Beschreibe nur den musikalischen Kern und eine mögliche Entwicklungsrichtung. Keine JSON-Daten, keine Notenlisten, keine Codeblöcke, keine vollständige Partitur und keine langen Gliederungen.`;
@@ -48,6 +48,10 @@ function assignment(req){
   }
   return text;
 }
+function legacyAssignment(req){
+  const s=req.settings||{};
+  return `Besetzung: ${s.ensemble||'frei'}\nTakte: ${s.measures||32}\nTaktart: ${s.meter||'4/4'}\nTempo: ${s.bpm||96} BPM\nTonart: ${s.key||'frei'}\n\nAuftrag:\n${s.task||s.idea||'Komponiere ein eigenständiges Stück.'}`;
+}
 function wantsConceptOnly(req){
   const task=String(req?.settings?.task||req?.settings?.idea||'').trim().toLowerCase();
   if(!task)return false;
@@ -69,21 +73,25 @@ async function discuss(req){
   return{engineVersion:VERSION,engineBuild:BUILD,text:r.text,usage:r.usage,diagnostic:{kind:'midi-discussion',engineBuild:BUILD,systemPrompt:DISCUSSION_SYSTEM,userPrompt,history:Array.isArray(req.history)?req.history:[],question:req.question,response:r.text,sourceName:req.sourceName||'',source:req.source}};
 }
 async function compose(req){
-  const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};
+  const common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};
   const conceptOnly=wantsConceptOnly(req);
+  const currentAssignment=assignment(req);
   if(conceptOnly){
-    const conceptUser=`Der Nutzer möchte ausdrücklich nur einen musikalischen Entwurf, noch keine Komposition.\n\n${a}\n\nAntworte ausschließlich mit 2 bis 4 Sätzen normalem Text. Keine JSON-Daten, keine Notenliste und keine Partitur.`;
+    const conceptUser=`Der Nutzer möchte ausdrücklich nur einen musikalischen Entwurf, noch keine Komposition.\n\n${currentAssignment}\n\nAntworte ausschließlich mit 2 bis 4 Sätzen normalem Text. Keine JSON-Daten, keine Notenliste und keine Partitur.`;
     const conceptRes=await callLLM({...common,systemPrompt:CONCEPT_SYSTEM,userPrompt:conceptUser,wantJson:false,maxOutputTokens:1200});
-    return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:true,concept:conceptRes.text,score:null,usage:{concept:conceptRes.usage,score:null},diagnostic:{kind:'concept-only',engineBuild:BUILD,systemPrompt:CONCEPT_SYSTEM,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:null,conceptResponse:conceptRes.text,scoreResponse:null}};
+    return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:true,concept:conceptRes.text,score:null,usage:{concept:conceptRes.usage,score:null},diagnostic:{kind:'concept-only',engineBuild:BUILD,systemPrompt:CONCEPT_SYSTEM,assignment:currentAssignment,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:null,conceptResponse:conceptRes.text,scoreResponse:null}};
   }
+  const sourceInstruction=String(req.sourceInstruction||req.settings?.sourceInstruction||'').trim();
+  const usesSource=!!(req.source&&sourceInstruction);
+  const a=usesSource?currentAssignment:legacyAssignment(req);
   const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;
   const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false,maxOutputTokens:32000});
   const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
   const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});
   const score=extractJSON(scoreRes.text);
-  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:SYSTEM_PREFIX,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
+  return{engineVersion:VERSION,engineBuild:BUILD,conceptOnly:false,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{kind:'composition',engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,conceptSystemPrompt:SYSTEM_PREFIX,assignment:a,assignmentMode:usesSource?'source-aware':'legacy-universal-studio',sourceInstruction,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}};
 }
-window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,CONCEPT_SYSTEM,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment,wantsConceptOnly};
+window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,CONCEPT_SYSTEM,DISCUSSION_SYSTEM,TECHNICAL_PROMPT,callLLM,compose,discuss,discussionPrompt,extractJSON,assignment,legacyAssignment,wantsConceptOnly};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
 if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const fresh=Date.now();const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?fresh='+fresh;s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
 })();
