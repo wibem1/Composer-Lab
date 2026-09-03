@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='shared-engine-1.0';
-const BUILD=4;
+const VERSION='shared-engine-1.1';
+const BUILD=5;
 const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.
 Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
 const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:
@@ -31,9 +31,19 @@ async function callLLM({provider,model,apiKey,reasoning='medium',systemPrompt,us
   if(provider==='openai'){const body={model,messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}],reasoning_effort:reasoning||'medium'};if(wantJson)body.response_format={type:'json_object'};const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${apiKey}`},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`OpenAI HTTP ${r.status}`);return{text:j.choices?.[0]?.message?.content||'',usage:{in:j.usage?.prompt_tokens||0,out:j.usage?.completion_tokens||0}}}
   throw new Error('Unbekannter KI-Anbieter.');
 }
-function assignment(req){const s=req.settings||{};let text=`VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\nBesetzung: ${s.ensemble||'frei'}\nTakte des fertigen Stücks: ${s.measures||32}\nTaktart: ${s.meter||'4/4'}\nTempo: ${s.bpm||96} BPM\nTonart: ${s.key||'frei'}\n\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\n${s.task||s.idea||'Komponiere ein eigenständiges Stück.'}`;if(req.source)text+=`\n\nVORHANDENES MATERIAL (${req.sourceName||req.source.ti||'Vorlage'}):\n${JSON.stringify(req.source)}`;return text}
-async function compose(req){const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false});const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});const score=extractJSON(scoreRes.text);return{engineVersion:VERSION,engineBuild:BUILD,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,assignment:a,conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}}}
+function assignment(req){
+  const s=req.settings||{};
+  let text=`VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\nBesetzung: ${s.ensemble||'frei'}\nTakte des fertigen Stücks: ${s.measures||32}\nTaktart: ${s.meter||'4/4'}\nTempo: ${s.bpm||96} BPM\nTonart: ${s.key||'frei'}\n\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\n${s.task||s.idea||'Komponiere ein eigenständiges Stück.'}`;
+  if(req.source){
+    const sourceInstruction=String(req.sourceInstruction||s.sourceInstruction||'').trim();
+    text+=`\n\nVORHANDENES MIDI-MATERIAL (${req.sourceName||req.source.ti||'Vorlage'}):\n${JSON.stringify(req.source)}`;
+    text+=`\n\nAUFTRAG FÜR DAS VORHANDENE MIDI-MATERIAL:\n${sourceInstruction||'Nutze das vorhandene Material als musikalische Ausgangsbasis und entscheide passend zum allgemeinen Auftrag, was erhalten, variiert oder weiterentwickelt werden soll.'}`;
+    text+=`\n\nWICHTIG ZUM QUELLMATERIAL:\n- Behandle den Auftrag für das vorhandene MIDI-Material als konkrete Bearbeitungsanweisung.\n- Wenn der Nutzer bestimmte Takte unverändert übernehmen will, müssen deren Noten, Rhythmus und Stimmen bis zu dieser Grenze erhalten bleiben.\n- Wenn nur einzelne Motive, Stimmen, Basslinien oder Harmonien übernommen werden sollen, verwende nur diese genannten Bestandteile.\n- Komponiere Änderungen oder Fortsetzungen erst dort, wo der Nutzer sie verlangt.\n- Die fertige JSON-Partitur muss das vollständige Ergebnis enthalten, also auch ausdrücklich beizubehaltende Teile der Quelle.`;
+  }
+  return text;
+}
+async function compose(req){const a=assignment(req),common={provider:req.provider,model:req.model,apiKey:req.apiKey,reasoning:req.reasoning||'medium'};const conceptUser=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${a}`;const conceptRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptUser,wantJson:false});const compUser=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${a}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;const scoreRes=await callLLM({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compUser,wantJson:true});const score=extractJSON(scoreRes.text);return{engineVersion:VERSION,engineBuild:BUILD,concept:conceptRes.text,score,usage:{concept:conceptRes.usage,score:scoreRes.usage},diagnostic:{engineBuild:BUILD,systemPrompt:SYSTEM_PREFIX,assignment:a,sourceInstruction:req.sourceInstruction||req.settings?.sourceInstruction||'',conceptPrompt:conceptUser,compositionPrompt:compUser,conceptResponse:conceptRes.text,scoreResponse:scoreRes.text}}}
 window.CompositionLabEngine={VERSION,BUILD,SYSTEM_PREFIX,TECHNICAL_PROMPT,callLLM,compose,extractJSON,assignment};
 window.dispatchEvent(new CustomEvent('compositionlab-engine-ready',{detail:{version:VERSION,build:BUILD}}));
-if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?v=20260903-4';s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?v=20260903-4';(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
+if(!window.__compositionLabStorageLoader){window.__compositionLabStorageLoader=true;const fresh=Date.now();const s=document.createElement('script');s.src='/Composer-Lab/shared/storage-engine.js?fresh='+fresh;s.onload=()=>{const a=document.createElement('script');a.src='/Composer-Lab/shared/storage-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(a)};(document.head||document.body).appendChild(s)}
 })();
