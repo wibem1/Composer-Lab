@@ -2,6 +2,7 @@
 'use strict';
 const INTERFACE_BUILD=31;
 const $=id=>document.getElementById(id);
+function activeBuild(){return Math.max(Number(window.__compositionLabTargetInterfaceBuild)||0,INTERFACE_BUILD)}
 function afterBase(){
   const exp=$('experimentSection');
   if(!exp)return false;
@@ -21,18 +22,19 @@ function afterBase(){
     }
   }
 
+  const shown=activeBuild();
   const tech=$('technicalSection')?.querySelector('.foldcontent');
   if(tech){
     tech.querySelectorAll('.uploadinfo').forEach(e=>{
       if(/Interface Build Android\/WebApp \d+/.test(e.textContent||'')){
-        e.innerHTML=e.innerHTML.replace(/Interface Build Android\/WebApp \d+/g,`Interface Build Android/WebApp ${INTERFACE_BUILD}`);
+        e.innerHTML=e.innerHTML.replace(/Interface Build Android\/WebApp \d+/g,`Interface Build Android/WebApp ${shown}`);
       }
     });
     let own=$('rootInterfaceBuildV31');
     if(!own){own=document.createElement('div');own.id='rootInterfaceBuildV31';own.className='uploadinfo';own.style.marginTop='8px';tech.appendChild(own)}
-    own.textContent=`Interface Build Android/WebApp ${INTERFACE_BUILD}`;
+    own.textContent=`Interface Build Android/WebApp ${shown}`;
   }
-  window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),interface:INTERFACE_BUILD,platform:'Android/WebApp'};
+  window.__compositionLabBuilds={...(window.__compositionLabBuilds||{}),interface:shown,platform:'Android/WebApp'};
   try{
     const states=JSON.parse(localStorage.getItem('composition_lab_root_fold_states_v2')||'{}');
     if(synth && Object.prototype.hasOwnProperty.call(states,'comparisonLabSection'))synth.open=!!states.comparisonLabSection;
