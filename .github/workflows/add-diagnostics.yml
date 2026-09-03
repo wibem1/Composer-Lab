@@ -1,3 +1,4 @@
+# trigger
 name: Add composition diagnostics
 on:
   push:
