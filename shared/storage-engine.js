@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const ENGINE_BUILD=3;
+const ENGINE_BUILD=4;
 const VERSION='shared-storage-1.0';
 const COMPOSITIONS='composition_lab_shared_composition_history_v1';
 const TEMPLATES='composition_lab_shared_template_history_v1';
