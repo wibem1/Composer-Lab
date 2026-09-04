@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const DIAG_VERSION=3, ASSET_VERSION='20260903-24';
+const DIAG_VERSION=3, ASSET_VERSION='20260904-01';
 if(!document.getElementById('composeBtn')){
   let tries=0;
   const timer=setInterval(()=>{
@@ -58,6 +58,12 @@ let hooks=0;const hookTimer=setInterval(()=>{try{if(installEngineHook())clearInt
 (()=>{
 'use strict';
 if(window.__compositionLabSharedEngineBootstrap)return;window.__compositionLabSharedEngineBootstrap=true;
-const mode=document.getElementById('technicalSection')?'root':'rich',fresh=Date.now();
-const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?fresh='+fresh;engine.onload=()=>{const adapter=document.createElement('script');adapter.src=mode==='root'?'/Composer-Lab/shared/root-engine-adapter.js?fresh='+fresh:'/Composer-Lab/shared/rich-engine-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(adapter)};(document.head||document.body).appendChild(engine);
+let topPath='';try{topPath=window.top.location.pathname||''}catch(_){topPath=''}
+const rootMode=!!document.getElementById('technicalSection');
+const ipadMode=!rootMode&&topPath.includes('/Composer-Lab/ipad/');
+const fresh=Date.now();
+if(ipadMode)window.__compositionLabTargetInterfaceBuild=20;
+const engine=document.createElement('script');engine.src='/Composer-Lab/shared/composition-engine.js?fresh='+fresh;
+engine.onload=()=>{const adapter=document.createElement('script');adapter.src=rootMode?'/Composer-Lab/shared/root-engine-adapter.js?fresh='+fresh:ipadMode?'/Composer-Lab/shared/ipad-engine14-adapter.js?fresh='+fresh:'/Composer-Lab/shared/rich-engine-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(adapter)};
+(document.head||document.body).appendChild(engine);
 })();
