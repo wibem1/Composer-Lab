@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=17;
+const INTERFACE_BUILD=18;
 const $=id=>document.getElementById(id);
 function clone(x){try{return typeof safeClone==='function'?safeClone(x):JSON.parse(JSON.stringify(x))}catch(_){return x}}
 function toObjectScore(score){
@@ -15,9 +15,41 @@ function toObjectScore(score){
   })):[];
   return typeof normalizeScore==='function'?normalizeScore(s):s;
 }
+function ensureConceptBox(){
+  let box=$('engine14ConceptBox');
+  if(box)return box;
+  const task=$('compTask')||$('compIdea');
+  const host=task?.closest('.field')?.parentElement;
+  if(!host)return null;
+  const h=document.createElement('h3');h.id='engine14ConceptHeading';h.textContent='Musikalischer Impuls';
+  box=document.createElement('div');box.id='engine14ConceptBox';box.className='idea-box';box.style.whiteSpace='pre-wrap';box.textContent='Noch kein Impuls erzeugt.';
+  const anchor=task.closest('.field');
+  anchor.after(h,box);
+  return box;
+}
+function showConcept(text){
+  const box=ensureConceptBox();
+  if(box)box.textContent=String(text||'–');
+}
+function bindMainPlayer(score){
+  try{if(typeof renderMain==='function')renderMain();}catch(_){}
+  try{if(typeof bindPlayerScore==='function')bindPlayerScore('main',score);}catch(_){}
+  const box=document.querySelector('[data-player="main"]');
+  if(!box)return;
+  const bindButtons=()=>{
+    const play=box.querySelector('.play'),pause=box.querySelector('.pause'),stop=box.querySelector('.stop');
+    if(play)play.onclick=()=>{try{const r=window.playPlayer?.('main');if(r?.catch)r.catch(e=>setStatus?.('main',String(e?.message||e),'err'))}catch(e){try{setStatus?.('main',String(e?.message||e),'err')}catch(_){}}};
+    if(pause)pause.onclick=()=>{try{window.pausePlayer?.('main')}catch(e){}};
+    if(stop)stop.onclick=()=>{try{window.stopPlayer?.('main');setStatus?.('main','Gestoppt.')}catch(e){}};
+  };
+  bindButtons();
+  window.addEventListener('compositionlab-samples-ready',()=>{try{bindPlayerScore?.('main',state.current||state.source);bindButtons()}catch(_){}},{once:true});
+}
 function install(){
   const E=window.CompositionLabEngine,btn=$('composeBtn');
   if(!E||E.BUILD!==14||!btn||typeof state==='undefined')return false;
+  ensureConceptBox();
+  if(state.current?._meta?.generatedConcept)showConcept(state.current._meta.generatedConcept);
   const handler=async()=>{
     const provider=$('pageProvider')?.value||state.provider||$('provider')?.value||'openai';
     const model=$('pageModel')?.value?.trim()||state.model||$('model')?.value?.trim()||'';
@@ -38,21 +70,23 @@ function install(){
     btn.disabled=true;
     try{setStatus?.('main','Engine Build 14 komponiert …')}catch(_){}
     try{
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:state.source?.ti||$('sourceName')?.value||'',sourceInstruction});
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:state.source?.ti||$('sourceName')?.value||'',sourceInstruction,onConcept:x=>showConcept(x?.concept||'')});
+      showConcept(r.concept||'');
       if(r.conceptOnly){
-        if($('compIdea'))$('compIdea').value=r.concept||idea;
         try{saveState?.()}catch(_){}
         try{setStatus?.('main','Musikalischer Entwurf erstellt · Engine Build 14')}catch(_){}
         return;
       }
       const score=toObjectScore(r.score);
       score.bpm=settings.bpm;
+      if(r.concept)score.sm=r.concept;
       score._meta={...(score._meta||{}),ensemble:settings.ensemble,measures:settings.measures,idea,task,sourceInstruction,generatedConcept:r.concept,engineVersion:E.VERSION,engineBuild:E.BUILD};
       state.provider=provider;state.model=model;state.current=score;
       state.history=Array.isArray(state.history)?state.history:[];
       state.history.push(clone(score));if(state.history.length>20)state.history.shift();
       try{saveState?.()}catch(_){}
       try{syncUI?.()}catch(_){}
+      bindMainPlayer(score);
       try{setStatus?.('main','Neue Komposition geladen · Engine Build 14')}catch(_){}
       window.__compositionLabLastSharedDiagnostic=r.diagnostic;
     }catch(e){
@@ -64,11 +98,12 @@ function install(){
   btn.dataset.sharedEngine='14';
   window.__compositionLabBuilds={engine:14,interface:INTERFACE_BUILD,platform:'iPad'};
   const modal=$('techModal')?.querySelector('.modal');
-  if(modal&&!$('ipadEngine14Badge')){
-    const d=document.createElement('div');d.id='ipadEngine14Badge';d.className='ipad-tech-section';
-    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 17</p>';
-    const foot=modal.querySelector('.modalfoot');if(foot)modal.insertBefore(d,foot);else modal.appendChild(d);
+  if(modal){
+    let d=$('ipadEngine14Badge');
+    if(!d){d=document.createElement('div');d.id='ipadEngine14Badge';d.className='ipad-tech-section';const foot=modal.querySelector('.modalfoot');if(foot)modal.insertBefore(d,foot);else modal.appendChild(d)}
+    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 18</p>';
   }
+  if(state.current)bindMainPlayer(state.current);
   return true;
 }
 let tries=0;
