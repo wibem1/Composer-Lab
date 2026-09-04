@@ -1,6 +1,18 @@
 (()=>{
 'use strict';
-function interfaceInfo(){try{const p=window.top.location.pathname;if(p.includes('/ipad/'))return{platform:'iPad',build:16};}catch(_){}return{platform:'Mac',build:17};}
+try{
+  const p=window.top.location.pathname||'';
+  if(p.includes('/ipad/')){
+    if(!document.getElementById('ipadEngine14Adapter')){
+      const s=document.createElement('script');
+      s.id='ipadEngine14Adapter';
+      s.src='/Composer-Lab/shared/ipad-engine14-adapter.js?fresh='+Date.now();
+      (document.head||document.body).appendChild(s);
+    }
+    return;
+  }
+}catch(_){}
+function interfaceInfo(){return{platform:'Mac',build:17};}
 function install(){
   const E=window.CompositionLabEngine,btn=document.getElementById('composeBtn');
   if(!E||!btn||typeof state==='undefined')return false;
