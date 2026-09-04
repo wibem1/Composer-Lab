@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Composition Lab">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  :root { --bg:#111318; --panel:#1a1f27; --panel2:#232a34; --text:#eef2f7; --muted:#9ba7b4; --accent:#7cc4ff; --ok:#74d99f; --warn:#ffd166; --err:#ff7b7b; --line:#303845; }
+  :root { --bg:#111318; --panel:#1a1f27; --panel2:#232a34; --text:#eef2f7; --muted:#9ba7b4; --accent:#7cc4ff; --ok:#74d99f; --warn:#ffd166; --err:#ff7b7b; --line:#303845; color-scheme: dark; }
   * { box-sizing:border-box; }
   html { min-height:100%; overflow-y:auto; }
   body { margin:0; min-height:100%; overflow-y:auto; background:var(--bg); color:var(--text); font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; }
@@ -22,13 +22,19 @@
   .panel { background:var(--panel); border:1px solid #2d3540; border-radius:10px; padding:14px; overflow:visible; min-height:0; }
   label { display:block; margin:10px 0 5px; color:#cbd4df; font-weight:650; }
   input, select, textarea, button { font:inherit; }
-  input, select, textarea { width:100%; padding:9px; border-radius:7px; border:1px solid #3a4553; background:#10141a; color:var(--text); }
+  input, select, textarea { width:100%; padding:9px; border-radius:7px; border:1px solid #3a4553; background:#10141a; color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; caret-color:var(--text); }
+  select option { background:#10141a; color:#eef2f7; }
+  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, select:-webkit-autofill { -webkit-text-fill-color:#eef2f7 !important; -webkit-box-shadow:0 0 0 1000px #10141a inset !important; box-shadow:0 0 0 1000px #10141a inset !important; }
   textarea { resize:vertical; min-height:110px; }
   .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   button { border:0; border-radius:7px; padding:10px 14px; cursor:pointer; font-weight:700; }
   .primary { background:var(--accent); color:#07121a; width:100%; margin-top:12px; }
-  .secondary { background:#303947; color:var(--text); }
+  .secondary { background:#303947; color:var(--text) !important; -webkit-text-fill-color:var(--text) !important; }
   .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .playerbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 10px; padding:9px; border:1px solid var(--line); border-radius:8px; background:#121820; }
+  .playerbar button { padding:8px 11px; }
+  .playerbar input[type=range] { width:120px; padding:0; accent-color:var(--accent); }
+  .playerstatus { color:var(--muted); font-size:12px; flex:1 1 180px; }
   pre { white-space:pre-wrap; word-break:break-word; background:#0f1318; padding:12px; border-radius:8px; border:1px solid #303845; min-height:160px; }
   .status { padding:8px 10px; border-radius:7px; background:#10141a; border:1px solid #303845; margin-bottom:10px; }
   .ok { color:var(--ok); } .warn { color:var(--warn); } .err { color:var(--err); }
@@ -69,10 +75,15 @@
   .compare-notes { min-height:72px; }
   @media (max-width:650px){ .labbuttons,.comparegrid{grid-template-columns:1fr;} }
   @media (max-width:900px){ main{grid-template-columns:1fr;} }
+
+  #status, .playerstatus, .operationstatus { color:var(--ok) !important; }
+
+  #sourceAPlayer #seekSourceA, #sourceBPlayer #seekSourceB { flex:1 1 260px; width:auto; min-width:140px; }
 </style>
+<script src="soundfont-player.js"></script>
 </head>
 <body>
-<header><h1>Composition Lab <span style="font-weight:400;color:var(--muted);font-size:13px;">· Komponieren mit künstlicher Intelligenz</span></h1></header>
+<header><h1>Composition Lab <span style="font-weight:400;color:var(--muted);font-size:13px;">· Werkstatt für gemeinsames Komponieren mit KI</span></h1></header>
 <main>
   <section class="panel">
     <label for="provider">Modell-Anbieter</label>
@@ -125,33 +136,28 @@
     <label for="prompt">Kompositionsauftrag</label>
     <textarea id="prompt">Komponiere ein eigenständiges, musikalisch überzeugendes Stück. Entwickle einen klar erkennbaren musikalischen Gedanken mit abwechslungsreicher Dynamik und Artikulation.</textarea>
 
-    <details class="labbox" id="experimentSection" open>
-      <summary>Experimentierlabor</summary>
-      <div class="foldcontent">
-        <p class="labhint">Hier entstehen Ausgangsideen oder Musikmaterial. Nichts wird automatisch als „richtig“ bewertet – du entscheidest, was interessant ist und was weiterentwickelt wird.</p>
-        <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>
-        <select id="templateLength">
-          <option value="2">2 Takte</option>
-          <option value="4" selected>4 Takte</option>
-          <option value="8">8 Takte</option>
-        </select>
-        <div class="uploadinfo" style="margin-bottom:9px;">Nur die Länge der Vorlage. Die oben eingestellte Taktzahl bestimmt weiterhin die Länge des fertigen Stücks.</div>
-        <div class="labbuttons">
-          <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
-          <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
-          <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
-          <button type="button" class="secondary" id="randomToTemplateBtn" disabled>↗ Als Vorlage verwenden</button>
-        </div>
-        <div class="uploadinfo" id="experimentInfo">Die Vorlagenlänge gilt nur für das erzeugte Ausgangsmaterial. Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
-      </div>
-    </details>
+    
 
-    <label>Vorhandenes Material hochladen (MIDI oder JSON)</label>
+    <label>Vorlage / vorhandenes Material (MIDI oder JSON)</label>
     <div class="uploadrow">
       <input id="uploadInput" type="file" accept=".mid,.midi,.json,application/json,audio/midi">
       <button type="button" class="secondary smallbtn" id="clearUploadBtn">Entfernen</button>
     </div>
-    <div class="uploadinfo" id="uploadInfo">Kein Material geladen.</div>
+    <div class="uploadinfo" id="uploadInfo">Keine Vorlage geladen.</div>
+    <div class="toolbar" style="margin-top:8px;">
+      <button type="button" class="secondary smallbtn" id="analyzeImportedBtn" disabled>Mit KI analysieren</button>
+    </div>
+    <details id="importedAnalysisSection" class="foldbox" style="display:none;margin-top:8px;">
+      <summary>KI-Analyse der importierten MIDI-Datei</summary>
+      <div class="foldcontent">
+        <div id="importedAnalysis" class="resultcard" style="white-space:pre-wrap;">Noch keine Analyse.</div>
+        <div class="chatrow" style="margin-top:9px;">
+          <textarea id="importedAnalysisQuestion" style="min-height:58px;" placeholder="Frage zur Analyse, z. B. „Was würdest du verbessern?“"></textarea>
+          <button id="askImportedAnalysisBtn" class="secondary" type="button">KI fragen</button>
+        </div>
+        <div id="importedAnalysisAnswer" class="resultcard" style="display:none;margin-top:8px;white-space:pre-wrap;"></div>
+      </div>
+    </details>
 
     <button class="primary" id="composeBtn">Mit gewählter KI komponieren</button>
 
@@ -161,6 +167,20 @@
     <div class="toolbar">
       <button class="secondary" id="downloadBtn" disabled>MIDI herunterladen</button>
       <button class="secondary" id="jsonBtn" disabled>JSON herunterladen</button>
+    </div>
+    <div class="playerbar" id="gmPlayer">
+      <strong id="mainPlayerTitle" style="flex:1 1 100%;">Noch keine Wiedergabequelle geladen.</strong>
+      <button class="secondary" id="playBtn" type="button">▶ Abspielen</button>
+      <button class="secondary" id="pauseBtn" type="button">⏸ Pause</button>
+      <button class="secondary" id="stopBtn" type="button">⏹ Stop</button>
+      <button class="secondary" id="loopBtn" type="button">🔁 Loop: Aus</button>
+      <label for="playerVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+        <input id="playerVolume" type="range" min="0" max="100" value="75">
+      </label>
+      <span class="playerstatus" id="playerStatus">GM-Player bereit.</span>
+      <div style="flex-basis:100%;height:0"></div>
+      <input id="playerSeek" type="range" min="0" max="1000" value="0" step="1" style="flex:1 1 260px;">
+      <span class="playerstatus" id="playerTime">0:00 / 0:00</span>
     </div>
     <div class="status" id="status">Bereit.</div>
 
@@ -186,41 +206,123 @@
       </div>
     </details>
 
-    <details class="foldbox" id="validationSection">
-      <summary>Technische Analyse & Validierung</summary>
-      <div class="foldcontent">
-        <pre id="validation">Noch keine Komposition geprüft.</pre>
-      </div>
-    </details>
+    <details class="labbox" id="experimentSection" style="grid-column:1 / -1; margin-top:8px;">
+        <summary>Experimentierlabor · optional</summary>
+        <div class="foldcontent">
+          <p class="labhint">Optionaler Arbeitsbereich für musikalische Versuche. Experimentiere hier unabhängig von der eigentlichen Komposition. Erst wenn dir eine Vorlage gefällt, übernimmst du sie als vorhandenes Material und arbeitest oben mit der eigentlichen Kompositionsengine weiter.</p>
+          <label for="templateLength" style="margin-top:0;">Vorlagenlänge</label>
+          <select id="templateLength">
+            <option value="2">2 Takte</option>
+            <option value="4" selected>4 Takte</option>
+            <option value="8">8 Takte</option>
+          </select>
+          <div class="uploadinfo" style="margin-bottom:9px;">Länge der experimentellen Vorlage. Sie ist vollständig unabhängig von der oben eingestellten Länge des fertigen Stücks.</div>
+          <label for="labTempo">Tempo (BPM)</label>
+          <input id="labTempo" type="number" min="20" max="300" value="96" placeholder="z. B. 90">
+          <div class="uploadinfo" style="margin-bottom:9px;">Tempo der experimentellen Vorlage.</div>
+          <label for="labEnsemble">Besetzung / Instrumente</label>
+          <input id="labEnsemble" value="Klavier solo" placeholder="z. B. Violine und Klavier, Streichquartett, Flöte solo">
+          <div class="uploadinfo" style="margin-bottom:9px;">Besetzung frei eingeben. Die KI verwendet diese Angabe für die experimentelle Vorlage.</div>
+          <label for="labStyle">Charakter / Stil</label>
+          <input id="labStyle" value="" placeholder="z. B. klassisch, modern, romantisch, experimentell, ruhig und geheimnisvoll">
+          <div class="uploadinfo" style="margin-bottom:9px;">Freie ästhetische Vorgabe für die Vorlage. Tonart, Taktart, Motivik und Harmonik darf die KI weiterhin selbst gestalten.</div>
+          <div class="labbuttons">
+            <button type="button" class="secondary" id="inspirationBtn">💡 Inspiration würfeln</button>
+            <button type="button" class="secondary" id="randomFreeBtn">🎲 Völliger Zufall</button>
+            <button type="button" class="secondary" id="randomGuidedBtn">🎛 Zufall mit Eckdaten</button>
+            <button type="button" class="secondary" id="randomToTemplateBtn">🎼 KI-Vorlage erzeugen</button>
+          </div>
+          <div class="uploadinfo" id="experimentInfo">Inspiration schreibt einen Vorschlag in den Kompositionsauftrag. Zufallsmusik wird lokal erzeugt und benötigt keine KI.</div>
+          <div class="playerbar" id="randomTemplateBox" style="display:none;margin-top:10px;">
+            <strong id="randomTemplateName" style="flex:1 1 100%;">KI-Vorlage</strong>
+            <button type="button" class="secondary smallbtn" id="templatePlayBtn">▶ Abspielen</button>
+            <button type="button" class="secondary smallbtn" id="templatePauseBtn">⏸ Pause</button>
+            <button type="button" class="secondary smallbtn" id="templateStopBtn">⏹ Stop</button>
+            <button type="button" class="secondary smallbtn" id="templateLoopBtn">🔁 Loop: Aus</button>
+            <label for="templateVolume" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+              <input id="templateVolume" type="range" min="0" max="100" value="75">
+            </label>
+            <span class="playerstatus" id="templatePlayerStatus">KI-Vorlage bereit.</span>
+            <div style="flex-basis:100%;height:0"></div>
+            <input id="templateSeek" type="range" min="0" max="1000" value="0" step="1" style="flex:1 1 260px;">
+            <span class="playerstatus" id="templateTime">0:00 / 0:00</span>
+            <div style="flex-basis:100%;height:0"></div>
+            <button type="button" class="secondary smallbtn" id="templateSaveBtn">💾 MIDI speichern</button>
+            <button type="button" class="secondary smallbtn" id="templateUseBtn">↗ In Komposition übernehmen</button>
+            <button type="button" class="secondary smallbtn" id="templateRerollBtn">🎲 Neue KI-Vorlage</button>
+          </div>
+          <div id="templateIdeaBox" class="resultcard" style="display:none;margin-top:10px;">
+            <strong>Kompositionsidee der Vorlage</strong>
+            <div id="templateIdeaText" style="margin-top:6px;white-space:pre-wrap;">Noch keine Kompositionsidee vorhanden.</div>
+          </div>
+          <details class="foldbox" id="synthesisSection">
+            <summary>Musik untersuchen & vergleichen</summary>
+            <div class="foldcontent">
+              <p class="labhint">Ein oder zwei beliebige Stücke oder Vorlagen laden und der KI dazu frei Fragen stellen. Analyse, Vergleich, Kritik, Verbesserungsideen oder Weiterentwicklung bestimmst du selbst.</p>
+              <div class="comparegrid">
+                <div>
+                  <label for="sourceASelect">Quelle A</label>
+                  <select id="sourceASelect"><option value="">Quelle wählen …</option></select>
+                  <div class="uploadrow"><input id="sourceAFile" type="file" accept=".mid,.midi,.json,application/json,audio/midi"></div>
+                  <div id="sourceACard" class="variantcard">Noch keine Quelle geladen.</div>
+                  <div class="playerbar" id="sourceAPlayer">
+                    <strong style="flex:1 1 100%;">Player A</strong>
+                    <button type="button" class="secondary smallbtn" id="playSourceA">▶ Abspielen</button>
+                    <button type="button" class="secondary smallbtn" id="pauseSourceA">⏸ Pause</button>
+                    <button type="button" class="secondary smallbtn" id="stopSourceA">⏹ Stop</button>
+                    <button type="button" class="secondary smallbtn" id="loopSourceA">🔁 Loop: Aus</button>
+                    <label for="volumeSourceA" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+                      <input id="volumeSourceA" type="range" min="0" max="100" value="75">
+                    </label>
+                    <span class="playerstatus" id="statusSourceA">Quelle A bereit.</span>
+                    <div style="flex-basis:100%;height:0"></div>
+                    <input id="seekSourceA" type="range" min="0" max="1000" value="0" step="1" style="flex:1 1 260px;">
+                    <span class="playerstatus" id="timeSourceA">0:00 / 0:00</span>
+                  </div>
+                </div>
+                <div>
+                  <label for="sourceBSelect">Quelle B</label>
+                  <select id="sourceBSelect"><option value="">Quelle wählen …</option></select>
+                  <div class="uploadrow"><input id="sourceBFile" type="file" accept=".mid,.midi,.json,application/json,audio/midi"></div>
+                  <div id="sourceBCard" class="variantcard">Noch keine Quelle geladen.</div>
+                  <div class="playerbar" id="sourceBPlayer">
+                    <strong style="flex:1 1 100%;">Player B</strong>
+                    <button type="button" class="secondary smallbtn" id="playSourceB">▶ Abspielen</button>
+                    <button type="button" class="secondary smallbtn" id="pauseSourceB">⏸ Pause</button>
+                    <button type="button" class="secondary smallbtn" id="stopSourceB">⏹ Stop</button>
+                    <button type="button" class="secondary smallbtn" id="loopSourceB">🔁 Loop: Aus</button>
+                    <label for="volumeSourceB" style="margin:0;font-weight:600;display:flex;align-items:center;gap:7px;">Lautstärke
+                      <input id="volumeSourceB" type="range" min="0" max="100" value="75">
+                    </label>
+                    <span class="playerstatus" id="statusSourceB">Quelle B bereit.</span>
+                    <div style="flex-basis:100%;height:0"></div>
+                    <input id="seekSourceB" type="range" min="0" max="1000" value="0" step="1" style="flex:1 1 260px;">
+                    <span class="playerstatus" id="timeSourceB">0:00 / 0:00</span>
+                  </div>
+                </div>
+              </div>
+              <div id="sourceChatLog" class="chatlog" style="margin-top:12px;max-height:360px;">
+                <div class="chatai chatmsg">Frage die KI frei zu Quelle A, Quelle B oder beiden. Du entscheidest selbst, ob du ein Stück analysieren, zwei Stücke vergleichen, Verbesserungsvorschläge erhalten oder einen neuen Kompositionsgedanken entwickeln möchtest.</div>
+              </div>
+              <div class="chatrow">
+                <textarea id="sourceChatInput" style="min-height:70px;" placeholder="z. B. „Analysiere Quelle A“, „Vergleiche A und B“ oder eine beliebige eigene Frage …"></textarea>
+                <button id="sourceChatSendBtn" class="secondary" type="button">Senden</button>
+              </div>
+              <div class="toolbar" style="margin-top:8px;">
+                <button id="sourceChatUseBtn" class="secondary smallbtn" type="button" disabled>Letzte KI-Antwort als Kompositionsauftrag übernehmen</button>
+              </div>
+            </div>
+          </details>
 
-    <details class="foldbox" id="compareSection" open>
-      <summary>Varianten vergleichen</summary>
-      <div class="foldcontent">
-        <p class="labhint">Wähle zwei Fassungen aus dem Verlauf. Composition Lab kürt keinen Sieger – der Vergleich gehört dir.</p>
-        <div class="comparegrid">
-          <div>
-            <label for="variantA">Variante A</label>
-            <select id="variantA"></select>
-            <div id="variantACard" class="variantcard">Noch keine Variante gewählt.</div>
-            <div class="historyactions">
-              <button type="button" class="secondary smallbtn" id="loadVariantA">In Editor laden</button>
-              <button type="button" class="secondary smallbtn" id="midiVariantA">MIDI</button>
+          <details class="foldbox" id="experimentHistorySection" open>
+            <summary>Vorlagen-Verlauf (unabhängig gespeichert)</summary>
+            <div class="foldcontent">
+              <div class="toolbar" style="margin-top:0"><button type="button" class="secondary smallbtn" id="clearExperimentHistoryBtn">Vorlagen-Verlauf leeren</button></div>
+              <div id="experimentHistoryList">Noch keine Vorlagen vorhanden.</div>
             </div>
-          </div>
-          <div>
-            <label for="variantB">Variante B</label>
-            <select id="variantB"></select>
-            <div id="variantBCard" class="variantcard">Noch keine Variante gewählt.</div>
-            <div class="historyactions">
-              <button type="button" class="secondary smallbtn" id="loadVariantB">In Editor laden</button>
-              <button type="button" class="secondary smallbtn" id="midiVariantB">MIDI</button>
-            </div>
-          </div>
+          </details>
         </div>
-        <label for="compareNotes">Eigene Beobachtungen</label>
-        <textarea id="compareNotes" class="compare-notes" placeholder="Was funktioniert in A? Was in B? Welche Idee möchtest du weiterentwickeln?"></textarea>
-      </div>
-    </details>
+      </details>
 
     <details class="foldbox" id="historySection" open>
       <summary>Versuche & Verlauf (dauerhaft gespeichert)</summary>
@@ -233,7 +335,14 @@
     </details>
   </section>
 
-  <details style="grid-column:1 / -1;" class="foldbox" id="technicalSection">
+
+
+  <details style="grid-column:1 / -1;" class="foldbox" id="validationSection">
+    <summary>Technische Analyse &amp; Validierung</summary>
+    <div class="foldcontent"><pre id="validation">Noch keine Komposition geprüft.</pre></div>
+  </details>
+
+<details style="grid-column:1 / -1;" class="foldbox" id="technicalSection">
       <summary>Technisches</summary>
       <div class="foldcontent">
         <label for="apiKey" id="apiKeyLabel" style="margin-top:0;">API-Key für Google / Gemini</label>
@@ -246,10 +355,6 @@
           <button type="button" class="secondary smallbtn" id="saveKeyBtn">💾 Jetzt speichern</button>
           <button type="button" class="secondary smallbtn" id="clearApiKeyBtn">🗑 Key löschen</button>
         </div>
-        <div class="toolbar" style="margin-top:12px; margin-bottom:4px;">
-          <button type="button" class="secondary smallbtn" id="diagnosticBtn" disabled>Diagnosedatei herunterladen</button>
-        </div>
-        <div class="uploadinfo" id="diagnosticInfo">Nach einem Kompositionsversuch enthält die Diagnosedatei die tatsächlich verwendeten Prompts, Antworten, Einstellungen und Plattformdaten. Der API-Key wird nicht gespeichert.</div>
       </div>
     </details>
 </main>
@@ -259,6 +364,7 @@
 
 const STORAGE_ID = "ai_midi_composer_settings_v37";
 const HISTORY_ID = "ai_midi_composer_history_v37";
+const EXPERIMENT_HISTORY_ID = "composition_lab_experiment_history_v1";
 
 const MODEL_OPTIONS = {
   gemini: [
@@ -283,7 +389,7 @@ const TOKEN_RATES = {
 };
 
 const SYSTEM_PREFIX = `Du bist ein Kompositions- und Produktionsassistent für MIDI.
-Erfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
+Entwickle aus dem Auftrag einen tragenden musikalischen Gedanken und führe ihn erkennbar weiter, statt Material nur aneinanderzureihen. Achte auf eine nachvollziehbare Form, gute Stimmführung, bewusste Harmonik und Rhythmik sowie ausdrucksvolle Dynamik und Artikulation. Vermeide unbeabsichtigte Tonleiterläufe, mechanische Wiederholungen und zufällige Dissonanzen. Ungewöhnliche, experimentelle oder offene Lösungen sind ausdrücklich willkommen, wenn sie musikalisch begründet sind. Beachte Besetzung und Spielbarkeit. Wenn vorhandenes MIDI-Material gegeben ist, erfasse seine musikalische Idee und führe, variiere oder verwandle sie sinnvoll nach dem Auftrag des Nutzers.`;
 
 const TECHNICAL_PROMPT = `NOTATION UND AUSGABE:
 - "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).
@@ -317,7 +423,7 @@ let lastModel = null;
 let uploadedScore = null;
 let uploadedName = "";
 let lastConcept = "";
-let lastDiagnostic = null;
+let mainPlayerScore = null; // Vorlage nach Übernahme, später fertige Komposition
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -391,9 +497,14 @@ function saveCurrentState(){
       musicalKey: $("musicalKey").value,
       ensemble: $("ensemble").value,
       prompt: $("prompt").value,
-      templateLength: $("templateLength").value
+      templateLength: $("templateLength").value,
+      labTempo: $("labTempo")?.value || "96",
+      labEnsemble: $("labEnsemble")?.value || "",
+      labStyle: $("labStyle")?.value || ""
     };
 
+    data.foldStates = {};
+    document.querySelectorAll("details[id]").forEach(el => { data.foldStates[el.id] = !!el.open; });
     localStorage.setItem(STORAGE_ID, JSON.stringify(data));
   } catch(_) {}
 }
@@ -413,8 +524,16 @@ function initApp(){
     if(data.form.ensemble !== undefined) $("ensemble").value = data.form.ensemble;
     if(data.form.prompt !== undefined) $("prompt").value = data.form.prompt;
     if(data.form.templateLength !== undefined && ["2","4","8"].includes(String(data.form.templateLength))) $("templateLength").value = String(data.form.templateLength);
+    if(data.form.labTempo !== undefined && $("labTempo")) $("labTempo").value = data.form.labTempo;
+    if(data.form.labEnsemble !== undefined && $("labEnsemble")) $("labEnsemble").value = data.form.labEnsemble;
+    if(data.form.labStyle !== undefined && $("labStyle")) $("labStyle").value = data.form.labStyle;
   }
 
+  if(data.foldStates && typeof data.foldStates === "object"){
+    document.querySelectorAll("details[id]").forEach(el => {
+      if(Object.prototype.hasOwnProperty.call(data.foldStates, el.id)) el.open = !!data.foldStates[el.id];
+    });
+  }
   syncUIForProvider(p);
   renderHistory();
 }
@@ -426,12 +545,12 @@ $("provider").addEventListener("change", (e) => {
 });
 
 // Automatisches Speichern bei jeder Änderung
-["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength"].forEach(id => {
+["apiKey", "model", "reasoningEffort", "measures", "meter", "tempo", "musicalKey", "ensemble", "prompt", "templateLength", "labTempo", "labEnsemble", "labStyle"].forEach(id => {
   $(id).addEventListener("input", saveCurrentState);
   $(id).addEventListener("change", saveCurrentState);
 });
 $("rememberApiKey").addEventListener("change", saveCurrentState);
-$("diagnosticBtn").addEventListener("click", downloadDiagnostic);
+document.querySelectorAll("details[id]").forEach(el => el.addEventListener("toggle", saveCurrentState));
 
 $("saveKeyBtn").addEventListener("click", () => {
   saveCurrentState();
@@ -573,17 +692,12 @@ function generateRandomMusic(useCurrentLimits){
 function useRandomAsTemplate(){
   if(!lastScore) return;
   uploadedScore = JSON.parse(JSON.stringify(lastScore));
-  uploadedName = `${lastScore.ti || "Vorlage"}.json`;
+  uploadedName = `${lastScore.ti || "Zufall"}.json`;
   const count=(uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0),0);
-
-  if(Number.isFinite(+uploadedScore.bpm)) $("tempo").value = Math.round(+uploadedScore.bpm);
-  if(uploadedScore.ts?.n && uploadedScore.ts?.d) $("meter").value = `${uploadedScore.ts.n}/${uploadedScore.ts.d}`;
-  if(uploadedScore.k && uploadedScore.k !== "unknown") $("musicalKey").value = uploadedScore.k;
-
   $("prompt").value = "";
   saveCurrentState();
   $("uploadInfo").textContent=`Als Vorlage aktiv: ${uploadedName} (${count} Noten, ${$("templateLength").value} Takte)`;
-  $("status").innerHTML='<span class="ok">Vorlage übernommen. Der Kompositionsauftrag wurde geleert; die Taktzahl des fertigen Stücks bleibt unverändert.</span>';
+  $("status").innerHTML='<span class="ok">Aktuelle Zufallsmusik ist jetzt Vorlage für die KI.</span>';
 }
 
 function getHistory(){
@@ -768,7 +882,15 @@ $("uploadInput").addEventListener("change", async e => {
     }
     const count = (uploadedScore.tr||[]).reduce((s,t)=>s+(t.nt?.length||0), 0);
     $("uploadInfo").textContent = `Geladen: ${f.name} (${count} Noten)`;
-    $("status").textContent = "Material geladen. Wird als Referenz mitgesendet.";
+    mainPlayerScore = uploadedScore;
+    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Import: ${f.name}`;
+    if($("playerSeek")) $("playerSeek").value = "0";
+    if($("playerTime")) $("playerTime").textContent = "0:00 / 0:00";
+    if($("playerStatus")) $("playerStatus").textContent = `Import „${f.name}“ im Hauptplayer bereit.`;
+    if($("playImportedBtn")) $("playImportedBtn").disabled = false;
+    if($("analyzeImportedBtn")) $("analyzeImportedBtn").disabled = false;
+    if($("importedAnalysis")){ $("importedAnalysis").style.display="block"; $("importedAnalysis").textContent="Noch keine Analyse."; } if($("importedAnalysisSection")){ $("importedAnalysisSection").style.display="none"; $("importedAnalysisSection").open=false; }
+    $("status").textContent = "Material geladen. Es kann angehört, analysiert und als Referenz mitgesendet werden.";
   } catch(err) {
     uploadedScore = null;
     $("uploadInfo").textContent = "Fehler beim Lesen des Uploads.";
@@ -779,7 +901,10 @@ $("uploadInput").addEventListener("change", async e => {
 $("clearUploadBtn").addEventListener("click", () => {
   uploadedScore = null;
   $("uploadInput").value = "";
-  $("uploadInfo").textContent = "Kein Material geladen.";
+  $("uploadInfo").textContent = "Keine Vorlage geladen.";
+  if($("playImportedBtn")) $("playImportedBtn").disabled = true;
+  if($("analyzeImportedBtn")) $("analyzeImportedBtn").disabled = true;
+  if($("importedAnalysis")){ $("importedAnalysis").style.display="block"; $("importedAnalysis").textContent="Noch keine Analyse."; } if($("importedAnalysisSection")){ $("importedAnalysisSection").style.display="none"; $("importedAnalysisSection").open=false; }
 });
 
 // --- API Router ---
@@ -915,14 +1040,6 @@ function encodeMTrk(events){
   return [...strB("MTrk"), ...u32(data.length), ...data];
 }
 
-function downloadDiagnostic(){
-  if(!lastDiagnostic) return;
-  const stamp=new Date(lastDiagnostic.startedAt||Date.now()).toISOString().replace(/[:.]/g,"-");
-  const title=lastDiagnostic.result?.score?.ti||lastScore?.ti||"Komposition";
-  const safe=String(title).replace(/[^a-z0-9äöüß_-]+/gi,"_").replace(/^_+|_+$/g,"").slice(0,60)||"Komposition";
-  downloadBlob(JSON.stringify(lastDiagnostic,null,2),`Composition-Lab-Diagnose_${safe}_${stamp}.json`,"application/json");
-}
-
 function downloadBlob(data, name, type){
   if (window.AndroidBridge && window.AndroidBridge.saveBlob) {
     const reader = new FileReader();
@@ -936,6 +1053,191 @@ function downloadBlob(data, name, type){
   setTimeout(() => URL.revokeObjectURL(a.href), 500);
 }
 
+
+// --- Integrierter GM-SoundFont-Player ---
+const GM_INSTRUMENTS = [
+  "acoustic_grand_piano","bright_acoustic_piano","electric_grand_piano","honkytonk_piano","electric_piano_1","electric_piano_2","harpsichord","clavinet",
+  "celesta","glockenspiel","music_box","vibraphone","marimba","xylophone","tubular_bells","dulcimer",
+  "drawbar_organ","percussive_organ","rock_organ","church_organ","reed_organ","accordion","harmonica","tango_accordion",
+  "acoustic_guitar_nylon","acoustic_guitar_steel","electric_guitar_jazz","electric_guitar_clean","electric_guitar_muted","overdriven_guitar","distortion_guitar","guitar_harmonics",
+  "acoustic_bass","electric_bass_finger","electric_bass_pick","fretless_bass","slap_bass_1","slap_bass_2","synth_bass_1","synth_bass_2",
+  "violin","viola","cello","contrabass","tremolo_strings","pizzicato_strings","orchestral_harp","timpani",
+  "string_ensemble_1","string_ensemble_2","synth_strings_1","synth_strings_2","choir_aahs","voice_oohs","synth_choir","orchestra_hit",
+  "trumpet","trombone","tuba","muted_trumpet","french_horn","brass_section","synth_brass_1","synth_brass_2",
+  "soprano_sax","alto_sax","tenor_sax","baritone_sax","oboe","english_horn","bassoon","clarinet",
+  "piccolo","flute","recorder","pan_flute","blown_bottle","shakuhachi","whistle","ocarina",
+  "lead_1_square","lead_2_sawtooth","lead_3_calliope","lead_4_chiff","lead_5_charang","lead_6_voice","lead_7_fifths","lead_8_bass__lead",
+  "pad_1_new_age","pad_2_warm","pad_3_polysynth","pad_4_choir","pad_5_bowed","pad_6_metallic","pad_7_halo","pad_8_sweep",
+  "fx_1_rain","fx_2_soundtrack","fx_3_crystal","fx_4_atmosphere","fx_5_brightness","fx_6_goblins","fx_7_echoes","fx_8_scifi",
+  "sitar","banjo","shamisen","koto","kalimba","bag_pipe","fiddle","shanai",
+  "tinkle_bell","agogo","steel_drums","woodblock","taiko_drum","melodic_tom","synth_drum","reverse_cymbal",
+  "guitar_fret_noise","breath_noise","seashore","bird_tweet","telephone_ring","helicopter","applause","gunshot"
+];
+
+let playerAudioCtx = null;
+let playerMasterGain = null;
+let playerInstrumentCache = new Map();
+let playerPaused = false;
+let playerPlaying = false;
+let playerLoopEnabled = false;
+let playerEndTimer = null;
+
+function gmProgramName(pg){
+  pg = Math.max(0, Math.min(127, Number(pg) || 0));
+  return GM_INSTRUMENTS[pg] || "acoustic_grand_piano";
+}
+
+function ensurePlayerAudio(){
+  if(!playerAudioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) throw new Error("Web Audio wird auf diesem Gerät nicht unterstützt.");
+    playerAudioCtx = new AC();
+    playerMasterGain = playerAudioCtx.createGain();
+    playerMasterGain.gain.value = Number($("playerVolume")?.value || 75) / 100;
+    playerMasterGain.connect(playerAudioCtx.destination);
+  }
+  return playerAudioCtx;
+}
+
+async function loadGMInstrument(program, channel){
+  const key = channel === 9 ? "drums" : String(Math.max(0, Math.min(127, Number(program)||0)));
+  if(playerInstrumentCache.has(key)) return playerInstrumentCache.get(key);
+  if(typeof Soundfont === "undefined") throw new Error("SoundFont-Modul konnte nicht geladen werden.");
+  const name = channel === 9 ? "synth_drum" : gmProgramName(program);
+  const promise = Soundfont.instrument(ensurePlayerAudio(), name, {
+    soundfont: "FluidR3_GM",
+    format: "mp3",
+    destination: playerMasterGain
+  });
+  playerInstrumentCache.set(key, promise);
+  try {
+    return await promise;
+  } catch(err){
+    playerInstrumentCache.delete(key);
+    if(name !== "acoustic_grand_piano"){
+      const fallback = Soundfont.instrument(ensurePlayerAudio(), "acoustic_grand_piano", {
+        soundfont: "FluidR3_GM", format: "mp3", destination: playerMasterGain
+      });
+      playerInstrumentCache.set(key, fallback);
+      return await fallback;
+    }
+    throw err;
+  }
+}
+
+function stopGMPlayback(update=true){
+  if(playerEndTimer){ clearTimeout(playerEndTimer); playerEndTimer = null; }
+  playerInstrumentCache.forEach(p => Promise.resolve(p).then(inst => { try { inst.stop(); } catch(_){} }).catch(()=>{}));
+  playerPaused = false;
+  playerPlaying = false;
+  if(update && $("playerStatus")) $("playerStatus").textContent = "Gestoppt.";
+}
+
+function scoreMaxBeat(score){
+  let max = 0;
+  (score?.tr || []).forEach(t => (t.nt || []).forEach(n => {
+    const start = Number(n[0]) || 0;
+    const dur = Number(n[1]) || 0;
+    const gate = n.length > 5 ? (Number(n[5]) || 0.95) : 0.95;
+    max = Math.max(max, start + dur * Math.max(0.05, gate));
+  }));
+  return max;
+}
+
+async function playGMScore(score){
+  if(!score || !Array.isArray(score.tr) || !score.tr.length){
+    $("playerStatus").textContent = "Noch keine Komposition zum Abspielen.";
+    return;
+  }
+  const ac = ensurePlayerAudio();
+  if(ac.state === "suspended") await ac.resume();
+  stopGMPlayback(false);
+  $("playerStatus").textContent = "GM-Klänge werden geladen …";
+
+  const used = [];
+  const seen = new Set();
+  for(const t of score.tr){
+    const ch = Math.max(0, Math.min(15, Number(t.ch)||0));
+    const pg = Math.max(0, Math.min(127, Number(t.pg)||0));
+    const key = ch === 9 ? "drums" : String(pg);
+    if(!seen.has(key)){ seen.add(key); used.push([pg,ch]); }
+  }
+  await Promise.all(used.map(([pg,ch]) => loadGMInstrument(pg,ch)));
+
+  const bpm = Math.max(20, Math.min(300, Number(score.bpm)||96));
+  const secPerBeat = 60 / bpm;
+  const base = ac.currentTime + 0.12;
+  for(const t of score.tr){
+    const ch = Math.max(0, Math.min(15, Number(t.ch)||0));
+    const pg = Math.max(0, Math.min(127, Number(t.pg)||0));
+    const inst = await loadGMInstrument(pg,ch);
+    for(const n of (t.nt || [])){
+      const start = Math.max(0, Number(n[0])||0);
+      const dur = Math.max(0.02, Number(n[1])||0.25);
+      const pitch = Math.max(0, Math.min(127, Math.round(Number(n[2])||60)));
+      const vel = Math.max(1, Math.min(127, Number(n[3])||80));
+      const gate = n.length > 5 ? Math.max(0.05, Math.min(4, Number(n[5])||0.95)) : 0.95;
+      try {
+        inst.play(pitch, base + start * secPerBeat, {
+          duration: Math.max(0.03, dur * gate * secPerBeat),
+          gain: Math.max(0.02, Math.min(1, vel / 127))
+        });
+      } catch(err){ console.warn("GM note playback failed", err); }
+    }
+  }
+
+  playerPlaying = true;
+  playerPaused = false;
+  $("playerStatus").textContent = `▶ Wiedergabe · FluidR3 GM · ${bpm} BPM`;
+  const totalMs = Math.max(250, (scoreMaxBeat(score) * secPerBeat + 0.6) * 1000);
+  playerEndTimer = setTimeout(() => {
+    if(playerPlaying && !playerPaused){
+      if(playerLoopEnabled){
+        const loopScore = score;
+        stopGMPlayback(false);
+        playGMScore(loopScore).catch(err => {
+          $("playerStatus").textContent = "Player-Fehler: " + err.message;
+        });
+      } else {
+        stopGMPlayback(false);
+        $("playerStatus").textContent = "Wiedergabe beendet.";
+      }
+    }
+  }, totalMs);
+}
+
+async function toggleGMPause(){
+  if(!playerAudioCtx || !playerPlaying){
+    $("playerStatus").textContent = "Keine laufende Wiedergabe.";
+    return;
+  }
+  if(playerAudioCtx.state === "running"){
+    await playerAudioCtx.suspend();
+    playerPaused = true;
+    if(playerEndTimer){ clearTimeout(playerEndTimer); playerEndTimer = null; }
+    $("playerStatus").textContent = "⏸ Pausiert.";
+  } else {
+    await playerAudioCtx.resume();
+    playerPaused = false;
+    $("playerStatus").textContent = "▶ Wiedergabe fortgesetzt.";
+  }
+}
+
+$("playBtn").addEventListener("click", async () => {
+  try { await playGMScore(mainPlayerScore || uploadedScore || lastScore); }
+  catch(err){ $("playerStatus").textContent = "Player-Fehler: " + err.message; }
+});
+$("pauseBtn").addEventListener("click", () => toggleGMPause().catch(err => $("playerStatus").textContent = "Player-Fehler: " + err.message));
+$("stopBtn").addEventListener("click", () => stopGMPlayback(true));
+$("loopBtn").addEventListener("click", () => {
+  playerLoopEnabled = !playerLoopEnabled;
+  $("loopBtn").textContent = playerLoopEnabled ? "🔁 Loop: Ein" : "🔁 Loop: Aus";
+  $("playerStatus").textContent = playerLoopEnabled ? "Loop eingeschaltet." : "Loop ausgeschaltet.";
+});
+$("playerVolume").addEventListener("input", e => {
+  if(playerMasterGain) playerMasterGain.gain.value = Math.max(0, Math.min(1, Number(e.target.value)/100));
+});
+
 // --- Kompositions-Logik ---
 async function compose(){
   saveCurrentState();
@@ -947,41 +1249,29 @@ async function compose(){
   $("composeBtn").disabled = true;
   $("status").innerHTML = '<span class="ok">KI entwickelt musikalischen Impuls …</span>';
 
-  lastDiagnostic={
-    format:"composition-lab-diagnostic",diagnosticVersion:1,startedAt:new Date().toISOString(),
-    environment:{href:location.href,origin:location.origin,userAgent:navigator.userAgent,platform:navigator.platform||"",language:navigator.language||"",online:navigator.onLine,androidBridge:!!window.AndroidBridge,storageId:STORAGE_ID,historyId:HISTORY_ID},
-    settings:{provider,model,reasoningEffort:$("reasoningEffort").value,measures:$("measures").value,meter:$("meter").value,tempo:$("tempo").value,musicalKey:$("musicalKey").value,ensemble:$("ensemble").value,freePrompt:$("prompt").value,templateLength:$("templateLength").value,uploadedName:uploadedName||null,uploadedScore:uploadedScore?JSON.parse(JSON.stringify(uploadedScore)):null},
-    prompts:{system:SYSTEM_PREFIX,technical:TECHNICAL_PROMPT},calls:{},result:null,error:null
-  };
-  $("diagnosticBtn").disabled=false;
-  $("diagnosticInfo").textContent="Diagnose für den aktuellen Kompositionsversuch wird aufgezeichnet. API-Key ist ausgeschlossen.";
-
   try {
-    let promptText = `VERBINDLICHE ECKDATEN (haben Vorrang vor widersprechenden Angaben im freien Auftrag):\nBesetzung: ${$("ensemble").value}\nTakte des fertigen Stücks: ${$("measures").value}\nTaktart: ${$("meter").value}\nTempo: ${$("tempo").value} BPM\nTonart: ${$("musicalKey").value}\n\nFreier musikalischer Auftrag (ergänzt die Eckdaten):\n${$("prompt").value}`;
+    let promptText = `Besetzung: ${$("ensemble").value}\nTakte: ${$("measures").value}\nTaktart: ${$("meter").value}\nTempo: ${$("tempo").value} BPM\nTonart: ${$("musicalKey").value}\n\nAuftrag:\n${$("prompt").value}`;
     if(uploadedScore){
       promptText += `\n\nVORHANDENES MATERIAL (${uploadedName}):\n` + JSON.stringify(uploadedScore);
     }
 
-    lastDiagnostic.prompts.effectiveAssignment=promptText;
-    const conceptPrompt=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${promptText}`;
-    lastDiagnostic.calls.concept={request:{system:SYSTEM_PREFIX,user:conceptPrompt,wantJson:false}};
-    const conceptRes=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,conceptPrompt,false);
-    lastDiagnostic.calls.concept.response={text:conceptRes.text||"",usage:conceptRes.usage||null};
+    const conceptRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, `Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${promptText}`, false);
     lastConcept = conceptRes.text || "";
     $("conceptView").innerHTML = `<strong>${esc(provider.toUpperCase())} Konzept:</strong><br>${esc(lastConcept).replace(/\n/g,"<br>")}`;
 
     $("status").innerHTML = '<span class="ok">KI komponiert …</span>';
     const compPrompt = `${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${promptText}\n\nDEIN KONZEPT:\n${conceptRes.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;
-    lastDiagnostic.calls.composition={request:{system:SYSTEM_PREFIX,user:compPrompt,wantJson:true}};
-    const scoreRes=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,compPrompt,true);
-    lastDiagnostic.calls.composition.response={text:scoreRes.text||"",usage:scoreRes.usage||null};
+    const scoreRes = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, compPrompt, true);
     const score = extractJSON(scoreRes.text);
 
     lastScore = score;
+    mainPlayerScore = score;
+    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Komposition: ${score.ti || "Unbenannt"}`;
+    if($("playerSeek")) $("playerSeek").value = "0";
+    if($("playerTime")) $("playerTime").textContent = "0:00 / 0:00";
     lastProvider = provider;
     lastModel = model;
     lastMidiBytes = buildMidi(score);
-    lastDiagnostic.result={score:JSON.parse(JSON.stringify(score)),completedAt:new Date().toISOString()};
 
     $("downloadBtn").disabled = false;
     $("jsonBtn").disabled = false;
@@ -996,7 +1286,6 @@ async function compose(){
     addHistory(score, provider, model, lastConcept);
     $("status").innerHTML = '<span class="ok">Komposition erfolgreich abgeschlossen!</span>';
   } catch(err) {
-    if(lastDiagnostic) lastDiagnostic.error={message:String(err?.message||err),name:String(err?.name||"Error"),at:new Date().toISOString()};
     $("status").innerHTML = `<span class="err">Fehler: ${esc(err.message)}</span>`;
   } finally {
     $("composeBtn").disabled = false;
@@ -1268,38 +1557,1689 @@ $("inspirationBtn").onclick = generateInspiration;
 $("randomFreeBtn").onclick = () => generateRandomMusic(false);
 $("randomGuidedBtn").onclick = () => generateRandomMusic(true);
 $("randomToTemplateBtn").onclick = useRandomAsTemplate;
-$("variantA").onchange = () => renderVariantCard("A");
-$("variantB").onchange = () => renderVariantCard("B");
-$("loadVariantA").onclick = () => loadVariant("A");
-$("loadVariantB").onclick = () => loadVariant("B");
-$("midiVariantA").onclick = () => downloadVariant("A");
-$("midiVariantB").onclick = () => downloadVariant("B");
+if($("variantA")) $("variantA").onchange = () => renderVariantCard("A");
+if($("variantB")) $("variantB").onchange = () => renderVariantCard("B");
+if($("loadVariantA")) $("loadVariantA").onclick = () => loadVariant("A");
+if($("loadVariantB")) $("loadVariantB").onclick = () => loadVariant("B");
+if($("midiVariantA")) $("midiVariantA").onclick = () => downloadVariant("A");
+if($("midiVariantB")) $("midiVariantB").onclick = () => downloadVariant("B");
 
 initApp();
 </script>
 
 <script>
-/* PWA-Standalone ja, Offline-Service-Worker nein:
-   Entfernt einen eventuell noch installierten Service Worker der vorigen Version. */
-window.addEventListener("load", async () => {
-  try {
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
-    }
-    if ("caches" in window) {
-      const names = await caches.keys();
-      await Promise.all(
-        names
-          .filter(name => name.startsWith("ai-midi-composer-pwa-"))
-          .map(name => caches.delete(name))
-      );
-    }
-  } catch (e) {
-    console.warn("PWA-Bereinigung:", e);
+window.addEventListener("load", () => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js?v=29", {updateViaCache:"none"}).catch(err =>
+      console.warn("Service Worker konnte nicht registriert werden:", err)
+    );
   }
 });
 </script>
 
+
+<script id="v23-random-override">
+(() => {
+  const v23Ensembles = [
+    {label:"Klavier solo", tracks:[{nm:"Piano",pg:0,lo:48,hi:84}]},
+    {label:"Cello solo", tracks:[{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Violine und Klavier", tracks:[{nm:"Violine",pg:40,lo:55,hi:91},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Cello und Klavier", tracks:[{nm:"Cello",pg:42,lo:36,hi:67},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Klarinette und Klavier", tracks:[{nm:"Klarinette",pg:71,lo:50,hi:86},{nm:"Piano",pg:0,lo:43,hi:79}]},
+    {label:"Flöte und Cello", tracks:[{nm:"Flöte",pg:73,lo:60,hi:96},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Streichtrio", tracks:[{nm:"Violine",pg:40,lo:55,hi:91},{nm:"Viola",pg:41,lo:48,hi:79},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Streichquartett", tracks:[{nm:"Violine I",pg:40,lo:57,hi:93},{nm:"Violine II",pg:40,lo:55,hi:88},{nm:"Viola",pg:41,lo:48,hi:79},{nm:"Cello",pg:42,lo:36,hi:67}]},
+    {label:"Zwei Klaviere", tracks:[{nm:"Piano I",pg:0,lo:48,hi:88},{nm:"Piano II",pg:0,lo:40,hi:80}]}
+  ];
+  const v23Keys = ["C major","G major","F major","D major","B-flat major","A major","E-flat major","a minor","e minor","d minor","g minor","b minor","c minor"];
+  const v23Meters = [[4,4],[4,4],[4,4],[3,4],[3,4],[2,4],[6,8],[6,8],[5,4],[7,8],[9,8],[12,8]];
+  const v23Measures = [8,8,12,16,16,16,20,24,24,32];
+  const v23Tempi = [48,54,60,66,72,76,80,84,88,92,96,100,104,108,112,116,120,126,132,138,144,152,160,168,176];
+  const majorScale=[0,2,4,5,7,9,11], minorScale=[0,2,3,5,7,8,10];
+  const rootMap={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+
+  function v23Pitch(lo,hi,keyText){
+    const scale=/minor|moll/i.test(keyText)?minorScale:majorScale;
+    const m=String(keyText||'C major').match(/^([A-G])/i);
+    const root=m?rootMap[m[1].toUpperCase()]:0;
+    for(let i=0;i<50;i++){
+      const p=randBetween(lo,hi);
+      if(scale.includes((p-root+120)%12)) return p;
+    }
+    return randBetween(lo,hi);
+  }
+
+  randomScore = function(useCurrentLimits){
+    let measures,meterN,meterD,bpm,ensembleLabel,trackDefs,keyText;
+    if(useCurrentLimits){
+      measures=Math.max(1,Math.min(256,parseInt($("measures").value,10)||16));
+      const mm=String($("meter").value||"4/4").match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+      meterN=mm?Math.max(1,Math.min(32,+mm[1])):4;
+      meterD=mm&&[1,2,4,8,16,32,64].includes(+mm[2])?+mm[2]:4;
+      bpm=Math.max(20,Math.min(300,parseInt($("tempo").value,10)||96));
+      ensembleLabel=$("ensemble").value||"Piano solo";
+      keyText=$("musicalKey").value||"C major";
+      trackDefs=[{nm:ensembleLabel,pg:0,lo:45,hi:84}];
+    } else {
+      measures=pick(v23Measures);
+      const meter=pick(v23Meters); meterN=meter[0]; meterD=meter[1];
+      bpm=pick(v23Tempi);
+      const e=pick(v23Ensembles); ensembleLabel=e.label; trackDefs=e.tracks;
+      keyText=pick(v23Keys);
+      $("measures").value=measures;
+      $("meter").value=`${meterN}/${meterD}`;
+      $("tempo").value=bpm;
+      $("musicalKey").value=keyText;
+      $("ensemble").value=ensembleLabel;
+      saveCurrentState();
+    }
+
+    const beatsPerMeasure=meterN*4/meterD;
+    const totalBeats=measures*beatsPerMeasure;
+    const durations=[0.25,0.5,0.5,0.75,1,1,1,1.5,2,2,3,4];
+    const tracks=[];
+    trackDefs.forEach((def,ti)=>{
+      const nt=[];
+      let pos=0;
+      while(pos<totalBeats-0.01){
+        let dur=Math.min(pick(durations),totalBeats-pos);
+        if(randomUint(100)>=18){
+          nt.push([+pos.toFixed(6),+dur.toFixed(6),v23Pitch(def.lo,def.hi,keyText),randBetween(48,102),0,pick([0.78,0.9,0.95,1,1.06])]);
+        }
+        pos+=dur;
+      }
+      tracks.push({nm:def.nm,ch:ti%16,pg:def.pg,nt,ct:[]});
+    });
+    return {
+      ti:useCurrentLimits?"Zufall mit Eckdaten":"Musikalischer Zufall",
+      bpm,
+      ts:{n:meterN,d:meterD},
+      k:keyText,
+      sm:useCurrentLimits?"Zufällig erzeugtes Ausgangsmaterial innerhalb der sichtbaren Eckdaten.":"Musikalisch begrenzter Zufall: Die sichtbaren Eckdaten wurden aus plausiblen musikalischen Möglichkeiten gewählt.",
+      tr:tracks
+    };
+  };
+
+  generateRandomMusic = function(useCurrentLimits){
+    const score=randomScore(useCurrentLimits);
+    installGeneratedScore(score,useCurrentLimits
+      ? "Zufall innerhalb deiner sichtbaren Eckdaten."
+      : "Musikalischer Zufall: Taktzahl, Taktart, Tempo, Tonart und Besetzung wurden aus plausiblen Möglichkeiten gewählt und sichtbar in die Felder eingetragen.");
+  };
+
+  const info=$("experimentInfo");
+  if(info) info.textContent='Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ würfelt musikalisch plausible Eckdaten und trägt sie sichtbar in die Felder ein. „Zufall mit Eckdaten“ behält deine eingetragenen Werte bei.';
+})();
+</script>
+
+<script id="v23-template-controls">
+(() => {
+  let randomTemplateScore = null;
+  let randomTemplateFileName = "";
+  let templateBusy = false;
+
+  const seedMotifs = [
+    "ein prägnantes Motiv aus drei oder vier Tönen",
+    "eine kleine rhythmische Verschiebung, die später wichtig wird",
+    "eine gesangliche Linie mit einer überraschenden Intervallwendung",
+    "eine ruhige Figur, die zwischen den Stimmen wandert",
+    "ein kurzer Frage-Antwort-Gedanke",
+    "eine zunächst unscheinbare Nebenstimme, die Eigenständigkeit gewinnt"
+  ];
+  const seedChars = [
+    "ruhig und konzentriert", "spielerisch, aber nicht beliebig", "leicht melancholisch",
+    "klar und kammermusikalisch", "gesanglich mit innerer Spannung", "zurückhaltend mit einer überraschenden Wendung"
+  ];
+  const seedDevelopments = [
+    "entwickle das Motiv erkennbar statt neues Material aneinanderzureihen",
+    "lasse die Stimmen zunehmend aufeinander reagieren",
+    "variiere Rhythmus oder Register, ohne den Grundgedanken zu verlieren",
+    "führe zu einem kleinen Höhepunkt und ende musikalisch plausibel",
+    "lasse aus der Begleitung zeitweise eine gleichberechtigte Stimme werden"
+  ];
+
+  function safeFileName(text){
+    return String(text || "KI_Vorlage")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+  }
+
+  function setTemplateStatus(text, isError=false){
+    const el = $("templatePlayerStatus");
+    if(el) el.textContent = text;
+    if(isError) $("status").innerHTML = '<span class="err">' + esc(text) + '</span>';
+  }
+
+  function syncLoopButtons(){
+    const text = playerLoopEnabled ? "🔁 Loop: Ein" : "🔁 Loop: Aus";
+    if($("loopBtn")) $("loopBtn").textContent = text;
+    if($("templateLoopBtn")) $("templateLoopBtn").textContent = text;
+  }
+
+  async function createTemplate(){
+    if(templateBusy) return;
+    const provider = $("provider").value;
+    const model = $("model").value.trim();
+    const apiKeyVal = $("apiKey").value.trim();
+    if(!apiKeyVal){
+      $("status").innerHTML = `<span class="err">Bitte zuerst den API-Key für ${esc(providerDisplayName(provider))} eingeben. Die Vorlage wird jetzt von der gewählten KI komponiert.</span>`;
+      return;
+    }
+
+    templateBusy = true;
+    $("randomToTemplateBtn").disabled = true;
+    if($("templateRerollBtn")) $("templateRerollBtn").disabled = true;
+    $("randomTemplateBox").style.display = "flex";
+    $("randomTemplateName").textContent = "KI komponiert eine neue Vorlage …";
+    setTemplateStatus("KI komponiert …");
+    $("status").innerHTML = '<span class="ok">Die gewählte KI komponiert eine musikalische Vorlage …</span>';
+
+    try {
+      const measures = [2,4,8].includes(parseInt($("templateLength").value,10)) ? parseInt($("templateLength").value,10) : 4;
+      const bpm = Math.max(20, Math.min(300, parseInt($("labTempo")?.value,10) || 96));
+      const ensemble = $("labEnsemble")?.value.trim() || $("ensemble").value || "Piano solo";
+      const style = $("labStyle")?.value.trim() || "frei";
+      const seed = `${pick(seedMotifs)}; Charakter: ${pick(seedChars)}; ${pick(seedDevelopments)}.`;
+
+      const task = `Komponiere KEIN fertiges großes Stück, sondern eine musikalisch brauchbare MIDI-Ausgangsvorlage, die später von Mensch und KI weiterentwickelt werden kann.\n\nEckdaten:\n- Besetzung: ${ensemble}\n- Länge: ${measures} Takte\n- Tempo: ${bpm} BPM (verbindlich)\n- Charakter / Stil: ${style}\n- Taktart und Tonart: von dir frei passend zur musikalischen Idee zu wählen\n- Zufälliger kompositorischer Impuls: ${seed}\n\nWICHTIG:\n- Die genannte Besetzung muss tatsächlich in getrennten, passend benannten MIDI-Spuren mit korrekten GM-Programmen vorkommen. Wenn zwei Instrumente genannt sind, müssen beide musikalisch hörbar beteiligt sein.\n- Erzeuge zusammenhängendes, motivisch erkennbares Material, keine statistische Tonfolge und keine bloße Zufallswolke.\n- Die Vorlage darf offen und anregend sein, soll aber bereits musikalischen Sinn ergeben.\n- Gib ihr einen kurzen, einprägsamen deutschen Titel, der zur musikalischen Idee passt.\n- Schreibe in das Feld "sm" eine prägnante musikalische Kompositionsidee für genau diese Vorlage: charakteristische Motive, Gestus, Rhythmik/Harmonik und mögliche Entwicklungsrichtung. Sie ist Teil der Vorlage und soll später gemeinsam mit MIDI und Einstellungen weiterverwendet werden.\n- Nutze Dynamik und Artikulation sinnvoll.\n- Halte die angegebene Taktzahl möglichst genau ein.\n\n${TECHNICAL_PROMPT}`;
+
+      const res = await callLLM(provider, model, apiKeyVal, SYSTEM_PREFIX, task, true);
+      const score = extractJSON(res.text);
+      score.bpm = bpm;
+      score.k = score.k || "C major";
+      score.ti = String(score.ti || "KI-Vorlage").trim();
+      score.sm = score.sm || `KI-Ausgangsvorlage · ${ensemble} · ${bpm} BPM · Charakter/Stil: ${style}. Kompositorische Idee: ${seed}`;
+      randomTemplateScore = score;
+
+      const meterFile = String(score.ts?.n || 4) + "-" + String(score.ts?.d || 4);
+      randomTemplateFileName = `${safeFileName(score.ti)}_${measures}T_${meterFile}_${score.bpm}BPM.mid`;
+      const trackNames = (score.tr || []).map(t => t.nm).filter(Boolean).join(" + ");
+      $("randomTemplateName").textContent = `${score.ti} · ${trackNames || ensemble} · ${measures} Takte · ${score.ts?.n || ""}/${score.ts?.d || ""} · ${score.bpm} BPM`;
+      $("experimentInfo").textContent = `KI-Vorlage mit ${providerDisplayName(provider)} erzeugt. Du kannst sie vollständig anhören, pausieren, stoppen, loopen, als MIDI speichern oder erst danach als Vorlage aktivieren.`;
+      setTemplateStatus("KI-Vorlage bereit.");
+      if($("templateIdeaBox")) $("templateIdeaBox").style.display = "block";
+      if($("templateIdeaText")) $("templateIdeaText").textContent = score.sm || seed;
+      if(typeof window.compositionLabAddTemplateHistory === "function") {
+        window.compositionLabAddTemplateHistory(score, "KI-Vorlage", {
+          ensemble, style, idea: score.sm || seed, measures, meter: `${score.ts?.n || 4}/${score.ts?.d || 4}`, bpm, key: score.k || "C major"
+        });
+      }
+      $("status").innerHTML = `<span class="ok">KI-Vorlage „${esc(score.ti)}“ erzeugt und im Vorlagen-Verlauf gespeichert.</span>`;
+    } catch(err) {
+      randomTemplateScore = null;
+      $("randomTemplateName").textContent = "KI-Vorlage konnte nicht erzeugt werden";
+      setTemplateStatus("Fehler: " + err.message, true);
+    } finally {
+      templateBusy = false;
+      $("randomToTemplateBtn").disabled = false;
+      if($("templateRerollBtn")) $("templateRerollBtn").disabled = false;
+    }
+  }
+
+  function useTemplate(){
+    if(!randomTemplateScore) return;
+    uploadedScore = JSON.parse(JSON.stringify(randomTemplateScore));
+    uploadedName = randomTemplateFileName || `${randomTemplateScore.ti}.mid`;
+    const count = (uploadedScore.tr || []).reduce((sum,t) => sum + (t.nt?.length || 0), 0);
+    if(typeof window.compositionLabApplyTemplate === "function") {
+      window.compositionLabApplyTemplate(uploadedScore,{
+        ensemble: $("labEnsemble")?.value.trim() || "",
+        style: $("labStyle")?.value.trim() || "",
+        idea: uploadedScore.sm || ""
+      });
+    } else {
+      const ts = uploadedScore.ts || {n:4,d:4};
+      $("meter").value = `${Number(ts.n)||4}/${Number(ts.d)||4}`;
+      $("tempo").value = Number(uploadedScore.bpm)||96;
+      $("musicalKey").value = uploadedScore.k||"C major";
+      $("ensemble").value = $("labEnsemble")?.value.trim() || (uploadedScore.tr||[]).map(t=>t.nm).filter(Boolean).join(" + ") || $("ensemble").value;
+      $("prompt").value = `Vorlage: ${uploadedScore.ti||"Vorlage"}. ${uploadedScore.sm||"Entwickle den musikalischen Grundgedanken der Vorlage weiter."}`;
+    }
+    $("uploadInfo").textContent = `Geladen: ${uploadedName} (${count} Noten) · aus Experimentierlabor`;
+    mainPlayerScore = uploadedScore;
+    lastScore = uploadedScore;
+    lastMidiBytes = buildMidi(uploadedScore);
+    if($("mainPlayerTitle")) $("mainPlayerTitle").textContent = `Vorlage: ${randomTemplateScore.ti || "Vorlage"}`;
+    if($("playerSeek")) $("playerSeek").value = "0";
+    if($("playerTime")) $("playerTime").textContent = "0:00 / 0:00";
+    if($("playerStatus")) $("playerStatus").textContent = `Vorlage „${randomTemplateScore.ti || "Vorlage"}“ im Hauptplayer bereit.`;
+    saveCurrentState();
+    $("status").innerHTML = `<span class="ok">„${esc(randomTemplateScore.ti)}“ wurde als vollständiges Vorlagenpaket übernommen. Der Hauptplayer spielt jetzt diese Vorlage.</span>`;
+  }
+
+  window.compositionLabSetCurrentTemplate = function(pkg){
+    if(!pkg || !pkg.score) return;
+    randomTemplateScore = JSON.parse(JSON.stringify(pkg.score));
+    const meta = pkg.meta || {};
+    randomTemplateFileName = pkg.fileName || `${safeFileName(randomTemplateScore.ti || "Vorlage")}.mid`;
+    $("randomTemplateBox").style.display = "flex";
+    const measures = meta.measures || (typeof window.compositionLabTemplateMeasures === "function" ? window.compositionLabTemplateMeasures(randomTemplateScore) : "");
+    const ensemble = meta.ensemble || (randomTemplateScore.tr || []).map(t=>t.nm).filter(Boolean).join(" + ");
+    $("randomTemplateName").textContent = `${randomTemplateScore.ti || "Vorlage"}${ensemble ? " · "+ensemble : ""}${measures ? " · "+measures+" Takte" : ""} · ${randomTemplateScore.ts?.n || 4}/${randomTemplateScore.ts?.d || 4} · ${randomTemplateScore.bpm || 96} BPM`;
+    if($("templateIdeaBox")) $("templateIdeaBox").style.display = "block";
+    if($("templateIdeaText")) $("templateIdeaText").textContent = meta.idea || randomTemplateScore.sm || "Keine Kompositionsidee gespeichert.";
+    setTemplateStatus("Gespeicherte Vorlage geladen.");
+  };
+
+  $("randomToTemplateBtn").onclick = createTemplate;
+  $("templateRerollBtn").onclick = createTemplate;
+  $("templatePlayBtn").onclick = async () => {
+    if(!randomTemplateScore) return;
+    try {
+      const vol = Number($("templateVolume").value || 75);
+      if($("playerVolume")) $("playerVolume").value = String(vol);
+      if(playerMasterGain) playerMasterGain.gain.value = Math.max(0, Math.min(1, vol / 100));
+      setTemplateStatus("GM-Klänge werden geladen …");
+      await playGMScore(randomTemplateScore);
+      setTemplateStatus("▶ Wiedergabe läuft.");
+    } catch(err) {
+      setTemplateStatus("Player-Fehler: " + err.message, true);
+    }
+  };
+  $("templatePauseBtn").onclick = () => toggleGMPause()
+    .then(() => setTemplateStatus(playerPaused ? "⏸ Pausiert." : "▶ Wiedergabe fortgesetzt."))
+    .catch(err => setTemplateStatus("Player-Fehler: " + err.message, true));
+  $("templateStopBtn").onclick = () => { stopGMPlayback(true); setTemplateStatus("Gestoppt."); };
+  $("templateLoopBtn").onclick = () => {
+    playerLoopEnabled = !playerLoopEnabled;
+    syncLoopButtons();
+    setTemplateStatus(playerLoopEnabled ? "Loop eingeschaltet." : "Loop ausgeschaltet.");
+  };
+  $("templateVolume").oninput = e => {
+    const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+    if($("playerVolume")) $("playerVolume").value = String(v);
+    if(playerMasterGain) playerMasterGain.gain.value = v / 100;
+  };
+  $("templateSaveBtn").onclick = () => {
+    if(!randomTemplateScore) return;
+    downloadBlob(buildMidi(randomTemplateScore), randomTemplateFileName || "KI_Vorlage.mid", "audio/midi");
+  };
+  $("templateUseBtn").onclick = useTemplate;
+
+  const oldLoop = $("loopBtn");
+  if(oldLoop) oldLoop.addEventListener("click", () => setTimeout(syncLoopButtons, 0));
+  const mainVol = $("playerVolume");
+  if(mainVol) mainVol.addEventListener("input", e => { if($("templateVolume")) $("templateVolume").value = e.target.value; });
+
+  const info = $("experimentInfo");
+  if(info) info.textContent = 'Inspiration ändert nur den Kompositionsauftrag. „Völliger Zufall“ und „Zufall mit Eckdaten“ bleiben lokale Experimente. „Zufall als Vorlage“ lässt dagegen die aktuell gewählte KI ein musikalisch zusammenhängendes Ausgangsmaterial komponieren.';
+  syncLoopButtons();
+})();
+</script>
+
+
+
+
+
+
+
+
+<script id="experiment-lab-v3-enhancements">
+(() => {
+  try{const d=getStoredData();if(d.form?.labEnsemble&&$("labEnsemble"))$("labEnsemble").value=d.form.labEnsemble;if(d.form?.labTempo&&$("labTempo"))$("labTempo").value=d.form.labTempo;if(d.form?.labStyle&&$("labStyle"))$("labStyle").value=d.form.labStyle;}catch(_){}
+  function saveLabPrefs(){try{const d=getStoredData();d.form=d.form||{};d.form.labEnsemble=$("labEnsemble")?.value||"";d.form.labTempo=$("labTempo")?.value||"96";d.form.labStyle=$("labStyle")?.value||"";localStorage.setItem(STORAGE_ID,JSON.stringify(d));}catch(_){}}
+  ["labEnsemble","labTempo","labStyle"].forEach(id=>{if($(id))$(id).addEventListener("input",saveLabPrefs);});
+
+  function templateMeasures(score){const n=Number(score?.ts?.n)||4,d=Number(score?.ts?.d)||4,bpmBeats=n*4/d;let max=0;(score?.tr||[]).forEach(t=>(t.nt||[]).forEach(x=>{max=Math.max(max,(Number(x[0])||0)+(Number(x[1])||0));}));return Math.max(1,Math.round(max/bpmBeats));}
+  window.compositionLabTemplateMeasures = templateMeasures;
+  function templateEnsemble(score,fallback=""){const names=(score?.tr||[]).map(t=>String(t.nm||"").trim()).filter(Boolean);return names.length?names.join(" + "):fallback;}
+  function applyTemplateToComposition(score,meta={}){if(!score)return;const meter=meta.meter||`${Number(score.ts?.n)||4}/${Number(score.ts?.d)||4}`;const ensemble=meta.ensemble||templateEnsemble(score,$("ensemble").value||"Piano solo");$("measures").value=meta.measures||meta.targetMeasures||templateMeasures(score);$("meter").value=meter;$("tempo").value=Number(meta.bpm||score.bpm)||96;$("musicalKey").value=meta.key||score.k||"C major";$("ensemble").value=ensemble;const idea=String(meta.idea||score.sm||"").trim();$("prompt").value=idea||`Entwickle den musikalischen Grundgedanken der Vorlage „${score.ti||"Vorlage"}“ weiter.`;saveCurrentState();}
+  window.compositionLabApplyTemplate=applyTemplateToComposition;
+  function hist(){try{return JSON.parse(localStorage.getItem(EXPERIMENT_HISTORY_ID)||"[]")}catch(_){return[]}}
+  function renderHist(){const box=$("experimentHistoryList");if(!box)return;const h=hist();if(!h.length){box.textContent="Noch keine Vorlagen vorhanden.";return;}box.innerHTML="";h.forEach(it=>{const d=document.createElement("div");d.className="historyitem";const m=it.meta||{};const ts=m.meter||`${it.score?.ts?.n||4}/${it.score?.ts?.d||4}`;const bpm=m.bpm||it.score?.bpm||96;const key=m.key||it.score?.k||"";const ens=m.ensemble||templateEnsemble(it.score,"");const idea=m.idea||it.score?.sm||"";const style=m.style||"";d.innerHTML=`<strong>${esc(it.title)}</strong><div class="historymeta">${esc(it.kind)} · ${esc(it.time)} · ${esc(ens)} · ${esc(ts)} · ${esc(bpm)} BPM${key?" · "+esc(key):""}${style?" · "+esc(style):""}</div>${idea?`<div style="margin-top:6px;font-size:12px;white-space:pre-wrap;color:var(--muted);"><strong>Idee:</strong> ${esc(idea)}</div>`:""}<div class="historyactions"><button class="secondary smallbtn" data-p>▶ Laden & anhören</button><button class="secondary smallbtn" data-u>↗ In Komposition übernehmen</button></div>`;d.querySelector('[data-p]').onclick=()=>{if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);playGMScore(it.score,0).catch(()=>{});};d.querySelector('[data-u]').onclick=()=>{uploadedScore=JSON.parse(JSON.stringify(it.score));uploadedName=(it.title||"Vorlage")+".mid";applyTemplateToComposition(uploadedScore,it.meta||{});mainPlayerScore=uploadedScore;lastScore=uploadedScore;lastMidiBytes=buildMidi(uploadedScore);if($("mainPlayerTitle"))$("mainPlayerTitle").textContent=`Vorlage: ${it.title||"Vorlage"}`;if($("playerSeek"))$("playerSeek").value="0";if($("playerTime"))$("playerTime").textContent="0:00 / 0:00";if(typeof window.compositionLabSetCurrentTemplate==="function")window.compositionLabSetCurrentTemplate(it);const n=(uploadedScore.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);$("uploadInfo").textContent=`Vorlage geladen: ${uploadedName} (${n} Noten)`;if($("playerStatus"))$("playerStatus").textContent=`Vorlage „${it.title||"Vorlage"}“ im Hauptplayer bereit.`;saveCurrentState();$("status").innerHTML=`<span class="ok">Vorlagenpaket „${esc(it.title||"Vorlage")}“ vollständig übernommen.</span>`;};box.appendChild(d);});}
+  function addHist(score,kind,meta={}){if(!score)return;let h=hist();h.unshift({id:Date.now()+Math.random(),time:new Date().toLocaleString(),kind:kind||"Vorlage",title:score.ti||"Vorlage",score:JSON.parse(JSON.stringify(score)),meta:{...meta}});localStorage.setItem(EXPERIMENT_HISTORY_ID,JSON.stringify(h.slice(0,20)));renderHist();}
+  window.compositionLabAddTemplateHistory=addHist;
+  renderHist();
+  if($("clearExperimentHistoryBtn"))$("clearExperimentHistoryBtn").onclick=()=>{if(confirm("Vorlagen-Verlauf wirklich leeren?")){localStorage.removeItem(EXPERIMENT_HISTORY_ID);renderHist();}};
+  const oldInstall=installGeneratedScore;installGeneratedScore=function(score,label){oldInstall(score,label);addHist(score,"Lokale Vorlage",{ensemble:$("ensemble")?.value||""});};
+
+  let currentScore=null,startBeat=0,baseTime=0,raf=0;
+  const oldStop=stopGMPlayback;stopGMPlayback=function(update=true){if(raf)cancelAnimationFrame(raf);raf=0;oldStop(update);};
+  playGMScore=async function(score,fromBeat=0){if(!score||!score.tr?.length)return;currentScore=score;startBeat=Math.max(0,Number(fromBeat)||0);const ac=ensurePlayerAudio();if(ac.state==='suspended')await ac.resume();stopGMPlayback(false);const max=scoreMaxBeat(score),bpm=Math.max(20,Math.min(300,Number(score.bpm)||96)),spb=60/bpm;const used=[],seen=new Set();for(const t of score.tr){const ch=Math.max(0,Math.min(15,Number(t.ch)||0)),pg=Math.max(0,Math.min(127,Number(t.pg)||0)),k=ch===9?'d':String(pg);if(!seen.has(k)){seen.add(k);used.push([pg,ch])}}await Promise.all(used.map(([pg,ch])=>loadGMInstrument(pg,ch)));baseTime=ac.currentTime+.08;for(const t of score.tr){const ch=Math.max(0,Math.min(15,Number(t.ch)||0)),pg=Math.max(0,Math.min(127,Number(t.pg)||0)),inst=await loadGMInstrument(pg,ch);for(const n of t.nt||[]){const st=Number(n[0])||0,d=Math.max(.02,Number(n[1])||.25),g=n.length>5?Math.max(.05,Math.min(4,Number(n[5])||.95)):.95,en=st+d*g;if(en<=startBeat)continue;const p=Math.max(0,Math.min(127,Math.round(Number(n[2])||60))),v=Math.max(1,Math.min(127,Number(n[3])||80)),rel=Math.max(0,st-startBeat);try{inst.play(p,baseTime+rel*spb,{duration:Math.max(.03,(en-Math.max(st,startBeat))*spb),gain:Math.max(.02,Math.min(1,v/127))})}catch(_){}}}playerPlaying=true;playerPaused=false;const fmt=x=>{x=Math.max(0,Math.floor(x));return Math.floor(x/60)+":"+String(x%60).padStart(2,'0')};function tick(){if(!playerPlaying)return;const beat=Math.min(max,startBeat+Math.max(0,ac.currentTime-baseTime)*bpm/60),frac=max?beat/max:0;[[$("playerSeek"),$("playerTime")],[$("templateSeek"),$("templateTime")],[$("seekSourceA"),$("timeSourceA")],[$("seekSourceB"),$("timeSourceB")]].forEach(([r,t])=>{if(r)r.value=String(Math.round(frac*1000));if(t)t.textContent=`${fmt(beat*spb)} / ${fmt(max*spb)}`});if(beat>=max){if(playerLoopEnabled)playGMScore(score,0).catch(()=>{});else{playerPlaying=false;$("playerStatus")&&($("playerStatus").textContent="Wiedergabe beendet.");}return;}raf=requestAnimationFrame(tick)}tick();};
+  function bindSeek(id,getScore){const r=$(id);if(!r)return;r.onchange=()=>{const sc=getScore();if(!sc)return;playGMScore(sc,scoreMaxBeat(sc)*(Number(r.value)||0)/1000).catch(()=>{});};}
+  bindSeek("playerSeek",()=>mainPlayerScore || uploadedScore || lastScore);bindSeek("templateSeek",()=>currentScore);
+})();
+</script>
+
+<script id="fold-state-persistence-v7">
+(() => {
+  const KEY = "composition_lab_fold_states_v1";
+  function read(){ try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch(_) { return {}; } }
+  function save(){
+    const state = {};
+    document.querySelectorAll("details[id]").forEach(el => { state[el.id] = !!el.open; });
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(_) {}
+  }
+  const state = read();
+  document.querySelectorAll("details[id]").forEach(el => {
+    if(Object.prototype.hasOwnProperty.call(state, el.id)) el.open = !!state[el.id];
+    el.addEventListener("toggle", save);
+  });
+})();
+</script>
+
+
+<script id="comparison-synthesis-v8">
+(()=>{
+  const $c=id=>document.getElementById(id);
+  const src={A:null,B:null};
+  const names={A:"",B:""};
+  function normalHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_ID)||"[]")}catch(_){return[]}}
+  function expHistory(){try{return JSON.parse(localStorage.getItem("composition_lab_experiment_history_v1")||"[]")}catch(_){return[]}}
+  function fill(){
+    ["A","B"].forEach(w=>{const sel=$c("source"+w+"Select");if(!sel)return;const old=sel.value;sel.innerHTML='<option value="">Quelle wählen …</option>';
+      normalHistory().forEach((it,i)=>{const o=document.createElement("option");o.value="h:"+i;o.textContent="Komposition · "+(it.title||it.score?.ti||"Ohne Titel");sel.appendChild(o)});
+      expHistory().forEach((it,i)=>{const o=document.createElement("option");o.value="e:"+i;o.textContent="Vorlage · "+(it.title||it.score?.ti||"Vorlage");sel.appendChild(o)});
+      if([...sel.options].some(o=>o.value===old))sel.value=old;
+    });
+  }
+  function card(w){const b=$c("source"+w+"Card"),x=src[w];if(!b)return;if(!x){b.textContent="Noch keine Quelle geladen.";return;}const n=(x.tr||[]).reduce((a,t)=>a+(t.nt?.length||0),0);b.innerHTML=`<strong>${esc(names[w]||x.ti||("Quelle "+w))}</strong><div class="historymeta">${esc(x.bpm||"")} BPM · ${esc(x.k||"")} · ${x.tr?.length||0} Spur(en) · ${n} Noten</div>${x.sm?`<div style="margin-top:6px;font-size:12px;color:var(--muted);">${esc(String(x.sm)).slice(0,300)}</div>`:""}`}
+  function choose(w,v){if(!v)return;const [kind,ix]=v.split(":");const it=(kind==="h"?normalHistory():expHistory())[Number(ix)];if(!it?.score)return;src[w]=JSON.parse(JSON.stringify(it.score));names[w]=it.title||it.score.ti||("Quelle "+w);card(w)}
+  async function file(w,f){if(!f)return;try{src[w]=f.name.toLowerCase().endsWith(".json")?JSON.parse(await f.text()):parseUploadedMidi(await f.arrayBuffer());names[w]=f.name;card(w)}catch(e){$c("source"+w+"Card").innerHTML=`<span class="err">${esc(e.message)}</span>`}}
+  async function compare(makePrompt=false){
+    if(!src.A||!src.B)throw new Error("Bitte zuerst Quelle A und Quelle B laden.");
+    const provider=$c("provider").value,model=$c("model").value,key=$c("apiKey").value.trim();if(!key)throw new Error("API-Key fehlt.");
+    const task=makePrompt?"Erstelle aus dem Vergleich einen kurzen, konkreten und editierbaren Kompositionsauftrag. Benenne klar, welche 1–2 Merkmale aus Quelle A und welche 1–2 Merkmale aus Quelle B übernommen oder weiterentwickelt werden sollen. Maximal etwa 120 Wörter. Das Ergebnis soll ein eigenständiges neues Stück C ermöglichen.":"Vergleiche beide musikalischen Quellen kurz und musikalisch. Maximal etwa 220 Wörter. Keine technische Detailanalyse und keine langen Einzelkapitel. Gliedere nur in: 1. Quelle A – charakteristische Idee und stärkste Merkmale, 2. Quelle B – charakteristische Idee und stärkste Merkmale, 3. wichtigste Unterschiede, 4. zwei oder drei besonders sinnvolle Möglichkeiten der Kombination. MIDI-Technik, Kanalnummern, exakte Velocities, Beat-Positionen und ähnliche Zahlen nur nennen, wenn sie musikalisch wirklich entscheidend sind. Keine bloße Siegerwertung.";
+    const text=`${task}
+
+QUELLE A – ${names.A}:
+${JSON.stringify(src.A)}
+
+QUELLE B – ${names.B}:
+${JSON.stringify(src.B)}`;
+    const r=await callLLM(provider,model,key,SYSTEM_PREFIX,text,false);return r.text;
+  }
+  ["A","B"].forEach(w=>{const sel=$c("source"+w+"Select"),fi=$c("source"+w+"File");if(sel)sel.onchange=()=>choose(w,sel.value);if(fi)fi.onchange=e=>file(w,e.target.files?.[0]);const pb=$c("playSource"+w);if(pb)pb.onclick=()=>{if(src[w])playGMScore(src[w],0).catch(()=>{})};const sb=$c("stopSource"+w);if(sb)sb.onclick=()=>stopGM();});
+  if($c("aiCompareBtn"))$c("aiCompareBtn").onclick=async()=>{const b=$c("aiCompareResult");try{b.textContent="KI analysiert A und B …";b.textContent=await compare(false)}catch(e){b.innerHTML=`<span class="err">${esc(e.message)}</span>`}};
+  if($c("suggestSynthesisBtn"))$c("suggestSynthesisBtn").onclick=async()=>{try{$c("synthesisPrompt").value="KI erstellt Syntheseauftrag …";$c("synthesisPrompt").value=await compare(true)}catch(e){$c("synthesisPrompt").value="";$c("aiCompareResult").innerHTML=`<span class="err">${esc(e.message)}</span>`}};
+  if($c("useSynthesisBtn"))$c("useSynthesisBtn").onclick=()=>{if(!src.A||!src.B){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst A und B laden.</span>';return}const t=$c("synthesisPrompt").value.trim();if(!t){$c("aiCompareResult").innerHTML='<span class="err">Bitte zuerst einen Syntheseauftrag formulieren.</span>';return}$c("prompt").value=t;window.comparisonSynthesisSources={a:JSON.parse(JSON.stringify(src.A)),b:JSON.parse(JSON.stringify(src.B)),nameA:names.A,nameB:names.B};saveCurrentState();$c("status").innerHTML='<span class="ok">Syntheseauftrag übernommen. Quelle A und B werden beim nächsten Komponieren gemeinsam an die KI übergeben.</span>';window.scrollTo({top:0,behavior:"smooth"})};
+  window.compositionLabGetComparisonSource=(w)=>src[w]||null;
+  fill();window.compositionLabRefreshComparisonSources=fill;
+})();
+</script>
+
+
+<script id="imported-midi-analysis-v9">
+(()=>{
+  const playBtn=document.getElementById("playImportedBtn");
+  const analyseBtn=document.getElementById("analyzeImportedBtn");
+  const box=document.getElementById("importedAnalysis");
+
+  if(playBtn) playBtn.addEventListener("click",()=>{
+    if(!uploadedScore){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst eine MIDI- oder JSON-Datei laden.</span>';
+      return;
+    }
+    mainPlayerScore=uploadedScore;
+    if(document.getElementById("mainPlayerTitle")) document.getElementById("mainPlayerTitle").textContent=`Import: ${uploadedName||uploadedScore.ti||"MIDI-Datei"}`;
+    playGMScore(uploadedScore,0).catch(err=>{document.getElementById("status").innerHTML=`<span class="err">${esc(err.message)}</span>`});
+  });
+
+  if(analyseBtn) analyseBtn.addEventListener("click",async()=>{
+    if(!uploadedScore){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst eine MIDI- oder JSON-Datei laden.</span>';
+      return;
+    }
+    const provider=document.getElementById("provider").value;
+    const model=document.getElementById("model").value.trim();
+    const apiKeyVal=document.getElementById("apiKey").value.trim();
+    if(!apiKeyVal){
+      document.getElementById("status").innerHTML='<span class="err">Bitte zuerst den API-Key der gewählten KI eingeben.</span>';
+      return;
+    }
+    analyseBtn.disabled=true;
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    const section=document.getElementById("importedAnalysisSection");
+    if(section){ section.style.display="block"; section.open=true; }
+    box.style.display="block";
+    box.textContent="KI analysiert die importierte MIDI-Datei …";
+    try{
+      const task=`Gib eine kompakte musikalische Analyse der folgenden importierten MIDI-Komposition. Schreibe für einen Musiker, nicht als technische MIDI-Dokumentation. Maximal etwa 250 Wörter und möglichst ohne unnötige Zahlenwerte.
+
+Gliedere nur in:
+1. Charakter und musikalische Idee
+2. Form, Motive, Harmonik und Rhythmik – knapp zusammengefasst
+3. Stärken
+4. Mögliche Schwächen
+5. Zwei oder drei konkrete Verbesserungsideen
+
+Technische MIDI-Details wie Kanalnummern, exakte Velocities, Beat-Positionen oder Gate-Zeiten nur nennen, wenn sie für die musikalische Beurteilung wirklich entscheidend sind. Erfinde nichts, was aus den MIDI-Daten nicht ableitbar ist.
+
+DATEI: ${uploadedName||uploadedScore.ti||"Import"}
+
+MIDI-DATEN:
+${JSON.stringify(uploadedScore)}`;
+      const res=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,task,false);
+      box.textContent=res.text||"Die KI hat keine Analyse zurückgegeben.";
+      document.getElementById("status").innerHTML='<span class="ok">Analyse der importierten MIDI-Datei erstellt.</span>';
+    }catch(err){
+      box.innerHTML=`<span class="err">${esc(err.message)}</span>`;
+      document.getElementById("status").innerHTML=`<span class="err">Analyse fehlgeschlagen: ${esc(err.message)}</span>`;
+    }finally{
+      analyseBtn.disabled=false;
+    }
+  });
+})();
+</script>
+
+
+<script id="safe-import-playback-v10">
+(()=>{
+  let schedTimer=0, uiRaf=0, token=0, activeScore=null, activeStartBeat=0, activeBaseTime=0, activeMax=0, activeBpm=96, activeSpb=.625, events=[], nextEvent=0, instMap=new Map();
+  const oldStopSafe=stopGMPlayback;
+  stopGMPlayback=function(update=true){
+    token++;
+    if(schedTimer){clearTimeout(schedTimer);schedTimer=0;}
+    if(uiRaf){cancelAnimationFrame(uiRaf);uiRaf=0;}
+    events=[]; nextEvent=0; activeScore=null;
+    return oldStopSafe(update);
+  };
+  const fmt=x=>{x=Math.max(0,Math.floor(x));return Math.floor(x/60)+":"+String(x%60).padStart(2,'0')};
+  playGMScore=async function(score,fromBeat=0){
+    if(!score||!score.tr?.length){
+      const ps=document.getElementById('playerStatus'); if(ps) ps.textContent='Noch keine Komposition zum Abspielen.';
+      return;
+    }
+    const my=++token;
+    if(schedTimer){clearTimeout(schedTimer);schedTimer=0;}
+    if(uiRaf){cancelAnimationFrame(uiRaf);uiRaf=0;}
+    oldStopSafe(false);
+    const ac=ensurePlayerAudio();
+    if(ac.state==='suspended') await ac.resume();
+    activeScore=score;
+    activeStartBeat=Math.max(0,Number(fromBeat)||0);
+    activeMax=scoreMaxBeat(score);
+    activeBpm=Math.max(20,Math.min(300,Number(score.bpm)||96));
+    activeSpb=60/activeBpm;
+    events=[]; instMap=new Map(); nextEvent=0;
+    const used=new Map();
+    let made=0;
+    for(const t of score.tr){
+      const ch=Math.max(0,Math.min(15,Number(t.ch)||0)), pg=Math.max(0,Math.min(127,Number(t.pg)||0)), key=ch+':'+pg;
+      used.set(key,[pg,ch]);
+      for(const n of (t.nt||[])){
+        const st=Number(n[0])||0, d=Math.max(.02,Number(n[1])||.25), g=n.length>5?Math.max(.05,Math.min(4,Number(n[5])||.95)):.95, en=st+d*g;
+        if(en<=activeStartBeat) continue;
+        events.push({st,en,p:Math.max(0,Math.min(127,Math.round(Number(n[2])||60))),v:Math.max(1,Math.min(127,Number(n[3])||80)),pg,ch,key});
+        made++;
+        if(made%1500===0) await new Promise(r=>setTimeout(r,0));
+        if(my!==token) return;
+      }
+    }
+    events.sort((a,b)=>a.st-b.st);
+    const status=document.getElementById('playerStatus');
+    if(status) status.textContent=`Wiedergabe wird vorbereitet (${events.length} Noten) …`;
+    for(const [key,[pg,ch]] of used){
+      if(my!==token) return;
+      instMap.set(key,await loadGMInstrument(pg,ch));
+    }
+    if(my!==token) return;
+    activeBaseTime=ac.currentTime+.12;
+    playerPlaying=true; playerPaused=false;
+    if(status) status.textContent='Wiedergabe läuft.';
+    const lookAheadSec=2.0;
+    function schedule(){
+      if(my!==token||!playerPlaying) return;
+      const nowBeat=activeStartBeat+Math.max(0,ac.currentTime-activeBaseTime)*activeBpm/60;
+      const horizon=nowBeat+lookAheadSec*activeBpm/60;
+      let count=0;
+      while(nextEvent<events.length && events[nextEvent].st<=horizon && count<800){
+        const e=events[nextEvent++], inst=instMap.get(e.key);
+        const rel=Math.max(0,e.st-activeStartBeat), when=activeBaseTime+rel*activeSpb;
+        try{inst&&inst.play(e.p,Math.max(ac.currentTime+.005,when),{duration:Math.max(.03,(e.en-Math.max(e.st,activeStartBeat))*activeSpb),gain:Math.max(.02,Math.min(1,e.v/127))});}catch(_){}
+        count++;
+      }
+      schedTimer=setTimeout(schedule,count>=800?0:80);
+    }
+    function tick(){
+      if(my!==token||!playerPlaying) return;
+      const beat=Math.min(activeMax,activeStartBeat+Math.max(0,ac.currentTime-activeBaseTime)*activeBpm/60), frac=activeMax?beat/activeMax:0;
+      [[document.getElementById('playerSeek'),document.getElementById('playerTime')],[document.getElementById('templateSeek'),document.getElementById('templateTime')],[document.getElementById('seekSourceA'),document.getElementById('timeSourceA')],[document.getElementById('seekSourceB'),document.getElementById('timeSourceB')]].forEach(([r,t])=>{if(r)r.value=String(Math.round(frac*1000));if(t)t.textContent=`${fmt(beat*activeSpb)} / ${fmt(activeMax*activeSpb)}`});
+      if(beat>=activeMax){
+        if(playerLoopEnabled){playGMScore(score,0).catch(()=>{});}else{playerPlaying=false;if(status)status.textContent='Wiedergabe beendet.';}
+        return;
+      }
+      uiRaf=requestAnimationFrame(tick);
+    }
+    schedule(); tick();
+  };
+})();
+</script>
+
+
+<script id="import-playback-v11">
+(()=>{
+  let timer=0, raf=0, playToken=0, cursors=[], activeScore=null, activeStart=0, activeMax=0, activeBpm=96, activeSpb=.625, baseTime=0, instMap=new Map();
+  const prevStop=stopGMPlayback;
+
+  function clearLocal(){
+    playToken++;
+    if(timer){clearTimeout(timer);timer=0;}
+    if(raf){cancelAnimationFrame(raf);raf=0;}
+    cursors=[];
+    activeScore=null;
+  }
+
+  stopGMPlayback=function(update=true){
+    clearLocal();
+    return prevStop(update);
+  };
+
+  const fmt=x=>{x=Math.max(0,Math.floor(x));return Math.floor(x/60)+":"+String(x%60).padStart(2,'0')};
+
+  playGMScore=async function(score,fromBeat=0){
+    if(!score||!Array.isArray(score.tr)||!score.tr.length){
+      const ps=document.getElementById('playerStatus');
+      if(ps) ps.textContent='Noch keine Komposition zum Abspielen.';
+      return;
+    }
+
+    clearLocal();
+    const my=playToken;
+    prevStop(false);
+    const ac=ensurePlayerAudio();
+    if(ac.state==='suspended') await ac.resume();
+
+    activeScore=score;
+    activeStart=Math.max(0,Number(fromBeat)||0);
+    activeMax=scoreMaxBeat(score);
+    activeBpm=Math.max(20,Math.min(300,Number(score.bpm)||96));
+    activeSpb=60/activeBpm;
+    baseTime=ac.currentTime+.12;
+
+    const isImport=(typeof uploadedScore!=='undefined' && score===uploadedScore);
+    let comparisonSide=window.__compositionLabComparisonPlaybackSide||null;
+    try{
+      if(!comparisonSide && window.compositionLabGetComparisonSource?.('A')===score) comparisonSide='A';
+      else if(!comparisonSide && window.compositionLabGetComparisonSource?.('B')===score) comparisonSide='B';
+    }catch(_){}
+    const status=document.getElementById(comparisonSide ? ('statusSource'+comparisonSide) : 'playerStatus');
+    const tracks=(score.tr||[]).filter(t=>Array.isArray(t.nt)&&t.nt.length);
+    let noteCount=0;
+    for(const t of tracks) noteCount+=(t.nt||[]).length;
+    if(status) status.textContent=`Wiedergabe wird vorbereitet (${noteCount} Noten) …`;
+
+    // Für importierte MIDI-Dateien benutzen wir bewusst eine speicherschonende Vorschau.
+    // Viele unterschiedliche SoundFonts gleichzeitig können Android-WebViews blockieren.
+    const uniquePrograms=new Set();
+    for(const t of tracks){
+      const ch=Math.max(0,Math.min(15,Number(t.ch)||0));
+      const pg=Math.max(0,Math.min(127,Number(t.pg)||0));
+      if(ch!==9) uniquePrograms.add(pg);
+    }
+    const lowMemoryImport=isImport && (uniquePrograms.size>2 || noteCount>12000);
+
+    instMap=new Map();
+    const needed=new Map();
+    for(const t of tracks){
+      const ch=Math.max(0,Math.min(15,Number(t.ch)||0));
+      const pg=Math.max(0,Math.min(127,Number(t.pg)||0));
+      const usePg=(lowMemoryImport && ch!==9)?0:pg;
+      const key=ch===9?'drums':String(usePg);
+      if(!needed.has(key)) needed.set(key,[usePg,ch]);
+    }
+
+    if(status) status.textContent=lowMemoryImport?'Speicherschonende MIDI-Vorschau wird geladen …':'Instrumente werden geladen …';
+    for(const [key,[pg,ch]] of needed){
+      if(my!==playToken) return;
+      try{instMap.set(key,await loadGMInstrument(pg,ch));}
+      catch(err){
+        if(ch!==9 && pg!==0){
+          try{instMap.set(key,await loadGMInstrument(0,0));}catch(_){throw err;}
+        }else throw err;
+      }
+      await new Promise(r=>setTimeout(r,0));
+    }
+    if(my!==playToken) return;
+
+    cursors=tracks.map(t=>({t,i:0}));
+    for(const c of cursors){
+      while(c.i<c.t.nt.length){
+        const n=c.t.nt[c.i];
+        const st=Number(n?.[0])||0, d=Math.max(.02,Number(n?.[1])||.25), g=n&&n.length>5?Math.max(.05,Math.min(4,Number(n[5])||.95)):.95;
+        if(st+d*g>activeStart) break;
+        c.i++;
+      }
+    }
+
+    playerPlaying=true; playerPaused=false;
+    if(comparisonSide){
+      const rr=document.getElementById('seekSource'+comparisonSide);
+      const tt=document.getElementById('timeSource'+comparisonSide);
+      if(rr) rr.value=String(Math.round((activeMax?activeStart/activeMax:0)*1000));
+      if(tt) tt.textContent=`${fmt(activeStart*activeSpb)} / ${fmt(activeMax*activeSpb)}`;
+    }
+    if(status) status.textContent=lowMemoryImport?'Wiedergabe läuft (speicherschonende Vorschau).':'Wiedergabe läuft.';
+
+    const lookAheadSec=1.25;
+    function schedule(){
+      if(my!==playToken||!playerPlaying) return;
+      const nowBeat=activeStart+Math.max(0,ac.currentTime-baseTime)*activeBpm/60;
+      const horizon=nowBeat+lookAheadSec*activeBpm/60;
+      let emitted=0;
+
+      while(emitted<400){
+        let best=null, bestCursor=null, bestStart=Infinity;
+        for(const c of cursors){
+          if(c.i>=c.t.nt.length) continue;
+          const n=c.t.nt[c.i], st=Number(n?.[0])||0;
+          if(st<bestStart){bestStart=st;best=n;bestCursor=c;}
+        }
+        if(!bestCursor || bestStart>horizon) break;
+        bestCursor.i++;
+
+        const t=bestCursor.t;
+        const ch=Math.max(0,Math.min(15,Number(t.ch)||0));
+        const pg=Math.max(0,Math.min(127,Number(t.pg)||0));
+        const usePg=(lowMemoryImport && ch!==9)?0:pg;
+        const key=ch===9?'drums':String(usePg);
+        const inst=instMap.get(key);
+        const st=Number(best[0])||0, d=Math.max(.02,Number(best[1])||.25), g=best.length>5?Math.max(.05,Math.min(4,Number(best[5])||.95)):.95, en=st+d*g;
+        if(en<=activeStart) continue;
+        const pitch=Math.max(0,Math.min(127,Math.round(Number(best[2])||60)));
+        const vel=Math.max(1,Math.min(127,Number(best[3])||80));
+        const when=baseTime+Math.max(0,st-activeStart)*activeSpb;
+        try{if(inst) inst.play(pitch,Math.max(ac.currentTime+.005,when),{duration:Math.max(.03,(en-Math.max(st,activeStart))*activeSpb),gain:Math.max(.02,Math.min(1,vel/127))});}catch(_){}
+        emitted++;
+      }
+      timer=setTimeout(schedule,emitted>=400?0:70);
+    }
+
+    function tick(){
+      if(my!==playToken||!playerPlaying) return;
+      const beat=Math.min(activeMax,activeStart+Math.max(0,ac.currentTime-baseTime)*activeBpm/60), frac=activeMax?beat/activeMax:0;
+      const seekId=comparisonSide ? ('seekSource'+comparisonSide) : 'playerSeek';
+      const timeId=comparisonSide ? ('timeSource'+comparisonSide) : 'playerTime';
+      const r=document.getElementById(seekId), tt=document.getElementById(timeId);
+      if(r) r.value=String(Math.round(frac*1000));
+      if(tt) tt.textContent=`${fmt(beat*activeSpb)} / ${fmt(activeMax*activeSpb)}`;
+      if(beat>=activeMax){
+        if(playerLoopEnabled){playGMScore(score,0).catch(()=>{});}else{playerPlaying=false;if(status)status.textContent='Wiedergabe beendet.';}
+        return;
+      }
+      raf=requestAnimationFrame(tick);
+    }
+
+    schedule();
+    tick();
+  };
+})();
+</script>
+
+
+<script id="localstorage-recovery-v12">
+(()=>{
+  function parse(k){try{return JSON.parse(localStorage.getItem(k));}catch(_){return null;}}
+  function nonEmptyObj(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length>0;}
+  function historyScore(v){
+    if(!Array.isArray(v)) return -1;
+    let n=0;
+    for(const x of v){ if(x&&typeof x==='object'&&(x.score||x.title||x.provider||x.meta)) n++; }
+    return n;
+  }
+  function settingsScore(v){
+    if(!nonEmptyObj(v)) return -1;
+    const fields=['provider','keys','remember','measures','meter','tempo','musicalKey','ensemble','prompt','foldStates','reasoningEffort'];
+    return fields.reduce((n,k)=>n+(Object.prototype.hasOwnProperty.call(v,k)?1:0),0);
+  }
+  function snapshot(){
+    const out=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i); if(!k) continue;
+      const v=parse(k); out.push({k,v,hs:historyScore(v),ss:settingsScore(v)});
+    }
+    return out;
+  }
+  function recover(show=true){
+    const items=snapshot();
+    const currentSettings=parse(STORAGE_ID), currentHistory=parse(HISTORY_ID), currentExp=parse(EXPERIMENT_HISTORY_ID);
+    let changed=false, notes=[];
+
+    // Settings: only restore from another richer object; originals are never deleted.
+    const curSS=settingsScore(currentSettings);
+    const settingCandidates=items.filter(x=>x.k!==STORAGE_ID&&x.ss>curSS&&/(midi|composer|composition|setting)/i.test(x.k)).sort((a,b)=>b.ss-a.ss);
+    if(settingCandidates[0]){
+      localStorage.setItem(STORAGE_ID, JSON.stringify(settingCandidates[0].v));
+      changed=true; notes.push('Einstellungen aus „'+settingCandidates[0].k+'“ wiederhergestellt.');
+    }
+
+    // Normal history: prefer the richest compatible legacy array when current history is empty/smaller.
+    const curHS=historyScore(currentHistory);
+    const historyCandidates=items.filter(x=>x.k!==HISTORY_ID&&x.hs>curHS&&/(history|verlauf|midi|composer|composition)/i.test(x.k)).sort((a,b)=>b.hs-a.hs);
+    if(historyCandidates[0]){
+      localStorage.setItem(HISTORY_ID, JSON.stringify(historyCandidates[0].v));
+      changed=true; notes.push('Kompositionsverlauf aus „'+historyCandidates[0].k+'“ wiederhergestellt ('+historyCandidates[0].v.length+' Einträge).');
+    }
+
+    // Experimental templates: don't confuse them with normal history; use keys that look experimental/template-like.
+    const curEH=historyScore(currentExp);
+    const expCandidates=items.filter(x=>x.k!==EXPERIMENT_HISTORY_ID&&x.hs>curEH&&/(experiment|template|vorlage)/i.test(x.k)).sort((a,b)=>b.hs-a.hs);
+    if(expCandidates[0]){
+      localStorage.setItem(EXPERIMENT_HISTORY_ID, JSON.stringify(expCandidates[0].v));
+      changed=true; notes.push('Vorlagenverlauf aus „'+expCandidates[0].k+'“ wiederhergestellt ('+expCandidates[0].v.length+' Einträge).');
+    }
+
+    if(changed){
+      try{initApp();}catch(_){ try{renderHistory();}catch(__){} }
+      try{window.compositionLabRefreshComparisonSources&&window.compositionLabRefreshComparisonSources();}catch(_){}
+    }
+    if(show){
+      const st=document.getElementById('status');
+      if(st){
+        if(changed) st.innerHTML='<span class="ok">'+notes.map(esc).join('<br>')+'</span>';
+        else {
+          const keys=items.map(x=>x.k);
+          st.innerHTML='<span class="warn">Kein älterer lokaler Speicherstand gefunden. Vorhandene LocalStorage-Schlüssel: '+esc(keys.length?keys.join(', '):'keine')+'.</span>';
+        }
+      }
+    }
+    return changed;
+  }
+
+  window.compositionLabRecoverLocalStorage=recover;
+  // One automatic, non-destructive recovery attempt on every load.
+  recover(false);
+
+  // Add a visible diagnostic/recovery button near the history controls.
+  const clear=document.getElementById('clearHistoryBtn');
+  if(clear && !document.getElementById('recoverMemoryBtn')){
+    const b=document.createElement('button');
+    b.type='button'; b.id='recoverMemoryBtn'; b.className='secondary smallbtn'; b.textContent='Gedächtnis prüfen';
+    b.addEventListener('click',()=>recover(true));
+    clear.parentElement && clear.parentElement.appendChild(b);
+  }
+})();
+</script>
+
+
+<script id="interactive-import-analysis-v12">
+(()=>{
+  const btn=document.getElementById('askImportedAnalysisBtn');
+  const input=document.getElementById('importedAnalysisQuestion');
+  const answer=document.getElementById('importedAnalysisAnswer');
+  if(!btn||!input||!answer) return;
+  btn.addEventListener('click',async()=>{
+    const q=input.value.trim();
+    if(!q){ answer.style.display='block'; answer.textContent='Bitte zuerst eine Frage eingeben.'; return; }
+    if(typeof uploadedScore==='undefined'||!uploadedScore){ answer.style.display='block'; answer.textContent='Keine importierte MIDI-Datei geladen.'; return; }
+    const p=document.getElementById('provider')?.value;
+    const model=document.getElementById('model')?.value;
+    const apiKey=document.getElementById('apiKey')?.value.trim();
+    if(!apiKey){ answer.style.display='block'; answer.textContent='Bitte zuerst den API-Schlüssel eintragen.'; return; }
+    const analysis=document.getElementById('importedAnalysis')?.textContent||'';
+    btn.disabled=true; answer.style.display='block'; answer.textContent='KI denkt über deine Frage nach …';
+    try{
+      const task=`Du besprichst mit einem Musiker eine importierte MIDI-Komposition. Antworte konkret, knapp und musikalisch auf seine Frage. Nutze die vorhandene Kurzanalyse und bei Bedarf die strukturierten MIDI-Daten. Technische MIDI-Zahlen nur nennen, wenn sie wirklich nötig sind.\n\nBisherige Analyse:\n${analysis}\n\nFrage:\n${q}\n\nMIDI-Daten:\n${JSON.stringify(uploadedScore)}`;
+      const text=await callLLM(p,model,apiKey,task);
+      answer.textContent=text;
+    }catch(err){ answer.textContent='Fehler bei der KI-Frage: '+(err?.message||err); }
+    finally{ btn.disabled=false; }
+  });
+})();
+</script>
+
+<script id="comparison-player-controls-v13">
+(()=>{
+  let activeSide=null;
+  const $=id=>document.getElementById(id);
+  const getScore=w=>window.compositionLabGetComparisonSource?.(w)||null;
+  const setStatus=(w,msg)=>{const e=$("statusSource"+w);if(e)e.textContent=msg;};
+  const syncLoops=()=>['A','B'].forEach(w=>{const b=$("loopSource"+w);if(b)b.textContent=playerLoopEnabled?'🔁 Loop: Ein':'🔁 Loop: Aus';});
+  const applyVolume=w=>{
+    const v=Math.max(0,Math.min(100,Number($("volumeSource"+w)?.value)||0));
+    if($("playerVolume")) $("playerVolume").value=String(v);
+    if($("templateVolume")) $("templateVolume").value=String(v);
+    if(playerMasterGain) playerMasterGain.gain.value=v/100;
+  };
+  async function play(w,fromBeat=0){
+    const sc=getScore(w);if(!sc){setStatus(w,'Bitte zuerst eine Quelle laden.');return;}
+    activeSide=w;applyVolume(w);setStatus(w,'GM-Klänge werden geladen …');
+    try{
+      window.__compositionLabComparisonPlaybackSide=w;
+      await playGMScore(sc,fromBeat);
+      setStatus(w,'▶ Wiedergabe läuft.');
+    }
+    catch(e){setStatus(w,'Player-Fehler: '+(e?.message||e));}
+    finally{window.__compositionLabComparisonPlaybackSide=null;}
+  }
+  ['A','B'].forEach(w=>{
+    const playBtn=$("playSource"+w),pauseBtn=$("pauseSource"+w),stopBtn=$("stopSource"+w),loopBtn=$("loopSource"+w),vol=$("volumeSource"+w),seek=$("seekSource"+w);
+    if(playBtn) playBtn.onclick=()=>play(w,0);
+    if(pauseBtn) pauseBtn.onclick=()=>{activeSide=w;toggleGMPause().then(()=>setStatus(w,playerPaused?'⏸ Pausiert.':'▶ Wiedergabe läuft.')).catch(e=>setStatus(w,'Player-Fehler: '+(e?.message||e)));};
+    if(stopBtn) stopBtn.onclick=()=>{stopGMPlayback(true);setStatus(w,'⏹ Gestoppt.');if(seek)seek.value='0';const t=$("timeSource"+w);if(t)t.textContent='0:00 / 0:00';};
+    if(loopBtn) loopBtn.onclick=()=>{playerLoopEnabled=!playerLoopEnabled;syncLoops();setStatus(w,playerLoopEnabled?'Loop eingeschaltet.':'Loop ausgeschaltet.');};
+    if(vol) vol.oninput=()=>applyVolume(w);
+    if(seek) seek.onchange=()=>{const sc=getScore(w);if(!sc)return;play(w,scoreMaxBeat(sc)*(Number(seek.value)||0)/1000);};
+  });
+  const mainLoop=$('loopBtn'),templateLoop=$('templateLoopBtn');
+  if(mainLoop)mainLoop.addEventListener('click',()=>setTimeout(syncLoops,0));
+  if(templateLoop)templateLoop.addEventListener('click',()=>setTimeout(syncLoops,0));
+  syncLoops();
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+<script id="backup-restore-v18">
+(()=>{
+  const FORMAT='composition-lab-backup', VERSION=1;
+  function safeParse(raw, fallback=null){try{return raw==null?fallback:JSON.parse(raw);}catch(_){return fallback;}}
+  function stamp(){return new Date().toISOString().replace(/[:.]/g,'-');}
+  function status(msg, cls='ok'){
+    const el=document.getElementById('status');
+    if(el) el.innerHTML='<span class="'+cls+'">'+esc(msg)+'</span>';
+  }
+  function collect(){
+    return {
+      format:FORMAT,
+      version:VERSION,
+      createdAt:new Date().toISOString(),
+      data:{
+        settings:safeParse(localStorage.getItem(STORAGE_ID),{}),
+        history:safeParse(localStorage.getItem(HISTORY_ID),[]),
+        experimentHistory:safeParse(localStorage.getItem(EXPERIMENT_HISTORY_ID),[])
+      }
+    };
+  }
+  function downloadBackup(){
+    const backup=collect();
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='Composition-Lab-Sicherung-'+stamp()+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+    status('Sicherung exportiert. API-Schlüssel werden nicht zusätzlich in die Sicherung aufgenommen.');
+  }
+  function validBackup(x){
+    return x&&x.format===FORMAT&&Number(x.version)>=1&&x.data&&typeof x.data==='object'&&
+      Array.isArray(x.data.history)&&Array.isArray(x.data.experimentHistory)&&x.data.settings&&typeof x.data.settings==='object';
+  }
+  function makeSafetySnapshot(){
+    const key='composition_lab_pre_restore_'+Date.now();
+    try{localStorage.setItem(key,JSON.stringify(collect())); return key;}catch(_){return null;}
+  }
+  async function importBackup(file){
+    if(!file) return;
+    let backup;
+    try{backup=JSON.parse(await file.text());}catch(_){status('Die Sicherungsdatei ist kein gültiges JSON.','err');return;}
+    if(!validBackup(backup)){status('Diese Datei ist keine gültige Composition-Lab-Sicherung.','err');return;}
+    const ok=confirm('Sicherung vom '+(backup.createdAt||'unbekannten Datum')+' wiederherstellen? Die aktuellen Daten werden vorher intern gesichert.');
+    if(!ok) return;
+    const snapshotKey=makeSafetySnapshot();
+    try{
+      localStorage.setItem(STORAGE_ID,JSON.stringify(backup.data.settings));
+      localStorage.setItem(HISTORY_ID,JSON.stringify(backup.data.history));
+      localStorage.setItem(EXPERIMENT_HISTORY_ID,JSON.stringify(backup.data.experimentHistory));
+      sessionStorage.setItem('composition_lab_restore_message','Sicherung erfolgreich wiederhergestellt'+(snapshotKey?' · vorheriger Stand intern gesichert.':'.'));
+      location.reload();
+    }catch(e){status('Wiederherstellung fehlgeschlagen: '+(e?.message||e),'err');}
+  }
+  function installUI(){
+    const clear=document.getElementById('clearHistoryBtn');
+    if(!clear||document.getElementById('exportBackupBtn')) return;
+    const exp=document.createElement('button'); exp.type='button'; exp.id='exportBackupBtn'; exp.className='secondary smallbtn'; exp.textContent='Sicherung exportieren';
+    const imp=document.createElement('button'); imp.type='button'; imp.id='importBackupBtn'; imp.className='secondary smallbtn'; imp.textContent='Sicherung importieren';
+    const input=document.createElement('input'); input.type='file'; input.id='backupFileInput'; input.accept='.json,application/json'; input.style.display='none';
+    exp.addEventListener('click',downloadBackup);
+    imp.addEventListener('click',()=>{input.value='';input.click();});
+    input.addEventListener('change',()=>importBackup(input.files&&input.files[0]));
+    const parent=clear.parentElement; if(parent){parent.appendChild(exp);parent.appendChild(imp);parent.appendChild(input);}
+  }
+  window.compositionLabExportBackup=downloadBackup;
+  window.compositionLabImportBackup=importBackup;
+  installUI();
+  const msg=sessionStorage.getItem('composition_lab_restore_message');
+  if(msg){sessionStorage.removeItem('composition_lab_restore_message'); setTimeout(()=>status(msg),100);}
+})();
+</script>
+
+
+
+
+<script id="fix-import-analysis-v19">
+(()=>{
+  const oldBtn=document.getElementById('analyzeImportedBtn');
+  if(!oldBtn) return;
+  const btn=oldBtn.cloneNode(true);
+  oldBtn.replaceWith(btn);
+
+  function setStatus(msg, cls='ok'){
+    const st=document.getElementById('status');
+    if(st) st.innerHTML='<span class="'+cls+'">'+esc(msg)+'</span>';
+  }
+  function showBox(msg, cls=''){
+    const section=document.getElementById('importedAnalysisSection');
+    const box=document.getElementById('importedAnalysis');
+    if(section){ section.style.display='block'; section.open=true; }
+    if(box){ box.style.display='block'; box.innerHTML=cls?'<span class="'+cls+'">'+esc(msg)+'</span>':esc(msg); }
+  }
+  function compactScore(score){
+    // Keep the musical structure, but cap very large imports so analysis requests
+    // do not silently fail because of an oversized browser/API payload.
+    const out={
+      ti:score?.ti||'', sm:score?.sm||'', bpm:score?.bpm||96,
+      ts:score?.ts||null, k:score?.k||'', tr:[]
+    };
+    const tracks=Array.isArray(score?.tr)?score.tr:[];
+    const total=tracks.reduce((n,t)=>n+(Array.isArray(t?.nt)?t.nt.length:0),0);
+    const cap=7000;
+    const ratio=total>cap?cap/total:1;
+    for(const t of tracks){
+      const notes=Array.isArray(t?.nt)?t.nt:[];
+      let kept=notes;
+      if(ratio<1){
+        const n=Math.max(24,Math.floor(notes.length*ratio));
+        if(notes.length>n){
+          kept=[];
+          const step=notes.length/n;
+          for(let i=0;i<n;i++) kept.push(notes[Math.min(notes.length-1,Math.floor(i*step))]);
+        }
+      }
+      out.tr.push({n:t?.n||'', ch:t?.ch, pr:t?.pr, nt:kept, cc:Array.isArray(t?.cc)?t.cc.slice(0,1200):[]});
+    }
+    if(ratio<1) out.analysisNote='Sehr große MIDI-Datei: repräsentative Notenauswahl für die Analyse; Form/Spannungsverlauf anhand der zeitlich verteilten Ereignisse beurteilen.';
+    return out;
+  }
+
+  btn.addEventListener('click',async()=>{
+    if(typeof uploadedScore==='undefined' || !uploadedScore){
+      setStatus('Bitte zuerst eine MIDI- oder JSON-Datei laden.','err');
+      return;
+    }
+    const provider=document.getElementById('provider')?.value||'';
+    const model=document.getElementById('model')?.value?.trim()||'';
+    const apiKeyVal=document.getElementById('apiKey')?.value?.trim()||'';
+    if(!apiKeyVal){
+      setStatus('Bitte zuerst den API-Key der gewählten KI eingeben.','err');
+      return;
+    }
+    btn.disabled=true;
+    showBox('KI analysiert die importierte MIDI-Datei …');
+    setStatus('KI analysiert die importierte MIDI-Datei …');
+    try{
+      const data=compactScore(uploadedScore);
+      const task=`Gib eine kompakte musikalische Analyse der folgenden importierten MIDI-Komposition. Schreibe für einen Musiker, nicht als technische MIDI-Dokumentation. Maximal etwa 250 Wörter.\n\nGliedere nur in:\n1. Charakter und musikalische Idee\n2. Form, Motive, Harmonik und Rhythmik – knapp\n3. Stärken\n4. Mögliche Schwächen\n5. Zwei oder drei konkrete Verbesserungsideen\n\nTechnische MIDI-Details nur nennen, wenn sie musikalisch entscheidend sind. Erfinde nichts, was aus den Daten nicht ableitbar ist.\n\nDATEI: ${typeof uploadedName!=='undefined'&&uploadedName?uploadedName:(uploadedScore.ti||'Import')}\n\nMIDI-DATEN:\n${JSON.stringify(data)}`;
+      const res=await callLLM(provider,model,apiKeyVal,SYSTEM_PREFIX,task,false);
+      const text=(res&&typeof res==='object'?res.text:res)||'Die KI hat keine Analyse zurückgegeben.';
+      const box=document.getElementById('importedAnalysis');
+      if(box) box.textContent=text;
+      setStatus('Analyse der importierten MIDI-Datei erstellt.');
+    }catch(err){
+      const msg=err?.message||String(err);
+      showBox('Analyse fehlgeschlagen: '+msg,'err');
+      setStatus('Analyse fehlgeschlagen: '+msg,'err');
+    }finally{
+      btn.disabled=false;
+    }
+  });
+
+  // Repair the follow-up question handler from v12: callLLM needs systemPrompt + userPrompt
+  const askOld=document.getElementById('askImportedAnalysisBtn');
+  if(askOld){
+    const ask=askOld.cloneNode(true); askOld.replaceWith(ask);
+    ask.addEventListener('click',async()=>{
+      const input=document.getElementById('importedAnalysisQuestion');
+      const answer=document.getElementById('importedAnalysisAnswer');
+      const q=input?.value?.trim()||'';
+      if(!answer) return;
+      answer.style.display='block';
+      if(!q){ answer.textContent='Bitte zuerst eine Frage eingeben.'; return; }
+      if(typeof uploadedScore==='undefined'||!uploadedScore){ answer.textContent='Keine importierte MIDI-Datei geladen.'; return; }
+      const provider=document.getElementById('provider')?.value||'';
+      const model=document.getElementById('model')?.value?.trim()||'';
+      const apiKeyVal=document.getElementById('apiKey')?.value?.trim()||'';
+      if(!apiKeyVal){ answer.textContent='Bitte zuerst den API-Schlüssel eintragen.'; return; }
+      ask.disabled=true; answer.textContent='KI denkt über deine Frage nach …';
+      try{
+        const analysis=document.getElementById('importedAnalysis')?.textContent||'';
+        const task=`Bisherige Kurzanalyse:\n${analysis}\n\nFrage des Musikers:\n${q}\n\nMIDI-Daten:\n${JSON.stringify(compactScore(uploadedScore))}`;
+        const system='Du besprichst mit einem Musiker eine importierte MIDI-Komposition. Antworte konkret, knapp und musikalisch. Technische MIDI-Zahlen nur nennen, wenn sie wirklich nötig sind.';
+        const res=await callLLM(provider,model,apiKeyVal,system,task,false);
+        answer.textContent=(res&&typeof res==='object'?res.text:res)||'Keine Antwort erhalten.';
+      }catch(err){ answer.textContent='Fehler bei der KI-Frage: '+(err?.message||err); }
+      finally{ ask.disabled=false; }
+    });
+  }
+})();
+</script>
+
+
+
+
+<script id="fix-import-analysis-v20">
+(()=>{
+  function esc2(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function show(msg, cls='ok'){
+    const section=document.getElementById('importedAnalysisSection');
+    const box=document.getElementById('importedAnalysis');
+    if(section){section.style.display='block';section.open=true;}
+    if(box){box.style.display='block';box.innerHTML='<span class="'+cls+'">'+esc2(msg)+'</span>';}
+    const st=document.getElementById('status');
+    if(st) st.innerHTML='<span class="'+cls+'">'+esc2(msg)+'</span>';
+  }
+  function compact(score){
+    const tracks=Array.isArray(score?.tr)?score.tr:[];
+    const out={ti:score?.ti||'',sm:score?.sm||'',bpm:score?.bpm||96,ts:score?.ts||null,k:score?.k||'',tr:[]};
+    let total=tracks.reduce((n,t)=>n+(Array.isArray(t?.nt)?t.nt.length:0),0);
+    const cap=5000, ratio=total>cap?cap/total:1;
+    for(const t of tracks){
+      const notes=Array.isArray(t?.nt)?t.nt:[];
+      let kept=notes;
+      if(ratio<1 && notes.length){
+        const n=Math.max(16,Math.floor(notes.length*ratio));
+        kept=[]; const step=notes.length/Math.max(1,n);
+        for(let i=0;i<n;i++) kept.push(notes[Math.min(notes.length-1,Math.floor(i*step))]);
+      }
+      out.tr.push({nm:t?.nm||t?.n||'',ch:t?.ch,pg:t?.pg,nt:kept,ct:Array.isArray(t?.ct)?t.ct.slice(0,600):[]});
+    }
+    return out;
+  }
+  async function analyse(btn){
+    show('Analyse wird gestartet …');
+    if(typeof uploadedScore==='undefined'||!uploadedScore){show('Keine importierte MIDI-Datei geladen.','err');return;}
+    const provider=document.getElementById('provider')?.value||'';
+    const model=document.getElementById('model')?.value?.trim()||'';
+    const apiKey=document.getElementById('apiKey')?.value?.trim()||'';
+    if(!apiKey){show('Für die KI-Analyse fehlt der API-Key der gewählten KI.','err');return;}
+    if(!model){show('Für die KI-Analyse ist kein Modell ausgewählt.','err');return;}
+    btn.disabled=true;
+    show('KI analysiert die importierte MIDI-Datei …');
+    try{
+      const data=compact(uploadedScore);
+      const task=`Gib eine kompakte musikalische Analyse dieser importierten MIDI-Komposition, maximal etwa 250 Wörter. Gliedere in: 1. Charakter und musikalische Idee, 2. Form/Motive/Harmonik/Rhythmik, 3. Stärken, 4. mögliche Schwächen, 5. zwei oder drei konkrete Verbesserungsideen. Schreibe musikalisch statt technisch und erfinde nichts.\n\nMIDI-DATEN:\n${JSON.stringify(data)}`;
+      const system=(typeof SYSTEM_PREFIX!=='undefined'&&SYSTEM_PREFIX)?SYSTEM_PREFIX:'Du bist ein erfahrener musikalischer Analyse- und Kompositionsassistent.';
+      const res=await callLLM(provider,model,apiKey,system,task,false);
+      const text=(res&&typeof res==='object'?res.text:res)||'Die KI hat keine Analyse zurückgegeben.';
+      const box=document.getElementById('importedAnalysis');
+      if(box){box.className='resultcard';box.textContent=text;}
+      const st=document.getElementById('status'); if(st)st.innerHTML='<span class="ok">Analyse erstellt.</span>';
+    }catch(e){show('Analyse fehlgeschlagen: '+(e?.message||String(e)),'err');}
+    finally{btn.disabled=false;}
+  }
+  // Capture handler catches the button even if another patch replaced the DOM node.
+  document.addEventListener('click',e=>{
+    const btn=e.target?.closest?.('#analyzeImportedBtn');
+    if(!btn)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    analyse(btn);
+  },true);
+})();
+</script>
+
+
+
+
+<script id="free-source-chat-v20">
+(()=>{
+  const $=id=>document.getElementById(id);
+  const log=$('sourceChatLog'), input=$('sourceChatInput'), send=$('sourceChatSendBtn'), use=$('sourceChatUseBtn');
+  if(!log||!input||!send) return;
+  let lastAnswer='';
+
+  function append(role,text){
+    const d=document.createElement('div');
+    d.className='chatmsg '+(role==='user'?'chatuser':'chatai');
+    d.textContent=text;
+    log.appendChild(d); log.scrollTop=log.scrollHeight;
+  }
+  function sourceName(w){
+    const card=$('source'+w+'Card');
+    return card?.querySelector('strong')?.textContent?.trim() || ('Quelle '+w);
+  }
+  function compact(score){
+    if(!score) return null;
+    const out={ti:score.ti||'',sm:score.sm||'',bpm:score.bpm||96,ts:score.ts||null,k:score.k||'',tr:[]};
+    const tracks=Array.isArray(score.tr)?score.tr:[];
+    const total=tracks.reduce((n,t)=>n+(Array.isArray(t?.nt)?t.nt.length:0),0);
+    const cap=7000, ratio=total>cap?cap/total:1;
+    for(const t of tracks){
+      const notes=Array.isArray(t?.nt)?t.nt:[];
+      let kept=notes;
+      if(ratio<1 && notes.length){
+        const n=Math.max(24,Math.floor(notes.length*ratio)); kept=[];
+        const step=notes.length/n;
+        for(let i=0;i<n;i++) kept.push(notes[Math.min(notes.length-1,Math.floor(i*step))]);
+      }
+      out.tr.push({nm:t.nm||t.n||'',ch:t.ch,pg:t.pg,nt:kept,ct:Array.isArray(t.ct)?t.ct.slice(0,1200):[]});
+    }
+    return out;
+  }
+  async function ask(){
+    const q=input.value.trim(); if(!q) return;
+    const a=window.compositionLabGetComparisonSource?.('A')||null;
+    const b=window.compositionLabGetComparisonSource?.('B')||null;
+    if(!a&&!b){ append('ai','Bitte zuerst mindestens Quelle A oder Quelle B laden.'); return; }
+    const provider=$('provider')?.value||'', model=$('model')?.value?.trim()||'', key=$('apiKey')?.value?.trim()||'';
+    if(!key){ append('ai','Bitte zuerst den API-Key der gewählten KI eingeben.'); return; }
+    append('user',q); input.value=''; send.disabled=true;
+    append('ai','KI beschäftigt sich mit deiner Frage …');
+    const pending=log.lastElementChild;
+    try{
+      let material='';
+      if(a) material+=`\n\nQUELLE A – ${sourceName('A')}:\n${JSON.stringify(compact(a))}`;
+      if(b) material+=`\n\nQUELLE B – ${sourceName('B')}:\n${JSON.stringify(compact(b))}`;
+      const system='Du bist ein musikalischer Analyse- und Kompositionspartner. Der Nutzer entscheidet selbst, was er über die geladenen MIDI-Stücke wissen oder tun möchte. Antworte genau auf seine freie Frage. Analysiere, vergleiche, kritisiere oder entwickle nur das, wonach gefragt wurde. Schreibe musikalisch verständlich und vermeide unnötige technische MIDI-Zahlen.';
+      const task=`FRAGE DES NUTZERS:\n${q}${material}`;
+      const res=await callLLM(provider,model,key,system,task,false);
+      lastAnswer=(res&&typeof res==='object'?res.text:res)||'Keine Antwort erhalten.';
+      pending.textContent=lastAnswer;
+      if(use) use.disabled=!lastAnswer.trim();
+    }catch(e){ pending.textContent='Fehler: '+(e?.message||e); }
+    finally{ send.disabled=false; }
+  }
+  send.addEventListener('click',ask);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask();}});
+  if(use) use.addEventListener('click',()=>{
+    if(!lastAnswer.trim()) return;
+    const p=$('prompt'); if(p) p.value=lastAnswer.trim();
+    const a=window.compositionLabGetComparisonSource?.('A')||null;
+    const b=window.compositionLabGetComparisonSource?.('B')||null;
+    window.comparisonSynthesisSources={
+      a:a?JSON.parse(JSON.stringify(a)):null,
+      b:b?JSON.parse(JSON.stringify(b)):null,
+      nameA:a?sourceName('A'):'', nameB:b?sourceName('B'):''
+    };
+    try{saveCurrentState();}catch(_){}
+    const st=$('status'); if(st) st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';
+  });
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script id="compositionLabFreshBootstrap">
+(()=>{
+  const stamp=Date.now();
+  const load=(src)=>{const s=document.createElement('script');s.async=false;s.src=src+(src.includes('?')?'&':'?')+'fresh='+stamp;(document.head||document.body).appendChild(s);};
+  load('workspace-repair-v21.js');
+  load('diagnostics-v2.js');
+})();
+</script>
 </body>
 </html>

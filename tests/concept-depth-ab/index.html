@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Composition Lab – Test Konzepttiefe</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f3f4f6;margin:0;color:#1f2937}main{max-width:900px;margin:auto;padding:18px}.card{background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px #0002}.badge{display:inline-block;background:#7c2d12;color:white;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}label{font-size:13px;font-weight:700;display:block;margin-bottom:4px}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}textarea{min-height:90px;resize:vertical}button{padding:11px 15px;border:0;border-radius:10px;background:#1d4ed8;color:white;font-weight:700}button.secondary{background:#475569}button:disabled{opacity:.55}.row{display:flex;gap:10px;flex-wrap:wrap}.status{font-size:13px;color:#475569;white-space:pre-wrap}.out{white-space:pre-wrap;line-height:1.4;background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:10px;max-height:420px;overflow:auto}.warn{background:#fff7ed;border:1px solid #fdba74}.small{font-size:12px;color:#64748b}@media(max-width:650px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<div class="card warn">
+<span class="badge">TESTVARIANTE</span>
+<h2>Konzepttiefe A/B – Variante B</h2>
+<p>Diese Seite gehört nicht zur regulären Entwicklungsreihe. Sie verwendet Engine Build 9 als technische Basis, verändert aber ausschließlich die interne Konzeptphase: Vor der Komposition erzeugt Gemini wieder einen ausführlichen eigenen Kompositionsplan.</p>
+<p class="small">Testkennung: concept-depth-ab-detailed-plan · Reguläre App bleibt Engine 9 / Interface 47.</p>
+</div>
+<div class="card">
+<div class="grid">
+<div><label>Google/Gemini API-Key</label><input id="key" type="password" autocomplete="off"></div>
+<div><label>Modell</label><select id="model"><option value="gemini-3.7-flash" selected>Gemini 3.7 Flash</option><option value="gemini-3.8-flash">Gemini 3.8 Flash</option></select></div>
+<div><label>Reasoning</label><select id="reasoning"><option value="medium" selected>Medium</option><option value="low">Low</option><option value="high">High</option></select></div>
+<div><label>Takte</label><input id="measures" value="32"></div>
+<div><label>Taktart</label><input id="meter" value="4/4"></div>
+<div><label>Tempo</label><input id="bpm" value="96"></div>
+<div><label>Tonart</label><input id="keySig" value="c minor"></div>
+<div><label>Besetzung</label><input id="ensemble" value="Klavier solo"></div>
+</div>
+<div style="margin-top:10px"><label>Kompositionsauftrag</label><textarea id="task">Romantisches Klavierstück</textarea></div>
+<div class="row" style="margin-top:12px"><button id="compose">Komponieren</button><button id="midi" class="secondary" disabled>MIDI herunterladen</button><button id="diag" class="secondary" disabled>Diagnose herunterladen</button></div>
+<div id="status" class="status" style="margin-top:10px">Bereit.</div>
+</div>
+<div class="card"><h3>Musikalischer Entwurf</h3><div id="concept" class="out">Noch kein Ergebnis.</div></div>
+<div class="card"><h3>Ergebnis</h3><div id="summary" class="out">Noch kein Ergebnis.</div></div>
+</main>
+<script src="./composition-engine-test.js?test=concept-depth-ab"></script>
+<script>
+(()=>{
+let result=null;
+const $=id=>document.getElementById(id);
+const status=t=>$('status').textContent=t;
+function vlq(n){n=Math.max(0,Math.round(n));const a=[n&127];while(n>>=7)a.unshift((n&127)|128);return a}
+function strBytes(s){return Array.from(new TextEncoder().encode(s))}
+function u32(n){return[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]}
+function u16(n){return[(n>>>8)&255,n&255]}
+function midiBytes(score){
+ const tpq=480, bpm=Number(score.bpm)||96; const events=[];
+ events.push({t:0,p:0,b:[0xff,0x51,0x03,...u32(Math.round(60000000/bpm)).slice(1)]});
+ const ts=score.ts||{n:4,d:4}, denPow=Math.round(Math.log2(Number(ts.d)||4));
+ events.push({t:0,p:0,b:[0xff,0x58,0x04,Number(ts.n)||4,denPow,24,8]});
+ (score.tr||[]).forEach((tr,ti)=>{
+   const ch=Math.max(0,Math.min(15,Number(tr.ch)||0));
+   events.push({t:0,p:0,b:[0xc0|ch,Math.max(0,Math.min(127,Number(tr.pg)||0))]});
+   (tr.ct||[]).forEach(c=>events.push({t:Math.round(Number(c[0])*tpq),p:1,b:[0xb0|ch,Number(c[1])&127,Number(c[2])&127]}));
+   (tr.nt||[]).forEach(n=>{const t=Math.round(Number(n[0])*tpq),d=Math.max(1,Math.round(Number(n[1])*tpq*(Number(n[5])||.95))),pitch=Number(n[2])&127,vel=Math.max(1,Math.min(127,Number(n[3])||80));events.push({t,p:2,b:[0x90|ch,pitch,vel]});events.push({t:t+d,p:1,b:[0x80|ch,pitch,0]})});
+ });
+ events.sort((a,b)=>a.t-b.t||a.p-b.p);let prev=0,track=[];
+ for(const e of events){track.push(...vlq(e.t-prev),...e.b);prev=e.t}
+ track.push(0,0xff,0x2f,0); const head=[...strBytes('MThd'),...u32(6),...u16(0),...u16(1),...u16(tpq)];
+ return new Uint8Array([...head,...strBytes('MTrk'),...u32(track.length),...track]);
+}
+function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('key').value=localStorage.getItem('compositionLabTestGeminiKey')||'';
+$('compose').onclick=async()=>{
+ try{
+   const apiKey=$('key').value.trim(); if(!apiKey)throw new Error('Bitte API-Key eintragen.'); localStorage.setItem('compositionLabTestGeminiKey',apiKey);
+   $('compose').disabled=true;$('midi').disabled=true;$('diag').disabled=true;status('Gemini entwickelt zunächst den ausführlichen musikalischen Entwurf …');
+   result=await window.CompositionLabTestEngine.compose({apiKey,model:$('model').value,reasoning:$('reasoning').value,settings:{measures:$('measures').value,meter:$('meter').value,bpm:$('bpm').value,key:$('keySig').value,ensemble:$('ensemble').value,task:$('task').value.trim()}});
+   $('concept').textContent=result.concept||'(leer)'; $('summary').textContent=`${result.score?.ti||'Ohne Titel'}\n${result.score?.sm||''}\n\nNoten: ${(result.score?.tr||[]).reduce((s,t)=>s+(t.nt||[]).length,0)}`;
+   $('midi').disabled=false;$('diag').disabled=false;status('Fertig. Bitte MIDI anhören und mit der aktuellen App vergleichen.');
+ }catch(e){status('Fehler: '+(e?.message||e))}finally{$('compose').disabled=false}
+};
+$('midi').onclick=()=>{if(!result?.score)return;const safe=(result.score.ti||'concept-depth-test').replace(/[\\/:*?"<>|]+/g,'_');download(safe+'.mid',new Blob([midiBytes(result.score)],{type:'audio/midi'}))};
+$('diag').onclick=()=>{if(!result)return;const d={format:'composition-lab-concept-depth-test',testVariant:result.testVariant,engineBuild:result.engineBuild,createdAt:new Date().toISOString(),diagnostic:result.diagnostic,result:result.score};download('Composition-Lab-Test-Diagnose.json',new Blob([JSON.stringify(d,null,2)],{type:'application/json'}))};
+})();
+</script>
+</body>
+</html>

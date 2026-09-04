@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Universal Studio Exact Test</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#f3f4f6;margin:0;color:#1f2937}main{max-width:900px;margin:auto;padding:18px}.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px #0002}.warn{background:#fff7ed;border:1px solid #fdba74}.badge{display:inline-block;background:#7c2d12;color:#fff;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:700}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}label{font-size:13px;font-weight:700;display:block;margin-bottom:4px}input,textarea,select,button{font:inherit}input,textarea,select{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}textarea{min-height:90px;resize:vertical}button{padding:11px 15px;border:0;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700}button.secondary{background:#475569}button:disabled{opacity:.55}.row{display:flex;gap:10px;flex-wrap:wrap}.status{font-size:13px;color:#475569;white-space:pre-wrap}.out{white-space:pre-wrap;line-height:1.4;background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:10px;max-height:420px;overflow:auto}.small{font-size:12px;color:#64748b}@media(max-width:650px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<div class="card warn"><span class="badge">ISOLIERTER TEST</span><h2>Universal Studio – exakter Gegenversuch</h2><p>Standalone-Test ohne externe Testskripte. Rekonstruiert den alten Gemini-Ablauf: gleicher Systemprompt für Impuls und Komposition, originale Impuls-Aufforderung, keine 2–4-Satz-Begrenzung, 32.000 Output-Tokens.</p><p class="small">Testkennung: universal-studio-exact-standalone-20260903</p></div>
+<div class="card">
+<div class="grid">
+<div><label>Google/Gemini API-Key</label><input id="apiKey" type="password" autocomplete="off"></div>
+<div><label>Modell</label><select id="model"><option value="gemini-3.7-flash" selected>Gemini 3.7 Flash</option><option value="gemini-3.8-flash">Gemini 3.8 Flash</option></select></div>
+<div><label>Reasoning</label><select id="reasoning"><option value="medium" selected>Medium</option><option value="low">Low</option><option value="high">High</option></select></div>
+<div><label>Takte</label><input id="measures" value="32"></div>
+<div><label>Taktart</label><input id="meter" value="4/4"></div>
+<div><label>Tempo</label><input id="bpm" value="96"></div>
+<div><label>Tonart</label><input id="keySig" value="c minor"></div>
+<div><label>Besetzung</label><input id="ensemble" value="Klavier solo"></div>
+</div>
+<div style="margin-top:10px"><label>Kompositionsauftrag</label><textarea id="task">Romantisches Klavierstück</textarea></div>
+<div class="row" style="margin-top:12px"><button id="compose">Komponieren</button><button id="midi" class="secondary" disabled>MIDI herunterladen</button><button id="diag" class="secondary" disabled>Diagnose herunterladen</button></div>
+<div id="status" class="status" style="margin-top:10px">Bereit.</div>
+</div>
+<div class="card"><h3>Musikalischer Impuls</h3><div id="concept" class="out">Noch kein Ergebnis.</div></div>
+<div class="card"><h3>Ergebnis</h3><div id="summary" class="out">Noch kein Ergebnis.</div></div>
+</main>
+<script>
+(()=>{
+'use strict';
+const TEST_VARIANT='universal-studio-exact-standalone-20260903';
+const SYSTEM_PREFIX=`Du bist ein Kompositions- und Produktionsassistent für MIDI.\nErfinde selbständige, geschlossene Musik nach dem Auftrag des Nutzers. Achte auf Stimmführung, Dynamik (Velocity 1-127), Rhythmik und Artikulation.`;
+const TECHNICAL_PROMPT=`NOTATION UND AUSGABE:\n- "d" = Notierter Wert in Viertelnoten-Beats (0.125, 0.25, 0.333333, 0.5, 0.666667, 0.75, 1, 1.5, 2, 3, 4, 6, 8).\n- "g" = Gate/Klingdauer als Faktor (z.B. 0.95 = normal, 0.5 = staccato, 1.05 = legato).\n- "st" = System (0=Standard, 1=Rechte Hand / oberes System, 2=Linke Hand / unteres System).\n- Format: JSON mit folgender Struktur:\n{\n  "ti": "Titel",\n  "bpm": 96,\n  "ts": {"n": 4, "d": 4},\n  "k": "e minor",\n  "sm": "Kurze Zusammenfassung",\n  "tr": [\n    {"nm":"Piano","ch":0,"pg":0,"nt":[[0.0,1.0,60,80,1]],"ct":[[0.0,64,0]]}\n  ]\n}\nnt-Array: [StartBeat, Dauer, Pitch, Velocity, Staff, Gate] (Gate ist optional, Standard 0.95).\nct-Array: [Beat, CC, Wert].\nGib ausschließlich valides JSON aus.`;
+const $=id=>document.getElementById(id); let result=null;
+function extractJSON(str){str=String(str||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');const s=str.indexOf('{'),e=str.lastIndexOf('}');if(s<0||e<s)throw new Error('Kein valides JSON in Modellantwort gefunden.');return JSON.parse(str.slice(s,e+1))}
+async function callGemini({model,apiKey,reasoning,systemPrompt,userPrompt,wantJson}){const cfg={maxOutputTokens:32000,thinkingConfig:{thinkingLevel:String(reasoning||'medium').toUpperCase()}};if(wantJson)cfg.responseMimeType='application/json';const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:systemPrompt}]},contents:[{role:'user',parts:[{text:userPrompt}]}],generationConfig:cfg})});const j=await r.json();if(!r.ok)throw new Error(j?.error?.message||`Gemini HTTP ${r.status}`);return{text:j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'',usage:{in:j.usageMetadata?.promptTokenCount||0,out:j.usageMetadata?.candidatesTokenCount||0}}}
+function promptText(){return `Besetzung: ${$('ensemble').value}\nTakte: ${$('measures').value}\nTaktart: ${$('meter').value}\nTempo: ${$('bpm').value} BPM\nTonart: ${$('keySig').value}\n\nAuftrag:\n${$('task').value.trim()}`}
+function vlq(n){n=Math.max(0,Math.round(n));const a=[n&127];while(n>>=7)a.unshift((n&127)|128);return a}function strBytes(s){return Array.from(new TextEncoder().encode(s))}function u32(n){return[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]}function u16(n){return[(n>>>8)&255,n&255]}
+function midiBytes(score){const tpq=480,bpm=Number(score.bpm)||96,events=[];events.push({t:0,p:0,b:[0xff,0x51,0x03,...u32(Math.round(60000000/bpm)).slice(1)]});const ts=score.ts||{n:4,d:4},denPow=Math.round(Math.log2(Number(ts.d)||4));events.push({t:0,p:0,b:[0xff,0x58,0x04,Number(ts.n)||4,denPow,24,8]});for(const tr of score.tr||[]){const ch=Math.max(0,Math.min(15,Number(tr.ch)||0));events.push({t:0,p:0,b:[0xc0|ch,Math.max(0,Math.min(127,Number(tr.pg)||0))]});for(const c of tr.ct||[])events.push({t:Math.round(Number(c[0])*tpq),p:1,b:[0xb0|ch,Number(c[1])&127,Number(c[2])&127]});for(const n of tr.nt||[]){const t=Math.round(Number(n[0])*tpq),d=Math.max(1,Math.round(Number(n[1])*tpq*(Number(n[5])||.95))),pitch=Number(n[2])&127,vel=Math.max(1,Math.min(127,Number(n[3])||80));events.push({t,p:2,b:[0x90|ch,pitch,vel]});events.push({t:t+d,p:1,b:[0x80|ch,pitch,0]})}}events.sort((a,b)=>a.t-b.t||a.p-b.p);let prev=0,track=[];for(const e of events){track.push(...vlq(e.t-prev),...e.b);prev=e.t}track.push(0,0xff,0x2f,0);return new Uint8Array([...strBytes('MThd'),...u32(6),...u16(0),...u16(1),...u16(tpq),...strBytes('MTrk'),...u32(track.length),...track])}
+function download(name,bytes,type){const blob=bytes instanceof Blob?bytes:new Blob([bytes],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1500)}
+$('apiKey').value=localStorage.getItem('universalStudioExactGeminiKey')||'';
+$('compose').onclick=async()=>{try{const apiKey=$('apiKey').value.trim();if(!apiKey)throw new Error('Bitte API-Key eintragen.');localStorage.setItem('universalStudioExactGeminiKey',apiKey);$('compose').disabled=true;$('midi').disabled=true;$('diag').disabled=true;$('status').textContent='Gemini entwickelt den musikalischen Impuls …';const p=promptText();const common={model:$('model').value,apiKey,reasoning:$('reasoning').value};const conceptPrompt=`Formuliere einen kurzen musikalischen Gedanken/Impuls für folgenden Auftrag:\n\n${p}`;const concept=await callGemini({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:conceptPrompt,wantJson:false});$('concept').textContent=concept.text||'(leer)';$('status').textContent='Gemini komponiert auf Grundlage dieses Impulses …';const compositionPrompt=`${TECHNICAL_PROMPT}\n\nAUFTRAG:\n${p}\n\nDEIN KONZEPT:\n${concept.text}\n\nGib jetzt die fertige JSON-Partitur aus.`;const scoreRes=await callGemini({...common,systemPrompt:SYSTEM_PREFIX,userPrompt:compositionPrompt,wantJson:true});const score=extractJSON(scoreRes.text);result={testVariant:TEST_VARIANT,score,diagnostic:{testVariant:TEST_VARIANT,model:common.model,reasoning:common.reasoning,promptText:p,conceptSystemPrompt:SYSTEM_PREFIX,conceptPrompt,conceptResponse:concept.text,compositionSystemPrompt:SYSTEM_PREFIX,technicalPrompt:TECHNICAL_PROMPT,compositionPrompt,scoreResponse:scoreRes.text}};$('summary').textContent=`${score.ti||'Ohne Titel'}\n${score.sm||''}\n\nNoten: ${(score.tr||[]).reduce((s,t)=>s+(t.nt||[]).length,0)}`;$('midi').disabled=false;$('diag').disabled=false;$('status').textContent='Fertig. MIDI kann jetzt heruntergeladen werden.'}catch(e){$('status').textContent='Fehler: '+(e?.message||e)}finally{$('compose').disabled=false}};
+$('midi').onclick=()=>{if(!result?.score)return;const safe=(result.score.ti||'Universal-Studio-Exact').replace(/[\\/:*?"<>|]+/g,'_');download(safe+'.mid',midiBytes(result.score),'audio/midi')};
+$('diag').onclick=()=>{if(!result)return;download('Universal-Studio-Exact-Diagnose.json',new Blob([JSON.stringify({format:'composition-lab-universal-studio-exact-test',createdAt:new Date().toISOString(),...result},null,2)],{type:'application/json'}))};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+name: Fix Template Workflow V5
+on: push
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: composition-lab-v2
+      - run: python tools/fix_template_workflow_v5.py
+      - run: python tools/comparison_synthesis_lab_v8.py
+      - run: python tools/safe_import_playback_v10.py
+      - run: python tools/import_playback_v11.py
+      - run: python tools/localstorage_recovery_v12.py
+      - run: python tools/compact_interactive_analysis_v12.py
+      - run: python tools/comparison_players_green_status_v13.py
+      - run: python tools/compact_comparison_analysis_v14.py
+      - run: python tools/fix_comparison_progress_v14.py
+      - run: python tools/fix_comparison_progress_v16.py
+      - run: python tools/fix_comparison_progress_v17.py
+      - run: python tools/backup_restore_v18.py
+      - run: python tools/fix_import_analysis_v19.py
+      - run: python tools/fix_import_analysis_v20.py
+      - run: python tools/free_comparison_chat_v20.py
+      - run: python tools/install_diagnostics_v2.py
+      - run: |
+          git config user.name "Composition Lab Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html ipad/index.html
+          git diff --cached --quiet || git commit -m "Add shared diagnostics to iPad and Android WebApp"
+          git push origin HEAD:composition-lab-v2

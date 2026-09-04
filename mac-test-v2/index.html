@@ -1,0 +1,14 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Composition Lab – Mac Test V2</title><style>html,body,iframe{margin:0;width:100%;height:100%;border:0;display:block;background:#e8ebef}</style></head><body><iframe id="app" src="../mac-test/"></iframe><script>
+const f=document.getElementById('app');
+f.addEventListener('load',()=>{const d=f.contentDocument,w=f.contentWindow;if(!d)return;
+const css=d.createElement('style');css.textContent=`
+:root{color-scheme:light}
+body.theme-dark{--bg:#171a1f;--panel:#22262d;--line:#444b55;--text:#eef1f4;--muted:#aab2bc;--accent:#4d7fb5;--accent2:#303c4a;--ok:#74d99f;--warn:#e6ad54;--err:#ff8078;color-scheme:dark}
+body.theme-dark .menubar,body.theme-dark .titlebar{background:#20242a;border-color:#444b55}body.theme-dark .dropdown,body.theme-dark .modal,body.theme-dark .card{background:#22262d;border-color:#444b55}body.theme-dark .field input,body.theme-dark .field select,body.theme-dark .field textarea,body.theme-dark .player,body.theme-dark .chatlog,body.theme-dark .chatinput textarea,body.theme-dark .list,body.theme-dark .idea-box,body.theme-dark .btn{background:#181c22;border-color:#4a515c;color:#eef1f4}body.theme-dark .ai{background:#303640}body.theme-dark .user{background:#29445f}body.theme-dark .tabs{background:#15191e;border-color:#444b55}body.theme-dark .tab.active{background:#343a43;color:#fff}body.theme-dark h3,body.theme-dark .field label,body.theme-dark .meta b,body.theme-dark .project{color:#c8ced6}body.theme-dark .hint,body.theme-dark .muted,body.theme-dark .item small{color:#aab2bc}body.theme-dark .dropdown button:hover,body.theme-dark .item:hover{background:#303945}
+.titlebar{height:76px;grid-template-columns:360px 1fr 260px}.window{height:calc(100vh - 34px)}.brandbox .logo{width:62px!important;height:62px!important}.brand{font-size:21px!important}
+`;d.head.appendChild(css);
+const view=[...d.querySelectorAll('.menu')].find(m=>m.querySelector(':scope>span')?.textContent.trim()==='Ansicht');if(view){const dd=view.querySelector('.dropdown');const hr=d.createElement('hr');dd.appendChild(hr);['Hell','Dunkel','System'].forEach((name,i)=>{const b=d.createElement('button');b.textContent='Erscheinungsbild: '+name;b.dataset.theme=['light','dark','system'][i];dd.appendChild(b);});}
+function apply(mode){let dark=mode==='dark'||(mode==='system'&&w.matchMedia('(prefers-color-scheme: dark)').matches);d.body.classList.toggle('theme-dark',dark);localStorage.setItem('composition-lab-mac-theme',mode);}
+apply(localStorage.getItem('composition-lab-mac-theme')||'light');d.addEventListener('click',e=>{const b=e.target.closest('[data-theme]');if(b)apply(b.dataset.theme);});w.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{if((localStorage.getItem('composition-lab-mac-theme')||'light')==='system')apply('system')});
+});
+</script></body></html>

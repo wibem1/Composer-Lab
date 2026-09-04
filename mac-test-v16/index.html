@@ -1,0 +1,22 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Composition Lab – Mac Test V16</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8ebef}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="app" src="../mac-test-v15/?v16=20260903-1"></iframe><script>
+const frame=document.getElementById('app');
+frame.addEventListener('load',()=>{let tries=0;const timer=setInterval(()=>{tries++;try{let d=frame.contentDocument;let inner=d?.getElementById('app');if(inner?.contentDocument)d=inner.contentDocument;inner=d?.getElementById('app');if(inner?.contentDocument)d=inner.contentDocument;if(!d?.getElementById('composeBtn')){if(tries>300)clearInterval(timer);return}clearInterval(timer);const s=d.createElement('script');s.textContent=`(()=>{
+const VERSION='16';
+const about=document.getElementById('aboutBtn');if(about){about.textContent='Über Composition Lab – Version '+VERSION;about.onclick=()=>alert('Composition Lab\\nMac Test Version '+VERSION+'\\nStand: 3. September 2026')}
+const cmp=document.getElementById('compare');if(!cmp)return;
+const style=document.createElement('style');style.textContent='#compare{grid-template-columns:minmax(360px,1fr) minmax(360px,1fr) 430px!important}.v16-history-card{display:flex!important;flex-direction:column!important}.v16-history-card .list{max-height:none!important;flex:1!important;min-height:420px!important}';document.head.appendChild(style);
+// Alle alten/duplizierten Vergleichsverläufe entfernen, außer dem mittleren V15-Element, das wir wiederverwenden.
+[...cmp.querySelectorAll('h2,h3')].forEach(h=>{if(/Vergleichsverlauf/i.test(h.textContent||'')){const next=h.nextElementSibling;if(next?.id!=='v15CompareHistory'){if(next&&(/comparehistory/i.test(next.id||'')||next.classList.contains('list')))next.remove();h.remove()}}});
+[...cmp.querySelectorAll('[id*="CompareHistory"],[id*="comparisonHistory"]')].forEach(e=>{if(e.id!=='v15CompareHistory')e.remove()});
+const cards=[...cmp.children].filter(x=>x.classList?.contains('card'));
+let history=document.getElementById('v15CompareHistory');let historyCard=history?.closest('.card');
+// Falls V15 den Verlauf nicht als eigene mittlere Karte angelegt hat, erzeugen wir eine.
+if(!historyCard){historyCard=document.createElement('div');historyCard.className='card scroll v16-history-card';historyCard.innerHTML='<h2>Vergleichsverlauf</h2><div class="list" id="v15CompareHistory"></div>';history=historyCard.querySelector('#v15CompareHistory');}
+historyCard.classList.add('v16-history-card');
+let chatCard=[...cmp.children].find(c=>c.classList?.contains('card')&&c.querySelector('#compareChat'));
+let leftCard=[...cmp.children].find(c=>c.classList?.contains('card')&&c!==historyCard&&c!==chatCard);
+if(leftCard&&historyCard&&chatCard){cmp.append(leftCard,historyCard,chatCard)}
+// In der rechten KI-Spalte darf kein Verlauf mehr stehen.
+if(chatCard){[...chatCard.querySelectorAll('h2,h3')].forEach(h=>{if(/Vergleichsverlauf/i.test(h.textContent||'')){const n=h.nextElementSibling;if(n&&n.classList.contains('list'))n.remove();h.remove()}});[...chatCard.querySelectorAll('[id*="History"],[id*="history"]')].forEach(e=>{if(/compare|vergleich/i.test(e.id||''))e.remove()})}
+})();`;d.body.appendChild(s)}catch(e){if(tries>300)clearInterval(timer)}},100)});
+</script></body></html>
