@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=18;
+const INTERFACE_BUILD=19;
 const $=id=>document.getElementById(id);
 function clone(x){try{return typeof safeClone==='function'?safeClone(x):JSON.parse(JSON.stringify(x))}catch(_){return x}}
 function toObjectScore(score){
@@ -14,6 +14,20 @@ function toObjectScore(score){
     }:n).filter(n=>Number.isFinite(Number(n.p)))
   })):[];
   return typeof normalizeScore==='function'?normalizeScore(s):s;
+}
+function fixApiKeyFields(){
+  ['keyOpenAI','keyAnthropic','keyGemini'].forEach(id=>{
+    const e=$(id);if(!e)return;
+    e.type='text';
+    e.autocomplete='off';
+    e.setAttribute('autocapitalize','none');
+    e.setAttribute('autocorrect','off');
+    e.setAttribute('spellcheck','false');
+    e.setAttribute('inputmode','text');
+    e.setAttribute('data-1p-ignore','true');
+    e.setAttribute('data-lpignore','true');
+    e.setAttribute('data-form-type','other');
+  });
 }
 function ensureConceptBox(){
   let box=$('engine14ConceptBox');
@@ -48,6 +62,8 @@ function bindMainPlayer(score){
 function install(){
   const E=window.CompositionLabEngine,btn=$('composeBtn');
   if(!E||E.BUILD!==14||!btn||typeof state==='undefined')return false;
+  fixApiKeyFields();
+  const tech=$('techMenu');if(tech&&!tech.dataset.ipadKeyFix){tech.dataset.ipadKeyFix='1';tech.addEventListener('click',()=>setTimeout(fixApiKeyFields,0),true)}
   ensureConceptBox();
   if(state.current?._meta?.generatedConcept)showConcept(state.current._meta.generatedConcept);
   const handler=async()=>{
@@ -101,7 +117,7 @@ function install(){
   if(modal){
     let d=$('ipadEngine14Badge');
     if(!d){d=document.createElement('div');d.id='ipadEngine14Badge';d.className='ipad-tech-section';const foot=modal.querySelector('.modalfoot');if(foot)modal.insertBefore(d,foot);else modal.appendChild(d)}
-    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 18</p>';
+    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 19</p>';
   }
   if(state.current)bindMainPlayer(state.current);
   return true;
@@ -111,6 +127,7 @@ const timer=setInterval(()=>{
   tries++;
   if(install()){
     const btn=$('composeBtn');
+    fixApiKeyFields();
     if(tries>80){clearInterval(timer);return}
     if(btn&&window.__ipadEngine14ComposeHandler&&btn.onclick!==window.__ipadEngine14ComposeHandler)btn.onclick=window.__ipadEngine14ComposeHandler;
   }
