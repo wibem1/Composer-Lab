@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const INTERFACE_BUILD=19;
+const INTERFACE_BUILD=20;
 const $=id=>document.getElementById(id);
 function clone(x){try{return typeof safeClone==='function'?safeClone(x):JSON.parse(JSON.stringify(x))}catch(_){return x}}
 function toObjectScore(score){
@@ -45,6 +45,44 @@ function showConcept(text){
   const box=ensureConceptBox();
   if(box)box.textContent=String(text||'–');
 }
+function safeFilename(x){return String(x||'Komposition').replace(/[^\wäöüÄÖÜß -]+/g,'_').replace(/\s+/g,' ').trim().slice(0,80)||'Komposition'}
+function downloadDiagnostic(){
+  const d=window.__compositionLabLastDiagnostic;
+  if(!d){alert('Noch keine Diagnosedatei vorhanden. Bitte zuerst eine neue Komposition mit Engine Build 14 erzeugen.');return}
+  const title=safeFilename(d?.result?.ti||state?.current?.ti||'Komposition');
+  const stamp=new Date(d.createdAt||Date.now()).toISOString().replace(/[:.]/g,'-');
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${title}-Diagnose-Engine14-${stamp}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+function ensureDiagnosticButton(){
+  let b=$('ipadDiagnosticDownload');
+  if(!b){
+    const save=$('saveMidi');
+    const host=save?.parentElement;
+    if(host){b=document.createElement('button');b.id='ipadDiagnosticDownload';b.className='btn';b.type='button';b.textContent='Diagnosedatei speichern';b.onclick=downloadDiagnostic;host.appendChild(b)}
+  }
+  if(b){b.disabled=!window.__compositionLabLastDiagnostic;b.title=b.disabled?'Nach der nächsten Komposition verfügbar':'Kompositionsdiagnose als JSON speichern'}
+  return b;
+}
+function makeDiagnostic({provider,model,reasoning,settings,sourceName,source,r,score}){
+  return{
+    format:'composition-lab-composition-diagnostic',
+    version:3,
+    createdAt:new Date().toISOString(),
+    platform:'iPad WebApp',
+    interfaceBuild:INTERFACE_BUILD,
+    engineVersion:window.CompositionLabEngine?.VERSION||r?.engineVersion||'',
+    engineBuild:window.CompositionLabEngine?.BUILD||r?.engineBuild||14,
+    provider,model,reasoning,
+    settings:clone(settings),
+    sourceName:sourceName||'',
+    source:source?clone(source):null,
+    concept:r?.concept||'',
+    usage:clone(r?.usage||null),
+    engineDiagnostic:clone(r?.diagnostic||null),
+    result:score?clone(score):null
+  };
+}
 function bindMainPlayer(score){
   try{if(typeof renderMain==='function')renderMain();}catch(_){}
   try{if(typeof bindPlayerScore==='function')bindPlayerScore('main',score);}catch(_){}
@@ -64,7 +102,7 @@ function install(){
   if(!E||E.BUILD!==14||!btn||typeof state==='undefined')return false;
   fixApiKeyFields();
   const tech=$('techMenu');if(tech&&!tech.dataset.ipadKeyFix){tech.dataset.ipadKeyFix='1';tech.addEventListener('click',()=>setTimeout(fixApiKeyFields,0),true)}
-  ensureConceptBox();
+  ensureConceptBox();ensureDiagnosticButton();
   if(state.current?._meta?.generatedConcept)showConcept(state.current._meta.generatedConcept);
   const handler=async()=>{
     const provider=$('pageProvider')?.value||state.provider||$('provider')?.value||'openai';
@@ -74,6 +112,7 @@ function install(){
     const idea=$('compIdea')?.value||'';
     const task=$('compTask')?.value||idea;
     const source=state.source||null;
+    const sourceName=state.source?.ti||$('sourceName')?.value||'';
     const sourceInstruction=source?task:'';
     const settings={
       ensemble:$('ensemble')?.value||'frei',
@@ -86,9 +125,12 @@ function install(){
     btn.disabled=true;
     try{setStatus?.('main','Engine Build 14 komponiert …')}catch(_){}
     try{
-      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName:state.source?.ti||$('sourceName')?.value||'',sourceInstruction,onConcept:x=>showConcept(x?.concept||'')});
+      const r=await E.compose({provider,model,apiKey,reasoning,settings,source,sourceName,sourceInstruction,onConcept:x=>showConcept(x?.concept||'')});
       showConcept(r.concept||'');
       if(r.conceptOnly){
+        window.__compositionLabLastDiagnostic=makeDiagnostic({provider,model,reasoning,settings,sourceName,source,r,score:null});
+        window.__compositionLabLastSharedDiagnostic=r.diagnostic;
+        ensureDiagnosticButton();
         try{saveState?.()}catch(_){}
         try{setStatus?.('main','Musikalischer Entwurf erstellt · Engine Build 14')}catch(_){}
         return;
@@ -100,11 +142,13 @@ function install(){
       state.provider=provider;state.model=model;state.current=score;
       state.history=Array.isArray(state.history)?state.history:[];
       state.history.push(clone(score));if(state.history.length>20)state.history.shift();
+      window.__compositionLabLastSharedDiagnostic=r.diagnostic;
+      window.__compositionLabLastDiagnostic=makeDiagnostic({provider,model,reasoning,settings,sourceName,source,r,score});
+      ensureDiagnosticButton();
       try{saveState?.()}catch(_){}
       try{syncUI?.()}catch(_){}
       bindMainPlayer(score);
       try{setStatus?.('main','Neue Komposition geladen · Engine Build 14')}catch(_){}
-      window.__compositionLabLastSharedDiagnostic=r.diagnostic;
     }catch(e){
       try{setStatus?.('main',String(e?.message||e),'err')}catch(_){alert(String(e?.message||e))}
     }finally{btn.disabled=false;}
@@ -117,7 +161,7 @@ function install(){
   if(modal){
     let d=$('ipadEngine14Badge');
     if(!d){d=document.createElement('div');d.id='ipadEngine14Badge';d.className='ipad-tech-section';const foot=modal.querySelector('.modalfoot');if(foot)modal.insertBefore(d,foot);else modal.appendChild(d)}
-    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 19</p>';
+    d.innerHTML='<h3>Builds</h3><p class="hint"><strong>Engine Build 14</strong><br>Interface Build iPad 20</p>';
   }
   if(state.current)bindMainPlayer(state.current);
   return true;
@@ -127,7 +171,7 @@ const timer=setInterval(()=>{
   tries++;
   if(install()){
     const btn=$('composeBtn');
-    fixApiKeyFields();
+    fixApiKeyFields();ensureDiagnosticButton();
     if(tries>80){clearInterval(timer);return}
     if(btn&&window.__ipadEngine14ComposeHandler&&btn.onclick!==window.__ipadEngine14ComposeHandler)btn.onclick=window.__ipadEngine14ComposeHandler;
   }
