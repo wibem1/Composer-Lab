@@ -1,0 +1,28 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Composition Lab"><meta name="theme-color" content="#f3f5f8"><title>Composition Lab – iPad Engine 14</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#e8ebef}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="app" src="../ipad/?engine14=1"></iframe><script>
+const outer=document.getElementById('app');
+function deepestDocument(){
+  let d=outer.contentDocument;
+  for(let i=0;i<16;i++){
+    const f=d?.getElementById('app');
+    if(f?.contentDocument)d=f.contentDocument;else break;
+  }
+  return d;
+}
+outer.addEventListener('load',()=>{
+  let tries=0;
+  const t=setInterval(()=>{
+    tries++;
+    try{
+      const d=deepestDocument();
+      if(!d?.getElementById('composeBtn')){if(tries>600)clearInterval(t);return}
+      if(d.getElementById('ipadEngine14Loader')){clearInterval(t);return}
+      const engine=d.createElement('script');engine.id='ipadEngine14Loader';engine.src='/Composer-Lab/shared/composition-engine.js?build=14&ipad=17';
+      engine.onload=()=>{
+        const adapter=d.createElement('script');adapter.id='ipadEngine14Adapter';adapter.src='/Composer-Lab/shared/ipad-engine14-adapter.js?build=17';d.head.appendChild(adapter);
+      };
+      d.head.appendChild(engine);
+      clearInterval(t);
+    }catch(e){if(tries>600)clearInterval(t)}
+  },100);
+});
+</script></body></html>
