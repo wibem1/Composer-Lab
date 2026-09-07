@@ -1,4 +1,4 @@
-const CACHE_NAME = 'composition-lab-runtime-v37';
+const CACHE_NAME = 'composition-lab-runtime-v38';
 const STATIC_SHELL = [
   './index.html',
   './manifest.webmanifest',
