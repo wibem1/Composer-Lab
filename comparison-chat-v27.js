@@ -1,32 +1,57 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV33)return;
-window.__compositionLabComparisonChatV33=true;
+if(window.__compositionLabComparisonChatV34)return;
+window.__compositionLabComparisonChatV34=true;
 const $=id=>document.getElementById(id);
 const log=$('sourceChatLog'),send=$('sourceChatSendBtn'),use=$('sourceChatUseBtn');
 if(!log||!send)return;
 
-// V33: Das Eingabefeld wird nicht mehr aus dem alten DOM übernommen.
-// Es wird unmittelbar nach dem Hinweis-/Chatfeld als eigenes natives textarea eingesetzt.
+// Kompakte Oberfläche: reine Erklärtexte verschwinden; Hinweise stehen direkt in Eingabefeldern.
+function compactHints(){
+  const chatInput=$('chatInput');
+  if(chatInput) chatInput.placeholder='Frage zum Stück oder Änderungswunsch, z. B. „Takt 5 bis 8 dramatischer“ …';
+  const firstChat=$('chatLog')?.querySelector('.chatai.chatmsg');
+  if(firstChat && !/^Du:|^KI:/.test(firstChat.textContent||'')) firstChat.remove();
+
+  const exp=$('experimentSection');
+  if(exp){
+    exp.querySelectorAll('p.labhint').forEach(p=>p.style.display='none');
+    const ids=['labTempo','labEnsemble','labStyle'];
+    ids.forEach(id=>{
+      const el=$(id); if(!el)return;
+      let n=el.nextElementSibling;
+      if(n?.classList?.contains('uploadinfo') && !n.id) n.style.display='none';
+    });
+    const len=$('templateLength');
+    if(len){const n=len.nextElementSibling;if(n?.classList?.contains('uploadinfo')&&!n.id)n.style.display='none';}
+  }
+}
+compactHints();
+
+// V34 behält den unter Android bewährten unabhängigen Eingabeweg aus V33.
 const old=$('sourceChatInput');
 if(old) old.style.display='none';
-let input=$('sourceChatEntryV33');
+let input=$('sourceChatEntryV34')||$('sourceChatEntryV33');
+if(input && input.id==='sourceChatEntryV33') input.id='sourceChatEntryV34';
 if(!input){
   input=document.createElement('textarea');
-  input.id='sourceChatEntryV33';
-  input.placeholder='Frage an die KI eingeben …';
+  input.id='sourceChatEntryV34';
   input.rows=4;
   input.setAttribute('inputmode','text');
   input.setAttribute('enterkeyhint','send');
   input.setAttribute('aria-label','Frage an die KI im Vergleichslabor');
-  input.style.cssText='display:block;width:100%;height:110px;min-height:110px;margin:12px 0 8px;padding:12px;border:2px solid #5b6b80;border-radius:8px;background:#10141a;color:#eef2f7;-webkit-text-fill-color:#eef2f7;caret-color:#eef2f7;font:inherit;resize:vertical;position:relative;z-index:5;';
+  input.style.cssText='display:block;width:100%;height:110px;min-height:110px;margin:8px 0;padding:12px;border:2px solid #5b6b80;border-radius:8px;background:#10141a;color:#eef2f7;-webkit-text-fill-color:#eef2f7;caret-color:#eef2f7;font:inherit;resize:vertical;position:relative;z-index:5;';
   log.insertAdjacentElement('afterend',input);
 }
-// Der Senden-Button bleibt unter dem neuen Feld. Die alte leere Zeile wird ausgeblendet.
+input.placeholder='Frage die KI zu Quelle A, Quelle B oder beiden …';
+// Der bisherige reine Hinweis im Vergleichs-Chat wird entfernt; echte Gesprächsbeiträge bleiben erhalten.
+for(const d of [...log.querySelectorAll('.chatai.chatmsg')]){
+  const t=(d.textContent||'').trim();
+  if(t.startsWith('Frage die KI frei zu Quelle A')) d.remove();
+}
 const oldRow=send.parentElement;
 if(oldRow){oldRow.style.display='block';oldRow.style.width='100%';}
-send.style.display='inline-block';
-send.style.marginTop='0';
+send.style.display='inline-block';send.style.marginTop='0';
 
 let lastAnswer='';
 function add(role,text){const d=document.createElement('div');d.className='chatmsg '+(role==='user'?'chatuser':'chatai');d.textContent=(role==='user'?'Du: ':'KI: ')+text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
@@ -37,5 +62,5 @@ send.onclick=ask;
 input.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}};
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV33';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V33 · neues Vergleichs-Eingabefeld direkt eingesetzt';tech.appendChild(d);}let n=0,t=setInterval(()=>{mark();if(++n>=20)clearInterval(t)},250);mark();
+function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV34';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V34 · kompakte Hinweise als Platzhalter';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
 })();
