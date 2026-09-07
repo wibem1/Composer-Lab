@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV29)return;
-window.__compositionLabComparisonChatV29=true;
+if(window.__compositionLabComparisonChatV30)return;
+window.__compositionLabComparisonChatV30=true;
 const $=id=>document.getElementById(id);
 
 (function dedupeDom(){
@@ -41,23 +41,12 @@ input.addEventListener('pointerdown',forceFocus,true);
 input.addEventListener('touchstart',forceFocus,{capture:true,passive:true});
 input.addEventListener('click',forceFocus);
 
-const fallback=document.createElement('button');
-fallback.type='button';
-fallback.className='secondary smallbtn';
-fallback.textContent='Text eingeben';
-fallback.style.marginTop='7px';
-fallback.onclick=()=>{
-  const v=window.prompt('Frage an die KI eingeben:',input.value||'');
-  if(v!==null){input.value=v;input.dispatchEvent(new Event('input',{bubbles:true}));}
-};
-input.parentElement?.insertAdjacentElement('afterend',fallback);
-
 let lastAnswer='';
 function add(role,text){const d=document.createElement('div');d.className='chatmsg '+(role==='user'?'chatuser':'chatai');d.textContent=(role==='user'?'Du: ':'KI: ')+text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
 function source(w){try{return window.compositionLabGetComparisonSource?.(w)||null}catch(_){return null}}
 function sourceName(w,sc){return $('source'+w+'Card')?.querySelector('strong')?.textContent?.trim()||sc?.ti||('Quelle '+w)}
-async function ask(){
- const msg=String(input.value||'').trim();if(!msg)return;
+async function ask(overrideMessage){
+ const msg=String(overrideMessage!==undefined?overrideMessage:input.value||'').trim();if(!msg)return;
  const a=source('A'),b=source('B');if(!a&&!b){add('ai','Bitte zuerst mindestens eine Quelle laden.');return;}
  const provider=$('provider')?.value,model=$('model')?.value?.trim(),key=$('apiKey')?.value?.trim();if(!key){add('ai','Bitte zuerst den API-Key der gewählten KI eingeben.');return;}
  add('user',msg);input.value='';send.disabled=true;send.textContent='KI denkt …';
@@ -68,22 +57,34 @@ async function ask(){
  }catch(e){add('ai','Fehler: '+(e?.message||e));}
  finally{send.disabled=false;send.textContent='Senden';}
 }
-send.addEventListener('click',ask);
+
+const fallback=document.createElement('button');
+fallback.type='button';
+fallback.className='secondary smallbtn';
+fallback.textContent='Text eingeben und senden';
+fallback.style.marginTop='7px';
+fallback.onclick=()=>{
+  const v=window.prompt('Frage an die KI eingeben:','');
+  if(v!==null && String(v).trim()) ask(String(v));
+};
+input.parentElement?.insertAdjacentElement('afterend',fallback);
+
+send.addEventListener('click',()=>ask());
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-function markV29(){
+function markV30(){
   const tech=$('technicalSection')?.querySelector('.foldcontent');
   if(!tech)return;
   document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());
   const d=document.createElement('div');
-  d.id='webRepairBuildV29';
+  d.id='webRepairBuildV30';
   d.className='uploadinfo';
   d.style.marginTop='12px';
-  d.textContent='WebApp Repair V29 · Android-Fokus + Eingabe-Fallback';
+  d.textContent='WebApp Repair V30 · Android-Eingabe direkt senden';
   tech.appendChild(d);
 }
 let marks=0;
-const markTimer=setInterval(()=>{markV29();if(++marks>=20)clearInterval(markTimer)},250);
-markV29();
+const markTimer=setInterval(()=>{markV30();if(++marks>=20)clearInterval(markTimer)},250);
+markV30();
 })();
