@@ -3,8 +3,33 @@
 if(window.__compositionLabComparisonChatV27)return;
 window.__compositionLabComparisonChatV27=true;
 const $=id=>document.getElementById(id);
-const input=$('sourceChatInput'), send=$('sourceChatSendBtn'), log=$('sourceChatLog'), use=$('sourceChatUseBtn');
+
+// Die index.html enthält noch eine ältere Vergleichs-Chat-Implementierung.
+// Durch einmaliges Ersetzen der beiden Bedienelemente werden deren alte
+// DOM-Eventhandler zuverlässig entfernt. Danach steuert nur dieses Skript
+// Eingabe und Senden. Das vermeidet insbesondere Fokus-/Touch-Konflikte
+// in Android-Chrome bzw. installierten WebApps.
+let input=$('sourceChatInput'), send=$('sourceChatSendBtn');
+const log=$('sourceChatLog'), use=$('sourceChatUseBtn');
 if(!input||!send||!log)return;
+
+const freshInput=input.cloneNode(true);
+input.replaceWith(freshInput);
+input=freshInput;
+const freshSend=send.cloneNode(true);
+send.replaceWith(freshSend);
+send=freshSend;
+
+input.disabled=false;
+input.readOnly=false;
+input.removeAttribute('disabled');
+input.removeAttribute('readonly');
+input.removeAttribute('inert');
+input.style.pointerEvents='auto';
+input.style.touchAction='manipulation';
+input.style.position='relative';
+input.style.zIndex='1';
+
 let lastAnswer='';
 function add(role,text){const d=document.createElement('div');d.className='chatmsg '+(role==='user'?'chatuser':'chatai');d.textContent=(role==='user'?'Du: ':'KI: ')+text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
 function source(w){try{return window.compositionLabGetComparisonSource?.(w)||null}catch(_){return null}}
@@ -23,8 +48,10 @@ async function ask(){
  }catch(e){add('ai','Fehler: '+(e?.message||e));}
  finally{send.disabled=false;send.textContent='Senden';input.disabled=false;input.readOnly=false;}
 }
-send.onclick=ask;
-input.disabled=false;input.readOnly=false;input.removeAttribute('inert');
-input.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}};
+
+send.addEventListener('click',ask);
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}});
+// Android/WebApp: Berührung des Feldes soll immer direkt den Texteingabefokus erhalten.
+input.addEventListener('pointerup',()=>{if(document.activeElement!==input)input.focus({preventScroll:true});});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 })();
