@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV36)return;
-window.__compositionLabComparisonChatV36=true;
+if(window.__compositionLabComparisonChatV37)return;
+window.__compositionLabComparisonChatV37=true;
 const $=id=>document.getElementById(id);
 const log=$('sourceChatLog'),send=$('sourceChatSendBtn'),use=$('sourceChatUseBtn');
 if(!log||!send)return;
@@ -28,7 +28,7 @@ function compactHints(){
 }
 compactHints();
 
-// Beim Laden aus dem Kompositionsverlauf den gespeicherten musikalischen Impuls zuverlässig mitladen.
+// Beim Laden aus dem alten lokalen Kompositionsverlauf den gespeicherten musikalischen Impuls zuverlässig mitladen.
 function historyItems(){try{return JSON.parse(localStorage.getItem(typeof HISTORY_ID!=='undefined'?HISTORY_ID:'ai_midi_composer_history_v37')||'[]')}catch(_){return[]}}
 function historyIdea(item){return String(item?.concept||item?.idea||item?.meta?.idea||'').trim();}
 function syncHistoryImpulse(button){
@@ -53,11 +53,11 @@ document.addEventListener('click',e=>{
 // Bewährten unabhängigen Android-Eingabeweg aus V33/V34 beibehalten.
 const old=$('sourceChatInput');
 if(old) old.style.display='none';
-let input=$('sourceChatEntryV36')||$('sourceChatEntryV35')||$('sourceChatEntryV34')||$('sourceChatEntryV33');
-if(input) input.id='sourceChatEntryV36';
+let input=$('sourceChatEntryV37')||$('sourceChatEntryV36')||$('sourceChatEntryV35')||$('sourceChatEntryV34')||$('sourceChatEntryV33');
+if(input) input.id='sourceChatEntryV37';
 if(!input){
   input=document.createElement('textarea');
-  input.id='sourceChatEntryV36';
+  input.id='sourceChatEntryV37';
   input.rows=4;
   input.setAttribute('inputmode','text');
   input.setAttribute('enterkeyhint','send');
@@ -79,5 +79,15 @@ send.onclick=ask;
 input.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}};
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV36';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V36 · Musikalischer Impuls aus Verlauf';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
+// Gemeinsamer CLAB-Kern + Android/WebApp-Adapter. MIDI-Import und MIDI-Export bleiben unverändert zusätzlich bestehen.
+if(!window.__compositionLabCLABBootstrapV1){
+  window.__compositionLabCLABBootstrapV1=true;
+  const fresh=Date.now();
+  const core=document.createElement('script');
+  core.src='/Composer-Lab/shared/clab-format.js?fresh='+fresh;
+  core.onload=()=>{const adapter=document.createElement('script');adapter.src='/Composer-Lab/shared/root-clab-adapter.js?fresh='+fresh;(document.head||document.body).appendChild(adapter)};
+  (document.head||document.body).appendChild(core);
+}
+
+function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV37';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V37 · CLAB + MIDI Import/Export';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
 })();
