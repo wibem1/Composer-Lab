@@ -1,34 +1,76 @@
-name: Fix Template Workflow V5
-on: push
+name: Composition Lab cleanup v27
+on:
+  push:
+    branches: [composition-lab-v2]
+    paths:
+      - '.github/workflows/fix-template-workflow-v5.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
 jobs:
-  patch:
-    if: github.actor != 'github-actions[bot]'
+  cleanup:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           ref: composition-lab-v2
-      - run: python tools/fix_template_workflow_v5.py
-      - run: python tools/comparison_synthesis_lab_v8.py
-      - run: python tools/safe_import_playback_v10.py
-      - run: python tools/import_playback_v11.py
-      - run: python tools/localstorage_recovery_v12.py
-      - run: python tools/compact_interactive_analysis_v12.py
-      - run: python tools/comparison_players_green_status_v13.py
-      - run: python tools/compact_comparison_analysis_v14.py
-      - run: python tools/fix_comparison_progress_v14.py
-      - run: python tools/fix_comparison_progress_v16.py
-      - run: python tools/fix_comparison_progress_v17.py
-      - run: python tools/backup_restore_v18.py
-      - run: python tools/fix_import_analysis_v19.py
-      - run: python tools/fix_import_analysis_v20.py
-      - run: python tools/free_comparison_chat_v20.py
-      - run: python tools/install_diagnostics_v2.py
-      - run: |
-          git config user.name "Composition Lab Bot"
+      - name: Clean accumulated one-off patches
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text()
+          before = len(s)
+
+          # 1) Collapse the accidentally repeated import-analysis visibility block.
+          block = '    const section=document.getElementById("importedAnalysisSection");\n    if(section){ section.style.display="block"; section.open=true; }\n'
+          s = re.sub(r'(?:' + re.escape(block) + r'){2,}', block, s)
+
+          # 2) Remove superseded import-analysis handlers; v20 is the active one.
+          for script_id in ('interactive-import-analysis-v12', 'fix-import-analysis-v19', 'free-source-chat-v20'):
+              s = re.sub(
+                  rf'\n*<script id="{re.escape(script_id)}">.*?</script>\n*',
+                  '\n\n',
+                  s,
+                  flags=re.S,
+              )
+
+          # 3) Keep exactly one external comparison-chat v27 loader.
+          tag = '<script src="comparison-chat-v27.js?v=27"></script>'
+          s = s.replace(tag, '')
+          anchor = '<script id="compositionLabFreshBootstrap">'
+          if anchor in s:
+              s = s.replace(anchor, tag + '\n\n' + anchor, 1)
+          else:
+              s = s.replace('</body>', tag + '\n</body>')
+
+          # 4) Remove extreme blank-line buildup from repeated patch runs.
+          s = re.sub(r'\n{4,}', '\n\n\n', s)
+
+          # 5) Sanity checks: do not publish a cleanup that loses core UI.
+          required = [
+              'id="composeBtn"', 'id="sourceChatInput"', 'id="sourceChatSendBtn"',
+              'id="technicalSection"', 'id="experimentSection"',
+              'comparison-chat-v27.js?v=27', 'workspace-repair-v21.js', 'diagnostics-v2.js'
+          ]
+          missing = [x for x in required if x not in s]
+          if missing:
+              raise SystemExit('Cleanup aborted; missing core markers: ' + ', '.join(missing))
+          if s.count('id="sourceChatInput"') != 1:
+              raise SystemExit('Cleanup aborted; sourceChatInput count is not 1')
+          if s.count(tag) != 1:
+              raise SystemExit('Cleanup aborted; comparison v27 loader count is not 1')
+
+          p.write_text(s)
+          print(f'index.html: {before} -> {len(s)} bytes')
+          PY
+      - name: Commit cleaned index
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "Composition Lab Cleanup"
           git config user.email "actions@users.noreply.github.com"
-          git add index.html ipad/index.html
-          git diff --cached --quiet || git commit -m "Add shared diagnostics to iPad and Android WebApp"
+          git add index.html
+          git commit -m "Clean accumulated WebApp repair patches"
           git push origin HEAD:composition-lab-v2
