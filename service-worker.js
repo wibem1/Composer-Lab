@@ -1,4 +1,4 @@
-const CACHE_NAME = 'composition-lab-runtime-v36';
+const CACHE_NAME = 'composition-lab-runtime-v37';
 const STATIC_SHELL = [
   './index.html',
   './manifest.webmanifest',
@@ -21,19 +21,13 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-
   const url = new URL(event.request.url);
   const isNavigation = event.request.mode === 'navigate';
   const isIndex = url.pathname.endsWith('/Composer-Lab/') || url.pathname.endsWith('/Composer-Lab/index.html');
-
   if (isNavigation || isIndex) {
-    event.respondWith(
-      fetch(new Request(event.request, {cache: 'no-store'}))
-        .catch(() => caches.match('./index.html'))
-    );
+    event.respondWith(fetch(new Request(event.request, {cache: 'no-store'})).catch(() => caches.match('./index.html')));
     return;
   }
-
   event.respondWith(
     fetch(new Request(event.request, {cache: 'no-store'}))
       .then(response => {
