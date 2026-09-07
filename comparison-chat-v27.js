@@ -4,6 +4,21 @@ if(window.__compositionLabComparisonChatV27)return;
 window.__compositionLabComparisonChatV27=true;
 const $=id=>document.getElementById(id);
 
+// Eindeutige sichtbare Kennzeichnung des aktuellen WebRepair-Stands.
+function showBuild(){
+ const tech=$('technicalSection')?.querySelector('.foldcontent');
+ if(!tech)return false;
+ let d=$('webRepairBuildV30');
+ if(!d){d=document.createElement('div');d.id='webRepairBuildV30';d.className='uploadinfo';d.style.marginTop='12px';tech.appendChild(d);}
+ d.textContent='WebApp Repair V30 · Android-Vergleichslabor';
+ // Ältere Repair-Kennzeichnungen ausblenden, damit nur eine Versionsnummer sichtbar ist.
+ tech.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>{if(e!==d)e.style.display='none';});
+ return true;
+}
+if(!showBuild()){
+ let buildTries=0;const buildTimer=setInterval(()=>{if(showBuild()||++buildTries>100)clearInterval(buildTimer);},100);
+}
+
 // Die index.html enthält noch eine ältere Vergleichs-Chat-Implementierung.
 // Durch einmaliges Ersetzen der beiden Bedienelemente werden deren alte
 // DOM-Eventhandler zuverlässig entfernt. Danach steuert nur dieses Skript
