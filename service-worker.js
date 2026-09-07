@@ -1,5 +1,6 @@
-const CACHE_NAME = 'composition-lab-runtime-v32';
+const CACHE_NAME = 'composition-lab-runtime-v33';
 const STATIC_SHELL = [
+  './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -28,6 +29,7 @@ self.addEventListener('fetch', event => {
   if (isNavigation || isIndex) {
     event.respondWith(
       fetch(new Request(event.request, {cache: 'no-store'}))
+        .then(response => response)
         .catch(() => caches.match('./index.html'))
     );
     return;
