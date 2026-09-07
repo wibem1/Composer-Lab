@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-if(window.__compositionLabWorkspaceRepairV24)return;
-window.__compositionLabWorkspaceRepairV24=true;
+if(window.__compositionLabWorkspaceRepairV25)return;
+window.__compositionLabWorkspaceRepairV25=true;
 const $=id=>document.getElementById(id);
 const IDEA_KEY='composition_lab_experiment_idea_v21';
 function text(v){return String(v??'').trim()}
@@ -10,32 +10,17 @@ function setInfo(msg,err=false){const e=$('experimentInfo');if(e)e.textContent=m
 function saveIdea(idea){const v=text(idea);if($('labIdea'))$('labIdea').value=v;try{localStorage.setItem(IDEA_KEY,v)}catch(_){}return v}
 function ideaFromScore(score,fallback=''){return text(score?.sm)||text(fallback)||'Erkunde das entstandene Material als Ausgangspunkt und entwickle seine auffälligsten musikalischen Eigenschaften weiter.'}
 function showAsCurrentTemplate(score,kind,idea){if(!score)return;const meta={idea:saveIdea(ideaFromScore(score,idea)),ensemble:text($('labEnsemble')?.value)||text($('ensemble')?.value),style:text($('labStyle')?.value),bpm:Number(score.bpm)||Number($('labTempo')?.value)||96,meter:`${Number(score.ts?.n)||4}/${Number(score.ts?.d)||4}`,key:text(score.k),measures:Number($('templateLength')?.value)||4};try{window.compositionLabSetCurrentTemplate?.({title:score.ti||kind||'Vorlage',kind:kind||'Vorlage',score:JSON.parse(JSON.stringify(score)),meta})}catch(_){}try{window.compositionLabAddTemplateHistory?.(score,kind||'Lokale Vorlage',meta)}catch(_){}}
-function repairComparisonInput(){
-  const input=$('sourceChatInput');
-  if(!input)return;
-  input.disabled=false;
-  input.readOnly=false;
-  input.removeAttribute('disabled');
-  input.removeAttribute('readonly');
-  input.removeAttribute('inert');
-  input.tabIndex=0;
-  input.style.pointerEvents='auto';
-  input.style.userSelect='text';
-  input.style.webkitUserSelect='text';
-  input.style.touchAction='manipulation';
-  input.style.position='relative';
-  input.style.zIndex='3';
-  const row=input.closest('.chatrow');
-  if(row){row.removeAttribute('inert');row.style.pointerEvents='auto';row.style.position='relative';row.style.zIndex='3';}
-  const section=input.closest('#synthesisSection');
-  if(section)section.removeAttribute('inert');
-  if(!input.dataset.androidFocusFix){
-    input.dataset.androidFocusFix='1';
-    const focus=()=>{try{input.focus({preventScroll:true})}catch(_){try{input.focus()}catch(__){}}};
-    input.addEventListener('pointerdown',focus,{passive:true});
-    input.addEventListener('touchstart',focus,{passive:true});
-    input.addEventListener('click',focus);
-  }
+function replaceComparisonInput(){
+  const old=$('sourceChatInput');
+  if(!old||old.dataset.freshV25)return;
+  const fresh=document.createElement('textarea');
+  fresh.id='sourceChatInput';
+  fresh.className=old.className||'';
+  fresh.placeholder=old.placeholder||'Frage die KI zu Quelle A, Quelle B oder beiden …';
+  fresh.style.minHeight='70px';
+  fresh.value=old.value||'';
+  fresh.dataset.freshV25='1';
+  old.replaceWith(fresh);
 }
 function install(){
   const exp=$('experimentSection'),tech=$('technicalSection');if(!exp||!tech)return false;const content=exp.querySelector('.foldcontent');if(!content)return false;
@@ -49,11 +34,9 @@ function install(){
   const inspiration=$('inspirationBtn'),free=$('randomFreeBtn'),guided=$('randomGuidedBtn');if(inspiration){inspiration.disabled=false;inspiration.textContent='💡 Inspiration';inspiration.onclick=()=>{try{if(typeof generateInspiration!=='function')throw new Error('Inspiration-Funktion fehlt');const oldPrompt=$('prompt')?.value||'';generateInspiration();const idea=$('prompt')?.value||'';if($('prompt'))$('prompt').value=oldPrompt;try{saveCurrentState()}catch(_){}saveIdea(idea);setInfo('Neue Inspiration als Kompositionsidee erzeugt.')}catch(e){setInfo('Inspiration fehlgeschlagen: '+(e?.message||e),true)}}}
   if(free){free.disabled=false;free.onclick=()=>{try{if(typeof generateRandomMusic!=='function')throw new Error('Zufallsfunktion fehlt');generateRandomMusic(false);const score=typeof lastScore!=='undefined'?lastScore:null;const idea=ideaFromScore(score,'Völliger Zufall als Ausgangsmaterial. Suche im entstandenen Material nach einer überraschenden musikalischen Eigenschaft und entwickle sie weiter.');showAsCurrentTemplate(score,'Völliger Zufall',idea);setInfo('Völliger Zufall erzeugt · MIDI und Kompositionsidee sind als aktuelle Vorlage geladen.')}catch(e){setInfo('Völliger Zufall fehlgeschlagen: '+(e?.message||e),true)}}}
   if(guided){guided.disabled=false;guided.onclick=()=>{try{if(typeof generateRandomMusic!=='function')throw new Error('Zufallsfunktion fehlt');generateRandomMusic(true);const score=typeof lastScore!=='undefined'?lastScore:null;const idea=ideaFromScore(score,'Zufälliges Ausgangsmaterial innerhalb der gewählten Eckdaten. Entwickle die auffälligste entstandene Figur oder Klangbewegung weiter.');showAsCurrentTemplate(score,'Zufall mit Eckdaten',idea);setInfo('Zufall mit Eckdaten erzeugt · MIDI und Kompositionsidee sind als aktuelle Vorlage geladen.')}catch(e){setInfo('Zufall mit Eckdaten fehlgeschlagen: '+(e?.message||e),true)}}}
-  repairComparisonInput();
-  if(techHost){let d=$('webRepairBuildV22');if(!d){d=document.createElement('div');d.id='webRepairBuildV22';d.className='uploadinfo';d.style.marginTop='12px';techHost.appendChild(d)}d.textContent='WebApp Repair V24 · Vergleichslabor-Eingabe repariert'}
+  replaceComparisonInput();
+  if(techHost){let d=$('webRepairBuildV22');if(!d){d=document.createElement('div');d.id='webRepairBuildV22';d.className='uploadinfo';d.style.marginTop='12px';techHost.appendChild(d)}d.textContent='WebApp Repair V25 · Vergleichslabor-Eingabe neu aufgebaut'}
   return true;
 }
-let n=0;const t=setInterval(()=>{n++;try{if(install()){clearInterval(t);setTimeout(()=>{install();repairComparisonInput()},500)}}catch(e){}if(n>200)clearInterval(t)},100);
-window.addEventListener('pageshow',repairComparisonInput);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(repairComparisonInput,50)});
+let n=0;const t=setInterval(()=>{n++;try{if(install()){clearInterval(t);setTimeout(install,500)}}catch(e){}if(n>200)clearInterval(t)},100);
 })();
