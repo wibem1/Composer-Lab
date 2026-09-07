@@ -1,41 +1,41 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV34)return;
-window.__compositionLabComparisonChatV34=true;
+if(window.__compositionLabComparisonChatV35)return;
+window.__compositionLabComparisonChatV35=true;
 const $=id=>document.getElementById(id);
 const log=$('sourceChatLog'),send=$('sourceChatSendBtn'),use=$('sourceChatUseBtn');
 if(!log||!send)return;
 
-// Kompakte Oberfläche: reine Erklärtexte verschwinden; Hinweise stehen direkt in Eingabefeldern.
+// Platzhalter in der gesamten WebApp optisch klar von echten Eingaben unterscheiden.
+if(!document.getElementById('compositionLabPlaceholderStyleV35')){
+  const st=document.createElement('style');
+  st.id='compositionLabPlaceholderStyleV35';
+  st.textContent=`input::placeholder,textarea::placeholder{font-style:italic;opacity:.72;color:#9ba7b4;-webkit-text-fill-color:#9ba7b4;}\ninput::-webkit-input-placeholder,textarea::-webkit-input-placeholder{font-style:italic;opacity:.72;color:#9ba7b4;-webkit-text-fill-color:#9ba7b4;}`;
+  (document.head||document.documentElement).appendChild(st);
+}
+
 function compactHints(){
   const chatInput=$('chatInput');
   if(chatInput) chatInput.placeholder='Frage zum Stück oder Änderungswunsch, z. B. „Takt 5 bis 8 dramatischer“ …';
   const firstChat=$('chatLog')?.querySelector('.chatai.chatmsg');
   if(firstChat && !/^Du:|^KI:/.test(firstChat.textContent||'')) firstChat.remove();
-
   const exp=$('experimentSection');
   if(exp){
     exp.querySelectorAll('p.labhint').forEach(p=>p.style.display='none');
-    const ids=['labTempo','labEnsemble','labStyle'];
-    ids.forEach(id=>{
-      const el=$(id); if(!el)return;
-      let n=el.nextElementSibling;
-      if(n?.classList?.contains('uploadinfo') && !n.id) n.style.display='none';
-    });
-    const len=$('templateLength');
-    if(len){const n=len.nextElementSibling;if(n?.classList?.contains('uploadinfo')&&!n.id)n.style.display='none';}
+    ['labTempo','labEnsemble','labStyle'].forEach(id=>{const el=$(id);if(!el)return;const n=el.nextElementSibling;if(n?.classList?.contains('uploadinfo')&&!n.id)n.style.display='none';});
+    const len=$('templateLength');if(len){const n=len.nextElementSibling;if(n?.classList?.contains('uploadinfo')&&!n.id)n.style.display='none';}
   }
 }
 compactHints();
 
-// V34 behält den unter Android bewährten unabhängigen Eingabeweg aus V33.
+// Bewährten unabhängigen Android-Eingabeweg aus V33/V34 beibehalten.
 const old=$('sourceChatInput');
 if(old) old.style.display='none';
-let input=$('sourceChatEntryV34')||$('sourceChatEntryV33');
-if(input && input.id==='sourceChatEntryV33') input.id='sourceChatEntryV34';
+let input=$('sourceChatEntryV35')||$('sourceChatEntryV34')||$('sourceChatEntryV33');
+if(input) input.id='sourceChatEntryV35';
 if(!input){
   input=document.createElement('textarea');
-  input.id='sourceChatEntryV34';
+  input.id='sourceChatEntryV35';
   input.rows=4;
   input.setAttribute('inputmode','text');
   input.setAttribute('enterkeyhint','send');
@@ -44,13 +44,8 @@ if(!input){
   log.insertAdjacentElement('afterend',input);
 }
 input.placeholder='Frage die KI zu Quelle A, Quelle B oder beiden …';
-// Der bisherige reine Hinweis im Vergleichs-Chat wird entfernt; echte Gesprächsbeiträge bleiben erhalten.
-for(const d of [...log.querySelectorAll('.chatai.chatmsg')]){
-  const t=(d.textContent||'').trim();
-  if(t.startsWith('Frage die KI frei zu Quelle A')) d.remove();
-}
-const oldRow=send.parentElement;
-if(oldRow){oldRow.style.display='block';oldRow.style.width='100%';}
+for(const d of [...log.querySelectorAll('.chatai.chatmsg')]){const t=(d.textContent||'').trim();if(t.startsWith('Frage die KI frei zu Quelle A'))d.remove();}
+const oldRow=send.parentElement;if(oldRow){oldRow.style.display='block';oldRow.style.width='100%';}
 send.style.display='inline-block';send.style.marginTop='0';
 
 let lastAnswer='';
@@ -62,5 +57,5 @@ send.onclick=ask;
 input.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}};
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV34';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V34 · kompakte Hinweise als Platzhalter';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
+function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV35';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V35 · Platzhalter kursiv';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
 })();
