@@ -1,4 +1,4 @@
-const CACHE_NAME = 'composition-lab-runtime-v31';
+const CACHE_NAME = 'composition-lab-runtime-v32';
 const STATIC_SHELL = [
   './manifest.webmanifest',
   './icon-192.png',
@@ -25,7 +25,6 @@ self.addEventListener('fetch', event => {
   const isNavigation = event.request.mode === 'navigate';
   const isIndex = url.pathname.endsWith('/Composer-Lab/') || url.pathname.endsWith('/Composer-Lab/index.html');
 
-  // Hauptseite niemals aus dem Service-Worker-Cache bedienen.
   if (isNavigation || isIndex) {
     event.respondWith(
       fetch(new Request(event.request, {cache: 'no-store'}))
@@ -34,7 +33,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Laufzeit-Dateien bevorzugt aus dem Netz holen; nur offline auf Cache zurückfallen.
   event.respondWith(
     fetch(new Request(event.request, {cache: 'no-store'}))
       .then(response => {
