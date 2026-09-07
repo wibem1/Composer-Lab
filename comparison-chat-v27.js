@@ -1,31 +1,40 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV27)return;
-window.__compositionLabComparisonChatV27=true;
+if(window.__compositionLabComparisonChatV28)return;
+window.__compositionLabComparisonChatV28=true;
 const $=id=>document.getElementById(id);
 
-// Entfernt die alten direkten Eventhandler des Vergleichschats, indem nur
-// Eingabefeld und Senden-Schaltfläche einmal sauber ersetzt werden.
-let input=$('sourceChatInput'), send=$('sourceChatSendBtn');
+// Historisch angesammelte doppelte IDs entfernen. Wenn ein ganzer Bereich
+// doppelt vorhanden ist, wird der spaetere Bereich komplett entfernt.
+(function dedupeDom(){
+  const seen=new Set();
+  for(const el of [...document.querySelectorAll('[id]')]){
+    if(!el.isConnected)continue;
+    if(seen.has(el.id)) el.remove();
+    else seen.add(el.id);
+  }
+})();
+
+let oldInput=$('sourceChatInput'), oldSend=$('sourceChatSendBtn');
 const log=$('sourceChatLog'), use=$('sourceChatUseBtn');
-if(!input||!send||!log)return;
+if(!oldInput||!oldSend||!log)return;
 
-const freshInput=input.cloneNode(true);
-input.replaceWith(freshInput);
-input=freshInput;
-const freshSend=send.cloneNode(true);
-send.replaceWith(freshSend);
-send=freshSend;
+// Fuer Android ein wirklich neues, natives Textfeld ohne geerbte Handler.
+const input=document.createElement('textarea');
+input.id='sourceChatInput';
+input.className=oldInput.className||'';
+input.placeholder=oldInput.placeholder||'Frage die KI zu Quelle A, Quelle B oder beiden …';
+input.value=oldInput.value||'';
+input.rows=3;
+input.autocomplete='off';
+input.spellcheck=true;
+input.tabIndex=0;
+input.setAttribute('aria-label','Frage an die KI im Vergleichslabor');
+input.style.cssText=(oldInput.getAttribute('style')||'')+';min-height:70px;width:100%;pointer-events:auto;touch-action:auto;position:relative;z-index:50;-webkit-user-select:text;user-select:text;';
+oldInput.replaceWith(input);
 
-input.disabled=false;
-input.readOnly=false;
-input.removeAttribute('disabled');
-input.removeAttribute('readonly');
-input.removeAttribute('inert');
-input.style.pointerEvents='auto';
-input.style.touchAction='manipulation';
-input.style.position='relative';
-input.style.zIndex='1';
+const send=oldSend.cloneNode(true);
+oldSend.replaceWith(send);
 
 let lastAnswer='';
 function add(role,text){const d=document.createElement('div');d.className='chatmsg '+(role==='user'?'chatuser':'chatai');d.textContent=(role==='user'?'Du: ':'KI: ')+text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
@@ -45,15 +54,6 @@ async function ask(){
 }
 send.addEventListener('click',ask);
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}});
-input.addEventListener('pointerup',()=>{if(document.activeElement!==input)input.focus({preventScroll:true});});
+for(const ev of ['click','touchend']) input.addEventListener(ev,()=>{try{input.focus({preventScroll:true})}catch(_){input.focus()}},{passive:true});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
-
-// Sichtbare WebRepair-Kennung der tatsächlich laufenden Android-Fassung.
-function markRepairVersion(){
- for(const el of document.querySelectorAll('body *')){
-  if(el.children.length===0&&/WebApp Repair V26/i.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/WebApp Repair V26/ig,'WebApp Repair V27');
- }
-}
-markRepairVersion();
-setTimeout(markRepairVersion,500);
 })();
