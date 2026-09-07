@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-if(window.__compositionLabComparisonChatV35)return;
-window.__compositionLabComparisonChatV35=true;
+if(window.__compositionLabComparisonChatV36)return;
+window.__compositionLabComparisonChatV36=true;
 const $=id=>document.getElementById(id);
 const log=$('sourceChatLog'),send=$('sourceChatSendBtn'),use=$('sourceChatUseBtn');
 if(!log||!send)return;
@@ -28,14 +28,36 @@ function compactHints(){
 }
 compactHints();
 
+// Beim Laden aus dem Kompositionsverlauf den gespeicherten musikalischen Impuls zuverlässig mitladen.
+function historyItems(){try{return JSON.parse(localStorage.getItem(typeof HISTORY_ID!=='undefined'?HISTORY_ID:'ai_midi_composer_history_v37')||'[]')}catch(_){return[]}}
+function historyIdea(item){return String(item?.concept||item?.idea||item?.meta?.idea||'').trim();}
+function syncHistoryImpulse(button){
+  const card=button?.closest?.('.historyitem'),list=$('historyList');
+  if(!card||!list)return;
+  const cards=[...list.children].filter(x=>x.classList?.contains('historyitem'));
+  const ix=cards.indexOf(card);if(ix<0)return;
+  const item=historyItems()[ix];if(!item)return;
+  const idea=historyIdea(item),view=$('conceptView');
+  if(typeof lastConcept!=='undefined') lastConcept=idea;
+  if(view){
+    const provider=String(item.provider||'KI').toUpperCase();
+    view.innerHTML=idea?`<strong>${provider} Konzept:</strong><br>${String(idea).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\n/g,'<br>')}`:'Für diesen Verlaufseintrag ist keine Kompositionsidee gespeichert.';
+  }
+}
+document.addEventListener('click',e=>{
+  const b=e.target?.closest?.('#historyList [data-act="load"]');
+  if(!b)return;
+  setTimeout(()=>syncHistoryImpulse(b),0);
+},false);
+
 // Bewährten unabhängigen Android-Eingabeweg aus V33/V34 beibehalten.
 const old=$('sourceChatInput');
 if(old) old.style.display='none';
-let input=$('sourceChatEntryV35')||$('sourceChatEntryV34')||$('sourceChatEntryV33');
-if(input) input.id='sourceChatEntryV35';
+let input=$('sourceChatEntryV36')||$('sourceChatEntryV35')||$('sourceChatEntryV34')||$('sourceChatEntryV33');
+if(input) input.id='sourceChatEntryV36';
 if(!input){
   input=document.createElement('textarea');
-  input.id='sourceChatEntryV35';
+  input.id='sourceChatEntryV36';
   input.rows=4;
   input.setAttribute('inputmode','text');
   input.setAttribute('enterkeyhint','send');
@@ -57,5 +79,5 @@ send.onclick=ask;
 input.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}};
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV35';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V35 · Platzhalter kursiv';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
+function mark(){const tech=$('technicalSection')?.querySelector('.foldcontent');if(!tech)return;document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());const d=document.createElement('div');d.id='webRepairBuildV36';d.className='uploadinfo';d.style.marginTop='12px';d.textContent='WebApp Repair V36 · Musikalischer Impuls aus Verlauf';tech.appendChild(d);}let n=0,t=setInterval(()=>{compactHints();mark();if(++n>=20)clearInterval(t)},250);mark();
 })();
