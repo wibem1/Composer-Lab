@@ -33,8 +33,6 @@ oldInput.replaceWith(input);
 const send=oldSend.cloneNode(true);
 oldSend.replaceWith(send);
 
-// Android: Fokus synchron im eigentlichen Touch/Pointer-Start setzen. Das hilft auch,
-// falls ein fremdes Element den sichtbaren Bereich teilweise überlagert.
 function insideInput(x,y){const r=input.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom}
 function forceFocus(){try{input.focus({preventScroll:true})}catch(_){input.focus()}}
 document.addEventListener('pointerdown',e=>{if(insideInput(e.clientX,e.clientY))forceFocus()},true);
@@ -43,8 +41,6 @@ input.addEventListener('pointerdown',forceFocus,true);
 input.addEventListener('touchstart',forceFocus,{capture:true,passive:true});
 input.addEventListener('click',forceFocus);
 
-// Robuster Android-Fallback: nativer Browser-Eingabedialog. Damit bleibt das
-// Vergleichslabor benutzbar, selbst wenn WebView/Browser den Inline-Fokus blockiert.
 const fallback=document.createElement('button');
 fallback.type='button';
 fallback.className='secondary smallbtn';
@@ -76,11 +72,18 @@ send.addEventListener('click',ask);
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();ask();}});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 
-// Sichtbare Kennung aktualisieren, ohne weitere Repair-Datei anzufassen.
-setTimeout(()=>{
-  for(const n of document.querySelectorAll('body *')){
-    if(n.children.length===0&&/WebApp Repair V28/i.test(n.textContent||''))
-      n.textContent=(n.textContent||'').replace(/WebApp Repair V28[^·]*/i,'WebApp Repair V29 ');
-  }
-},300);
+function markV29(){
+  const tech=$('technicalSection')?.querySelector('.foldcontent');
+  if(!tech)return;
+  document.querySelectorAll('[id^="webRepairBuild"]').forEach(e=>e.remove());
+  const d=document.createElement('div');
+  d.id='webRepairBuildV29';
+  d.className='uploadinfo';
+  d.style.marginTop='12px';
+  d.textContent='WebApp Repair V29 · Android-Fokus + Eingabe-Fallback';
+  tech.appendChild(d);
+}
+let marks=0;
+const markTimer=setInterval(()=>{markV29();if(++marks>=20)clearInterval(markTimer)},250);
+markV29();
 })();
