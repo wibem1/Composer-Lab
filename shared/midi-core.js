@@ -2,7 +2,7 @@
 'use strict';
 if(window.CompositionLabMIDICore?.VERSION)return;
 
-const VERSION='midi-core-1.0';
+const VERSION='midi-core-1.1';
 const PPQ_OUT=480;
 const td=new TextDecoder();
 const te=new TextEncoder();
@@ -44,11 +44,11 @@ function parse(buffer){
       const kind=status&0xf0,ch=status&0x0f,s=chState(ch);s.used=true;
       const need2=![0xc0,0xd0].includes(kind);const d1=b[i++]??0,d2=need2?(b[i++]??0):0;const beat=tick/ppq;
       if(kind===0x90&&d2>0){const key=d1;const a=s.open.get(key)||[];a.push({beat,vel:d2});s.open.set(key,a)}
-      else if(kind===0x80||(kind===0x90&&d2===0)){const a=s.open.get(d1)||[];const on=a.shift();if(a.length)s.open.set(d1,a);else s.open.delete(d1);if(on){const dur=Math.max(1/ppq,beat-on.beat);s.nt.push([on.beat,dur,d1,on.vel,0,0.95])}}
+      else if(kind===0x80||(kind===0x90&&d2===0)){const a=s.open.get(d1)||[];const on=a.shift();if(a.length)s.open.set(d1,a);else s.open.delete(d1);if(on){const dur=Math.max(1/ppq,beat-on.beat);s.nt.push([on.beat,dur,d1,on.vel,0,1.0])}}
       else if(kind===0xb0){s.ct.push([beat,d1,d2])}
       else if(kind===0xc0){s.pg=d1}
     }
-    channels.forEach((s,ch)=>{if(!s.used||(!s.nt.length&&!s.ct.length))return;for(const [pitch,a] of s.open){for(const on of a)s.nt.push([on.beat,Math.max(.25,1/ppq),pitch,on.vel,0,.95])}s.nt.sort((a,b)=>a[0]-b[0]);s.ct.sort((a,b)=>a[0]-b[0]);scoreTracks.push({nm:trackName||(channels.size>1?`Track ${ti+1} Ch ${ch+1}`:`Track ${ti+1}`),ch,pg:s.pg,nt:s.nt,ct:s.ct})});
+    channels.forEach((s,ch)=>{if(!s.used||(!s.nt.length&&!s.ct.length))return;for(const [pitch,a] of s.open){for(const on of a)s.nt.push([on.beat,Math.max(.25,1/ppq),pitch,on.vel,0,1.0])}s.nt.sort((a,b)=>a[0]-b[0]);s.ct.sort((a,b)=>a[0]-b[0]);scoreTracks.push({nm:trackName||(channels.size>1?`Track ${ti+1} Ch ${ch+1}`:`Track ${ti+1}`),ch,pg:s.pg,nt:s.nt,ct:s.ct})});
     pos=end;
   }
   return{ti:title,bpm:Math.round(bpm*1000)/1000,ts,k,sm:`Importierte MIDI-Datei (Format ${format})`,tr:scoreTracks};
