@@ -17,10 +17,11 @@ Der Konsolidierungsbranch aktiviert nun folgenden kontrollierten Bootstrap:
 6. `shared/experiment-adapter.js` – WebApp-Anbindung des Experimentallabors
 7. `shared/gemini-model-config.js` – Modellkonfiguration
 8. `shared/root-interface-v47.js` – aktueller Root-Interface-Layer
-9. `shared/midi-io-adapter.js` – verbindliche WebApp-Schnittstelle für MIDI-I/O
-10. `shared/midi-analysis-adapter.js` – einheitliche KI-Analyse importierter MIDI-Dateien
-11. `shared/player-adapter.js` – ein aktiver Wiedergabepfad für Haupt-, Vorlagen- und Vergleichsplayer
-12. `shared/comparison-adapter.js` – Quellen A/B, KI-Vergleich, Syntheseauftrag und Vergleichs-Chat
+9. `shared/midi-core.js` – eigenständiger Score↔MIDI-Kernkandidat
+10. `shared/midi-io-adapter.js` – verbindliche WebApp-Schnittstelle für MIDI-I/O
+11. `shared/midi-analysis-adapter.js` – einheitliche KI-Analyse importierter MIDI-Dateien
+12. `shared/player-adapter.js` – ein aktiver Wiedergabepfad für Haupt-, Vorlagen- und Vergleichsplayer
+13. `shared/comparison-adapter.js` – Quellen A/B, KI-Vergleich, Syntheseauftrag und Vergleichs-Chat
 
 Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 
@@ -37,8 +38,12 @@ Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 | Komposition | ältere Inline-Engine | gemeinsame Engine Build 14 | ABGEDECKT – neuer Zielpfad |
 | MIDI-Vorlage als Quelle | vorhanden | Engine Adapter `source` | ABGEDECKT |
 | freier Hinweis zur Quelle | teilweise historisch | Root Engine Adapter / MIDI-Chat | ABGEDECKT |
-| MIDI-Import | Inline-Parser | `CompositionLabMIDI` als stabile Schnittstelle, Parser noch Root-Code | ÜBERGANG |
-| MIDI-Export | Inline-Builder | `CompositionLabMIDI` als stabile Schnittstelle, Builder noch Root-Code | ÜBERGANG |
+| MIDI-Import | doppelter Inline-Parser | `midi-core.js` über `CompositionLabMIDI` | KERNKANDIDAT AKTIV – Roundtrip-Test ausstehend |
+| MIDI-Export | doppelter Inline-Builder | `midi-core.js` über `CompositionLabMIDI` | KERNKANDIDAT AKTIV – Roundtrip-Test ausstehend |
+| MIDI Noten/Velocity/Gate | vorhanden | `midi-core.js` | ABGEDECKT |
+| MIDI Kanal/Programm/CC | vorhanden | `midi-core.js` | ABGEDECKT |
+| MIDI Tempo/Taktart/Tonart/Spurnamen | vorhanden | `midi-core.js` | ABGEDECKT |
+| MIDI Spezial-/Raw-Events | uneinheitlich | noch nicht Bestandteil von `midi-core.js` | OFFEN – mit Native abgleichen |
 | JSON-Export | vorhanden | bestehender Root-Code | ABGEDECKT |
 | Hauptplayer | mehrfach überschrieben | `player-adapter.js` | KONSOLIDIERT IM BRANCH |
 | Loop / Pause / Seek | mehrfach überschrieben | `player-adapter.js` | KONSOLIDIERT IM BRANCH |
@@ -68,11 +73,27 @@ Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 | CLAB | noch nicht in `main` | separater Branch `clab-webapp-v1` | BEWUSST ZURÜCKGESTELLT |
 | MusicXML | noch kein vollständiger WebApp-Kern | offen | SPÄTER |
 
+## MIDI-Kern – bewusste Grenze
+
+`shared/midi-core.js` ist jetzt der aktive Kernkandidat im Konsolidierungsbranch. Er unterstützt Standard-MIDI-Dateien mit PPQ-Zeitbasis und bildet folgende gemeinsame Semantik ab:
+
+- Noten, Start, Dauer, Velocity und Gate
+- MIDI-Kanal und General-MIDI-Programm
+- Controller (`ct`)
+- Tempo
+- Taktart
+- Tonart
+- Tracknamen
+
+Nicht als bereits gelöst gelten Raw-/Spezialereignisse wie Pitch Bend, Aftertouch, SysEx, spezielle Meta-Events oder DAW-spezifische Zusatzinformationen. Diese dürfen nicht stillschweigend verloren gehen, sobald wir Native- oder DAW-Roundtrips als Ziel betrachten. Dafür wird der Native-Ansatz mit `me` separat abgeglichen.
+
+Der alte Root-Parser und Root-Builder bleiben bis zum bestandenen Roundtrip-Test als Fallback erhalten. Erst danach werden die doppelten Inline-Implementierungen entfernt.
+
 ## Aktuell verbleibende große Altbereiche
 
-1. Den MIDI-Parser und MIDI-Builder selbst aus dem Monolithen in einen echten gemeinsamen Kern überführen.
+1. Den neuen MIDI-Kern gegen reale MIDI-Dateien, den alten Root-Parser/-Builder und Native testen.
 2. Android-/PWA-spezifische Hilfsfunktionen sauber als Plattformadapter markieren.
-3. Danach die bereits übersteuerten Inline-, Player-, Analyse- und Vergleichsblöcke physisch aus `index.html` entfernen oder archivieren.
+3. Danach die bereits übersteuerten Inline-, Player-, Analyse-, Vergleichs- und MIDI-Blöcke physisch aus `index.html` entfernen oder archivieren.
 
 ## Sicherheitsregel
 
