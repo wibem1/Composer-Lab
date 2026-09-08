@@ -9,7 +9,7 @@ Status: **Konsolidierung abgeschlossen**
 - Composition Lab Native: `main` — **V5.0.12 / Build 84 / Engine Build 14 / CLAB v1**
 - Native Referenz: `reference-v5.0.11` — unverändert erhalten
 - Music Chat Lab: `main` — **v1.0.17 / Engine Build 14 / CLAB v1**
-- Music Chat Lab Pages: `main` — reines Deployment, keine zweite App-Codebasis
+- Music Chat Lab Pages: `main` — reines Deployment mit byteidentischem Laufzeit-Snapshot, keine zweite Entwicklungsquelle
 
 ## Abgeschlossene Bereinigung
 
@@ -20,7 +20,7 @@ Status: **Konsolidierung abgeschlossen**
 - gemeinsamer MIDI-Core mit stabiler MIDI-Import-Regel `Gate = 1.0`
 - Music Chat Lab auf gemeinsame MIDI-Semantik ausgerichtet: alle CCs, Key Signature, keine künstliche 5000-Event-Abschneidung, kein erfundener Staff bei normalem MIDI
 - Music Chat Lab ohne historische `*-fix`, `*-vNN`- und alte `output`-Reparaturpfade
-- Music Chat Lab Pages auf reines Deployment reduziert; Laufzeitcode kommt direkt aus `Music-Chat-Lab/main`
+- Music Chat Lab Pages ist ausschließlich Deployment; der Laufzeit-Snapshot wird vom freigegebenen `Music-Chat-Lab/main` gespiegelt und nicht eigenständig weiterentwickelt
 - Native vollständig materialisiert: 25 Swift-Dateien direkt unter `Sources/`, keine Source-ZIP und keine Entfaltungslogik im aktiven `main`
 - Native MIDI-Gate-Korrektur
 - MusicXML-`ev`-Import, zweistaffige Zuordnung, Tie-Import und Tie-Export
