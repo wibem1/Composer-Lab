@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Composition Lab",
-  "short_name": "Composition Lab",
+  "name": "ComposeLab",
+  "short_name": "ComposeLab",
   "description": "Musikalische Werkstatt für gemeinsames Komponieren von Mensch und KI",
   "start_url": "./index.html",
   "scope": "./",
