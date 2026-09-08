@@ -6,6 +6,8 @@ Stand: 8. September 2026
 
 Die laufenden Musikprojekte werden als zusammenhängendes System entwickelt und nicht als voneinander unabhängige Einzelprogramme. Unterschiedliche Bedienkonzepte sind ausdrücklich gewünscht; gemeinsame musikalische Datenmodelle und Austauschformate sollen dagegen verbindlich sein.
 
+Die verbindliche Detaildefinition des gemeinsamen musikalischen Kerns steht in `CORE-CONTRACT.md`. Dieses Dokument beschreibt die Systemstruktur und die Zuständigkeiten der Projekte.
+
 ## 2. Aktive Anwendungen
 
 ### Composition Lab WebApp
@@ -18,7 +20,7 @@ Repository: `wibem1/Composition-Lab-Native`
 
 Rolle: native macOS-Fassung mit weitergehender System-, MusicXML- und DAW-Integration.
 
-Referenzstand außerhalb des derzeit unvollständigen GitHub-Repositories: Composition Lab Native V5.0.11, Build 83, Engine Build 14. Dieser Stand muss unverändert als nächstes sauber in GitHub gesichert werden, bevor dort weiterentwickelt wird.
+Referenzstand außerhalb des derzeit unvollständigen GitHub-Repositories: Composition Lab Native V5.0.11, Build 83, Engine Build 14. Dieser Stand muss unverändert sauber in GitHub gesichert werden, bevor dort weiterentwickelt wird.
 
 ### Music Chat Lab
 Entwicklungsrepository: `wibem1/Music-Chat-Lab`
@@ -60,7 +62,8 @@ Folgende Bereiche sind systemweit und dürfen nicht unkoordiniert in mehreren Ap
    - MIDI und MusicXML sind Austausch-/Exportdarstellungen und nicht konkurrierende Masterdaten
 
 4. **MIDI-Grundmodell**
-   - Import, strukturierte Repräsentation und Export sollen dieselben musikalischen Informationen möglichst verlustarm behandeln
+   - Import, strukturierte Repräsentation und Export folgen der in `CORE-CONTRACT.md` festgelegten Semantik
+   - normale MIDI-Dateiimporte setzen bei gemessener Note-On→Note-Off-Dauer `Gate = 1.0`
 
 5. **MusicXML-Grundmodell**
    - MusicXML soll aus dem strukturierten Score erzeugt werden
@@ -115,13 +118,25 @@ Vor neuen Funktionen gilt:
 - keine direkte Weiterentwicklung in Deployment- oder Archiv-Repositories
 - Altbestände zunächst klassifizieren, erst danach löschen oder verschieben
 - funktionierende Referenzstände müssen reproduzierbar in GitHub gesichert sein
+- `CORE-CONTRACT.md` ist bei Änderungen gemeinsamer musikalischer Semantik mitzupflegen
 
-## 10. Konsolidierungsreihenfolge
+## 10. Aktueller Konsolidierungsstand
 
-1. Composition Lab Native V5.0.11 unverändert in GitHub sichern
-2. Music Chat Lab und Music-Chat-Lab-Pages vollständig abgleichen; Source of Truth = Music-Chat-Lab
-3. Composition Lab WebApp: aktive Dateien von Tests, Repairs und historischen Versionen unterscheiden
-4. verbindliches gemeinsames Score- und CLAB-Schema dokumentieren
-5. gemeinsame Engine-/Parser-Komponenten konsolidieren
-6. erst danach physisch aufräumen und Altbestände in Archive verschieben
-7. anschließend normale Funktionsentwicklung wieder aufnehmen
+Bereits erledigt:
+
+1. Repository-Rollen geklärt
+2. WebApp technisch inventarisiert
+3. WebApp-Konsolidierungsbranch angelegt
+4. Engine-14-, Storage-, Player-, MIDI-Analyse- und Vergleichspfade modularisiert
+5. eigenständigen WebApp-MIDI-Kern erstellt und mit realen MIDI-Dateien roundtrip-getestet
+6. Native V5.0.11 gegen den gemeinsamen MIDI-/Score-Vertrag abgeglichen
+7. Music Chat Lab gegen denselben Vertrag abgeglichen
+8. gemeinsamen Kernvertrag in `CORE-CONTRACT.md` festgelegt
+
+Als Nächstes:
+
+1. Composition Lab Native V5.0.11 unverändert vollständig in GitHub sichern
+2. Music Chat Lab gezielt an den gemeinsamen MIDI-Vertrag angleichen
+3. WebApp alten Inline-MIDI-/Player-/Analyse-/Vergleichscode erst nach Testfreigabe physisch entfernen oder archivieren
+4. CLAB-Kompatibilität aller drei Anwendungen abschließen
+5. danach normale Funktionsentwicklung wieder aufnehmen
