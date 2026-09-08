@@ -17,8 +17,10 @@ Der Konsolidierungsbranch aktiviert nun folgenden kontrollierten Bootstrap:
 6. `shared/experiment-adapter.js` – WebApp-Anbindung des Experimentallabors
 7. `shared/gemini-model-config.js` – Modellkonfiguration
 8. `shared/root-interface-v47.js` – aktueller Root-Interface-Layer
-9. `shared/midi-analysis-adapter.js` – einheitliche KI-Analyse importierter MIDI-Dateien
-10. `shared/player-adapter.js` – ein aktiver Wiedergabepfad für Haupt-, Vorlagen- und Vergleichsplayer
+9. `shared/midi-io-adapter.js` – verbindliche WebApp-Schnittstelle für MIDI-I/O
+10. `shared/midi-analysis-adapter.js` – einheitliche KI-Analyse importierter MIDI-Dateien
+11. `shared/player-adapter.js` – ein aktiver Wiedergabepfad für Haupt-, Vorlagen- und Vergleichsplayer
+12. `shared/comparison-adapter.js` – Quellen A/B, KI-Vergleich, Syntheseauftrag und Vergleichs-Chat
 
 Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 
@@ -35,8 +37,8 @@ Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 | Komposition | ältere Inline-Engine | gemeinsame Engine Build 14 | ABGEDECKT – neuer Zielpfad |
 | MIDI-Vorlage als Quelle | vorhanden | Engine Adapter `source` | ABGEDECKT |
 | freier Hinweis zur Quelle | teilweise historisch | Root Engine Adapter / MIDI-Chat | ABGEDECKT |
-| MIDI-Import | Inline-Parser | weiterhin bestehender Root-Parser | ÜBERGANG – später Kernkandidat |
-| MIDI-Export | Inline-Builder | weiterhin bestehender Root-Builder | ÜBERGANG – später Kernkandidat |
+| MIDI-Import | Inline-Parser | `CompositionLabMIDI` als stabile Schnittstelle, Parser noch Root-Code | ÜBERGANG |
+| MIDI-Export | Inline-Builder | `CompositionLabMIDI` als stabile Schnittstelle, Builder noch Root-Code | ÜBERGANG |
 | JSON-Export | vorhanden | bestehender Root-Code | ABGEDECKT |
 | Hauptplayer | mehrfach überschrieben | `player-adapter.js` | KONSOLIDIERT IM BRANCH |
 | Loop / Pause / Seek | mehrfach überschrieben | `player-adapter.js` | KONSOLIDIERT IM BRANCH |
@@ -54,8 +56,10 @@ Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 | Vorlage in Komposition übernehmen | vorhanden | Experiment-Adapter | ABGEDECKT |
 | MIDI-Analyse durch KI | Inline + Repair-Patches | `midi-analysis-adapter.js` | KONSOLIDIERT IM BRANCH |
 | Rückfrage zur MIDI-Analyse | Inline + Repair-Patches | `midi-analysis-adapter.js` | KONSOLIDIERT IM BRANCH |
-| Vergleich Quelle A/B | vorhanden | Root-spezifischer Vergleichscode | NOCH NICHT KONSOLIDIERT |
-| freier Vergleichs-Chat | `comparison-chat-v27.js` | weiterhin aktiv | ABGEDECKT, aber noch app-spezifisch |
+| Quellen A/B laden | Inline-Vergleichscode | `comparison-adapter.js` | KONSOLIDIERT IM BRANCH |
+| KI-Vergleich A/B | Inline-Vergleichscode | `comparison-adapter.js` | KONSOLIDIERT IM BRANCH |
+| Syntheseauftrag erzeugen/übernehmen | Inline-Vergleichscode | `comparison-adapter.js` | KONSOLIDIERT IM BRANCH |
+| freier Vergleichs-Chat | `comparison-chat-v27.js` | `comparison-adapter.js` | KONSOLIDIERT IM BRANCH |
 | Diagnoseexport | `diagnostics-v2.js` | Engine Adapter liefert Diagnosedaten | ABGEDECKT |
 | Fold-State-Persistenz | mehrfach vorhanden | `root-interface-v47.js` | ABGEDECKT |
 | API-Key-Speicherung | historischer Root-Code + Interface | Root Interface | ABGEDECKT |
@@ -66,16 +70,9 @@ Gestartet wird dieser Pfad über `shared/consolidated-bootstrap.js`.
 
 ## Aktuell verbleibende große Altbereiche
 
-1. MIDI-Import und MIDI-Export
-2. Vergleichslabor außerhalb des Players
-3. Android-/PWA-spezifische Hilfsfunktionen
-4. später: physisches Entfernen der nun übersteuerten Inline-Player- und Analyseblöcke
-
-## Player-Konsolidierung
-
-Der alte `index.html` enthält mindestens zwei Grundimplementierungen des Players sowie zusätzliche Override-Schichten. Im Konsolidierungsbranch bleibt dieser Code zunächst als Sicherheitsnetz bestehen. `player-adapter.js` ersetzt jedoch die sichtbaren Player-Bedienelemente durch frische DOM-Knoten und bindet ausschließlich einen neuen Handler-Satz. Dadurch feuern die alten `addEventListener`-Handler nicht mehr mit.
-
-Der neue Player verwendet ein kurzes Look-ahead-Fenster statt sämtliche Noten eines längeren Stücks sofort zu planen. Damit bleibt die Architektur für größere MIDI-Dateien kontrollierbar und es existiert nur eine Stelle für Play, Pause, Stop, Loop und Seek.
+1. Den MIDI-Parser und MIDI-Builder selbst aus dem Monolithen in einen echten gemeinsamen Kern überführen.
+2. Android-/PWA-spezifische Hilfsfunktionen sauber als Plattformadapter markieren.
+3. Danach die bereits übersteuerten Inline-, Player-, Analyse- und Vergleichsblöcke physisch aus `index.html` entfernen oder archivieren.
 
 ## Sicherheitsregel
 
