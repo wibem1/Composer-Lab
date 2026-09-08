@@ -70,3 +70,14 @@ input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))
 input.addEventListener('pointerup',()=>{if(document.activeElement!==input)input.focus({preventScroll:true});});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
 })();
+
+// Konsolidierungsbranch: ab hier wird der gemeinsame Engine-14-/Storage-/Interface-Pfad
+// zusätzlich aktiviert. Der bisherige Root-Code bleibt vorerst als Sicherheitsnetz bestehen.
+(()=>{
+  if(window.__compositionLabConsolidatedLoader)return;
+  window.__compositionLabConsolidatedLoader=true;
+  const s=document.createElement('script');
+  s.async=false;
+  s.src='/Composer-Lab/shared/consolidated-bootstrap.js?fresh='+Date.now();
+  (document.head||document.body).appendChild(s);
+})();
