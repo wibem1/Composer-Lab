@@ -3,7 +3,7 @@
 if(window.__compositionLabConsolidatedBootstrap)return;
 window.__compositionLabConsolidatedBootstrap=true;
 
-const BUILD='consolidation-1';
+const BUILD='consolidation-2';
 const base='/Composer-Lab/shared/';
 
 function load(src){
@@ -26,15 +26,20 @@ async function start(){
     if(!window.CompositionLabStorage) await load(base+'storage-engine.js');
     await load(base+'storage-adapter.js');
 
-    // 3. WebApp-Adapter. Dieser aktiviert die Engine 14 am Komponieren-Button
+    // 3. WebApp-Adapter. Dieser aktiviert Engine 14 am Komponieren-Button
     //    und lädt anschließend Experiment-Engine, Experiment-Adapter,
     //    Modellkonfiguration und die aktuelle Root-Oberfläche.
     await load(base+'root-engine-adapter.js');
+
+    // 4. Erste aus dem historischen index.html ausgelöste Einzelfunktion:
+    //    MIDI-Analyse und Rückfragen werden nun von genau einem Adapter gesteuert.
+    await load(base+'midi-analysis-adapter.js');
 
     window.__compositionLabArchitecture={
       bootstrap:BUILD,
       engine:Number(window.CompositionLabEngine?.BUILD||0),
       mode:'consolidated-webapp',
+      modules:['composition-engine','storage-engine','storage-adapter','root-engine-adapter','midi-analysis-adapter'],
       startedAt:new Date().toISOString()
     };
 
