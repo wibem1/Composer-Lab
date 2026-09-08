@@ -3,7 +3,7 @@
 if(window.__compositionLabConsolidatedBootstrap)return;
 window.__compositionLabConsolidatedBootstrap=true;
 
-const BUILD='consolidation-7';
+const BUILD='consolidation-8';
 const base='/Composer-Lab/shared/';
 
 function load(src){
@@ -31,14 +31,16 @@ async function start(){
     await load(base+'player-adapter.js');
     await load(base+'comparison-adapter.js');
     await load(base+'experiment-adapter.js');
+    await load(base+'clab-document-v1.js');
 
     window.__compositionLabArchitecture={
       bootstrap:BUILD,
       engine:Number(window.CompositionLabEngine?.BUILD||0),
       midiCore:window.CompositionLabMIDICore?.VERSION||'',
       experiment:window.CompositionLabExperiment?.VERSION||'',
+      clab:window.CompositionLabCLAB?.VERSION||0,
       mode:'consolidated-webapp',
-      modules:['composition-engine','storage-engine','midi-core','experiment-engine','storage-adapter','root-engine-adapter','midi-io-adapter','midi-analysis-adapter','player-adapter','comparison-adapter','experiment-adapter'],
+      modules:['composition-engine','storage-engine','midi-core','experiment-engine','storage-adapter','root-engine-adapter','midi-io-adapter','midi-analysis-adapter','player-adapter','comparison-adapter','experiment-adapter','clab-document-v1'],
       startedAt:new Date().toISOString()
     };
 
