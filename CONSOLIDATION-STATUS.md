@@ -1,100 +1,41 @@
-# Music Lab System – Konsolidierungsstatus
+# Composition Lab – Konsolidierungsstatus
 
-Stand: 8. September 2026
+Stand: 2026-09-08
 
-Diese Datei dient als zentrale Arbeitsliste für die laufende Aufräum- und Strukturierungsphase. Während dieser Phase sollen keine neuen Produktfunktionen begonnen werden, solange sie nicht unmittelbar der Konsolidierung dienen.
+## Ziel
 
-## A. Repositories und Rollen
+Der aktive Entwicklungsstand soll frei von historischen Plattformprototypen, Reparaturschichten und redundanten Implementierungen sein. Neue Funktionen werden erst wieder begonnen, wenn die Konsolidierung abgeschlossen und geprüft ist.
 
-### `wibem1/Composer-Lab`
-Status: **AKTIV – Source of Truth für Composition Lab WebApp**
+## Aktive Referenzen
 
-Nächste Aufgaben:
-- aktive Laufzeitdateien identifizieren
-- alte Interface-/Repair-/Teststände klassifizieren
-- gemeinsame Kernmodule von UI-spezifischem Code trennen
-- bestehende CLAB-Testarbeit vorerst isoliert lassen
+- WebApp: `consolidation-webapp`
+- Native: `native-core-alignment`
+- Native Referenz: `reference-v5.0.11` (unverändert)
+- Music Chat Lab: `main`
+- Music Chat Lab Pages: Deployment only
 
-### `wibem1/Composition-Lab-Native`
-Status: **AKTIV – Source of Truth für Composition Lab Native, aber GitHub-Stand unvollständig**
+## Bereits konsolidiert
 
-Bekannter Referenzstand außerhalb des Repositories:
-- V5.0.11
-- Build 83
-- Engine Build 14
+- Gemeinsamer Core-Vertrag (`CORE-CONTRACT.md`)
+- MIDI-Core mit korrektem Import-Gate 1.0
+- Native MIDI-Gate-Korrektur
+- MusicXML-`ev`-Import
+- MusicXML Tie-Import und Tie-Export
+- EV Contract 1.1
+- Historische Mac-/iPad-Prototypordner aus dem aktiven WebApp-Entwicklungsbaum entfernt
+- Historische Installations-Workflows aus dem aktiven WebApp-Entwicklungsbaum entfernt
 
-Nächste Aufgabe mit höchster Priorität:
-- vollständigen Referenzstand V5.0.11 unverändert in GitHub sichern
+## Noch offen
 
-### `wibem1/Music-Chat-Lab`
-Status: **AKTIV – Source of Truth für Music Chat Lab**
+1. WebApp-Monolith: historische Inline-Parser, Player, Repair- und Override-Schichten endgültig entfernen und ausschließlich die konsolidierten Module laden.
+2. WebApp-Rootdateien: nur tatsächlich benötigte Laufzeitdateien behalten.
+3. Music Chat Lab: MIDI-Parser/-Builder auf gemeinsamen Core-Vertrag ausrichten (alle CCs, Key Signature, gemeinsame Semantik).
+4. Music Chat Lab: aktive Dateien von `output.js`/`output-v2.js` und sonstigen Legacy-Kandidaten trennen bzw. entfernen.
+5. Music-Chat-Lab-Pages: auf reines Deployment reduzieren.
+6. Historisches `Midi-Composer`: eindeutig als Archiv kennzeichnen, soweit Schreibrechte dies zulassen.
+7. Alte Composer-Lab-Branches löschen. Die aktuelle GitHub-Schnittstelle erlaubt in dieser Sitzung keine Branch-Löschung; Löschkandidaten werden separat dokumentiert.
+8. `.clab`-Kompatibilität erst nach der Code-Entrümpelung abschließend integrieren und testen.
 
-Nächste Aufgaben:
-- Funktionsbestand mit Pages-Repository vergleichen
-- neuere/fehlende Module aus Pages identifizieren
-- danach einen eindeutigen, reproduzierbaren Hauptstand herstellen
+## Regel bis Abschluss
 
-### `wibem1/Music-Chat-Lab-Pages`
-Status: **DEPLOYMENT – keine eigenständige Entwicklung**
-
-Nächste Aufgaben:
-- Unterschiede zum Entwicklungsrepository vollständig erfassen
-- danach nur noch aus `Music-Chat-Lab` deployen
-
-### `wibem1/Midi-Composer`
-Status: **ARCHIV – historischer Vorläufer**
-
-Hinweis: Die Archivkennzeichnung konnte wegen eines aktuellen 403-Schreibfehlers der GitHub-Integration noch nicht als README in diesem Repository gespeichert werden.
-
-## B. Gemeinsamer Kern
-
-Status der gemeinsamen Bereiche:
-
-| Bereich | Referenz / Stand | Konsolidierungsziel |
-|---|---|---|
-| Score-Schema | weitgehend gemeinsam | verbindlich dokumentieren |
-| Engine | Engine Build 14 | Änderungen künftig koordiniert |
-| CLAB | Native V5.0.11 derzeit Referenz | gemeinsames Projektformat aller Apps |
-| MIDI | mehrere Implementierungen | gemeinsame Semantik und Roundtrip-Regeln |
-| MusicXML | Native am weitesten | gemeinsame Score-basierte Erzeugung |
-| Provider-Adapter | mehrfach vorhanden | Schnittstellen angleichen, UI darf verschieden bleiben |
-
-## C. Begriffe
-
-Verbindliche Bedeutung:
-
-- Projekt = `.clab`
-- Austausch = MIDI / MusicXML
-- Backup = App-Zustand / Einstellungen / Verlauf
-- Verlauf = lokale Arbeitsgeschichte
-- Engine = musikalische Kompositionslogik
-- Score = gemeinsame strukturierte musikalische Repräsentation
-
-## D. Klassifikation für Dateien
-
-Jede historisch gewachsene Datei soll künftig einer dieser Kategorien zugeordnet werden:
-
-- `ACTIVE` – aktuell geladen und produktiv benötigt
-- `CORE` – gemeinsamer Kern
-- `LEGACY` – für Rückwärtskompatibilität noch nötig
-- `TEST` – gezielter Test oder Experiment
-- `ARCHIVE` – historisch, nicht mehr Teil der laufenden Anwendung
-
-## E. Aktuelle Stop-Regel
-
-Bis die Punkte 1–4 erledigt sind, keine neue Funktionsentwicklung:
-
-1. Native V5.0.11 sichern
-2. Music Chat Lab vs. Pages konsolidieren
-3. Composer-Lab-Laufzeitpfad inventarisieren
-4. gemeinsames Score-/CLAB-Schema verbindlich dokumentieren
-
-## F. Branch-Hinweis
-
-Der Branch `clab-webapp-v1` enthält einen isolierten CLAB-Kompatibilitätsversuch und wird derzeit nicht nach `main` übernommen.
-
-Im Zuge der CLAB-Arbeit wurden zusätzlich mehrere kurzlebige Testbranches angelegt. Sie gehören nicht zum Zielzustand und sollen bei der späteren Branch-Bereinigung entfernt werden. Bis dahin dürfen sie nicht als Referenzstände verwendet werden.
-
-## G. Nächster konkreter Arbeitsschritt
-
-Als nächstes wird **Composition Lab WebApp technisch inventarisiert**: Welche Dateien lädt `main` tatsächlich zur Laufzeit, welche sind nur historische oder experimentelle Altbestände? Erst danach werden Verzeichnisse oder Dateien physisch aufgeräumt.
+Keine neue Produktfunktion. Jede Änderung muss entweder Altcode entfernen, gemeinsame Semantik vereinheitlichen, Referenzstände sichern oder Tests/Dokumentation verbessern.
