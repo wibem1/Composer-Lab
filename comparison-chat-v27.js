@@ -69,4 +69,12 @@ input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))
 // Android/WebApp: Berührung des Feldes soll immer direkt den Texteingabefokus erhalten.
 input.addEventListener('pointerup',()=>{if(document.activeElement!==input)input.focus({preventScroll:true});});
 if(use)use.onclick=()=>{if(!lastAnswer)return;const p=$('prompt');if(p)p.value=lastAnswer;try{saveCurrentState()}catch(_){}const st=$('status');if(st)st.innerHTML='<span class="ok">Letzte KI-Antwort als Kompositionsauftrag übernommen.</span>';};
+
+// Branch clab-webapp-v1: Native-kompatiblen CLAB-Dokument-Layer nachladen.
+if(!window.__compositionLabClabLoaderV1){
+ window.__compositionLabClabLoaderV1=true;
+ const s=document.createElement('script');
+ s.src='shared/clab-document-v1.js?fresh='+Date.now();
+ (document.head||document.body).appendChild(s);
+}
 })();
