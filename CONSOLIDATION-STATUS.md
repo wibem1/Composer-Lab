@@ -5,10 +5,10 @@ Status: **Konsolidierung abgeschlossen**
 
 ## Aktive Referenzen
 
-- Composition Lab WebApp: `main`
-- Composition Lab Native: `main` — **V5.0.12 / Build 84 / Engine Build 14**
+- Composition Lab WebApp: `main` — **Engine Build 14 / CLAB v1**
+- Composition Lab Native: `main` — **V5.0.12 / Build 84 / Engine Build 14 / CLAB v1**
 - Native Referenz: `reference-v5.0.11` — unverändert erhalten
-- Music Chat Lab: `main` — **v1.0.16 / Engine Build 14**
+- Music Chat Lab: `main` — **v1.0.17 / Engine Build 14 / CLAB v1**
 - Music Chat Lab Pages: `main` — reines Deployment, keine zweite App-Codebasis
 
 ## Abgeschlossene Bereinigung
@@ -26,6 +26,8 @@ Status: **Konsolidierung abgeschlossen**
 - MusicXML-`ev`-Import, zweistaffige Zuordnung, Tie-Import und Tie-Export
 - EV Contract 1.1 und dokumentierte Roundtrip-Tests
 - alte doppelte Native-Paketchronik aus dem aktiven Root entfernt
+- CLAB v1 in WebApp und Music Chat Lab als produktiver Lese-/Schreibpfad implementiert
+- automatisierte CLAB-v1-Semantiktests für WebApp und Music Chat Lab bestanden
 
 ## Gemeinsamer Vertragsstand
 
@@ -41,9 +43,21 @@ Der verbindliche gemeinsame Stand ist:
 
 ## CLAB-Status
 
-Composition Lab Native ist weiterhin die vollständige Referenzimplementierung für `.clab` Version 1.
+Composition Lab Native bleibt die Referenzimplementierung des Formats. WebApp und Music Chat Lab können denselben CLAB-v1-Dokumenttyp jetzt produktiv öffnen und speichern.
 
-WebApp und Music Chat Lab kennen den gemeinsamen CLAB-Vertrag derzeit architektonisch, besitzen auf `main` aber noch **keinen vollständigen produktiven CLAB-v1-Lese-/Schreibpfad**. Das ist keine verbliebene Altlast und gehört nicht mehr zur Konsolidierung, sondern ist eine künftige gemeinsame Interoperabilitätsfunktion.
+Gemeinsam geprüft sind insbesondere:
+
+- Score inklusive `ev` und `me`
+- Konzept / musikalischer Impuls
+- Provider und Modell
+- Takte, Taktart, Tempo, Tonart, Besetzung und Kompositionsauftrag
+- `sourceName` / `sourceScore`
+- Erhalt unbekannter zukünftiger Top-Level-Felder
+- Erhalt von `originalMusicXMLData`
+- keine API-Schlüssel und kein Chat-Verlauf in CLAB
+- Legacy-Felder `midiData` / `musicXMLData` werden beim neuen Speichern nicht weitergeführt
+
+Music Chat Lab übernimmt einen geöffneten CLAB-Score zusätzlich in einen freien MIDI-Speicherplatz und stellt ihn dem Chat als normalen Engine-14-Musikkontext zur Verfügung. Eine daraus neu erzeugte Komposition wird anschließend zum aktuellen CLAB-Projektstand.
 
 ## Alte Branches
 
