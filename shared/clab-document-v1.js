@@ -9,6 +9,7 @@ let loadedDocument=null;
 function appleDateNow(){return Date.now()/1000-APPLE_EPOCH;}
 function safeName(s){return String(s||'Composition').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,' ').trim()||'Composition';}
 function noteCount(score){return (score?.tr||[]).reduce((n,t)=>n+(Array.isArray(t?.nt)?t.nt.length:0),0);}
+function nativeProvider(v){return ['gemini','anthropic','openai'].includes(String(v||''))?String(v):null;}
 function setStatus(msg,kind='ok'){
   const e=$('status'); if(!e)return; const cls=kind==='err'?'err':kind==='warn'?'warn':'ok';
   e.innerHTML=`<span class="${cls}">${String(msg).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`;
@@ -57,10 +58,11 @@ function makeDocument(){
   if(!lastScore)throw new Error('Noch keine Komposition vorhanden.');
   const previous=loadedDocument?clone(loadedDocument):{};
   const sameScore=!!loadedDocument&&JSON.stringify(loadedDocument.score)===JSON.stringify(lastScore);
+  const provider=nativeProvider(lastProvider)||nativeProvider($('provider')?.value);
   const doc={...previous,
     format:FORMAT,version:VERSION,savedAt:appleDateNow(),
     title:String(lastScore.ti||previous.title||'Komposition'),score:clone(lastScore),concept:String(lastConcept||''),
-    provider:lastProvider||$('provider')?.value||null,model:lastModel||$('model')?.value||null,
+    provider,model:provider?(lastModel||$('model')?.value||null):null,
     measures:String($('measures')?.value??''),meter:String($('meter')?.value??''),tempo:String($('tempo')?.value??''),
     musicalKey:String($('musicalKey')?.value??''),ensemble:String($('ensemble')?.value??''),assignment:String($('prompt')?.value??''),
     sourceName:uploadedScore?(uploadedName||uploadedScore.ti||null):null,sourceScore:uploadedScore?clone(uploadedScore):null
@@ -79,7 +81,7 @@ function installUi(){
   const midi=$('downloadBtn');const toolbar=midi?.parentElement;if(!toolbar)return false;
   const open=document.createElement('button');open.id='clabOpenBtn';open.type='button';open.className='secondary';open.textContent='CLAB öffnen';
   const save=document.createElement('button');save.id='clabSaveBtn';save.type='button';save.className='secondary';save.textContent='CLAB speichern';
-  const input=document.createElement('input');input.id='clabFileInput';input.type='file';input.accept='.clab,.clabproject,application/json';input.style.display='none';
+  const input=document.createElement('input');input.id='clabFileInput';input.type='file';input.accept='.clab,application/json';input.style.display='none';
   toolbar.insertBefore(open,midi);toolbar.insertBefore(save,midi);toolbar.appendChild(input);
   open.onclick=()=>{input.value='';input.click();};
   input.onchange=()=>{const f=input.files?.[0];if(f)openFile(f);};
